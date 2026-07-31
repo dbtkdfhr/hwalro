@@ -47,11 +47,11 @@ jobs:
         run: pnpm --filter @hwallo/frontend run format
 
       # ── Backend: Spotless ──
-      - name: Set up JDK 21
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 21
+          java-version: 17
           cache: gradle
 
       - name: Format backend services (Spotless)

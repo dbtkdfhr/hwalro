@@ -1,9 +1,9 @@
 server:
-  port: 8080
+  port: 8082
 
 spring:
   application:
-    name: hwallo-backend
+    name: regulation-service
 
   # 개발 환경에서는 DB/OpenAI 없이 실행 (아래 exclude 제거 후 각각 설정)
   autoconfigure:

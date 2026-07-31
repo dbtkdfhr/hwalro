@@ -1,0 +1,16 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: simulation-service
+
+  # 개발 환경에서는 OpenAI 없이 실행 (exclude 제거 후 설정)
+  autoconfigure:
+    exclude:
+      - org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration
+
+  # Spring AI Configuration
+  # ai:
+  #   openai:
+  #     api-key: ${OPENAI_API_KEY}

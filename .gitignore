@@ -12,6 +12,7 @@ out/
 target/
 *.class
 *.jar
+!**/gradle/wrapper/gradle-wrapper.jar
 *.war
 *.log
 .mvn/wrapper/maven-wrapper.jar

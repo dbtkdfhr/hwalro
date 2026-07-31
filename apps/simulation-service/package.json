@@ -1,5 +1,5 @@
 {
-  "name": "@hwallo/backend",
+  "name": "@hwallo/simulation-service",
   "private": true,
   "scripts": {
     "dev": "./gradlew bootRun",

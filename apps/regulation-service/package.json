@@ -1,0 +1,11 @@
+{
+  "name": "@hwallo/regulation-service",
+  "private": true,
+  "scripts": {
+    "dev": "./gradlew bootRun",
+    "build": "./gradlew compileJava -q",
+    "lint": "./gradlew spotlessCheck -q",
+    "format": "./gradlew spotlessApply -q",
+    "clean": "./gradlew clean -q"
+  }
+}

@@ -1,4 +1,4 @@
-package com.hwallo.backend.controller;
+package com.hwallo.regulation.controller;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -11,7 +11,7 @@ public class HealthController {
     public Map<String, Object> health() {
         return Map.of(
                 "status", "UP",
-                "service", "hwallo-backend",
+                "service", "regulation-service",
                 "timestamp", LocalDateTime.now().toString());
     }
 }

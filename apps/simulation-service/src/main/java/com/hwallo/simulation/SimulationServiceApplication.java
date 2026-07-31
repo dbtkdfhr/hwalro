@@ -1,11 +1,11 @@
-package com.hwallo.backend;
+package com.hwallo.simulation;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class HwalloBackendApplication {
+public class SimulationServiceApplication {
     public static void main(String[] args) {
-        SpringApplication.run(HwalloBackendApplication.class, args);
+        SpringApplication.run(SimulationServiceApplication.class, args);
     }
 }

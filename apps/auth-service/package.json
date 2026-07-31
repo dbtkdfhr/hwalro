@@ -1,5 +1,5 @@
 {
-  "name": "@hwallo/auth-service",
+  "name": "@hwalro/auth-service",
   "private": true,
   "scripts": {
     "dev": "dotenv -e ../../.env -- ./gradlew bootRun",

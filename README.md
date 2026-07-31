@@ -1,10 +1,10 @@
-# HWALLO
+# HWALRO
 
 > 팝업·전시·행사 공간의 배치안을 대피 시뮬레이션으로 사전 검토하고, 안전한 공간 운영을 위한 의사결정을 지원하는 서비스
 
 ## 서비스 소개
 
-활로(HWALLO)는 백화점과 복합 쇼핑 공간에서 운영되는 팝업·전시·행사의 안전성을 개장 전에 검토할 수 있도록 돕는 공간 안전 지원 시스템입니다.
+활로(HWALRO)는 백화점과 복합 쇼핑 공간에서 운영되는 팝업·전시·행사의 안전성을 개장 전에 검토할 수 있도록 돕는 공간 안전 지원 시스템입니다.
 
 운영 담당자는 공간의 도면과 배치안을 등록하고 인원·출구 등의 조건을 설정해 대피 시뮬레이션을 실행할 수 있습니다. 시뮬레이션 결과에서는 대피 시간, 밀집도, 병목 등의 지표를 확인하고 배치안을 비교할 수 있습니다.
 
@@ -86,7 +86,7 @@
 ## 저장소 구조
 
 ```text
-hwallo/
+hwalro/
 ├─ apps/
 │  ├─ frontend/
 │  ├─ auth-service/
@@ -130,7 +130,7 @@ Turborepo가 프론트엔드와 각 백엔드 서비스의 `dev` 스크립트를
 ### 프론트엔드만 실행
 
 ```bash
-pnpm --filter @hwallo/frontend dev
+pnpm --filter @hwalro/frontend dev
 ```
 
 ### 백엔드 서비스 개별 실행
@@ -163,8 +163,8 @@ pnpm build
 ### 프론트엔드
 
 ```bash
-pnpm --filter @hwallo/frontend lint
-pnpm --filter @hwallo/frontend build
+pnpm --filter @hwalro/frontend lint
+pnpm --filter @hwalro/frontend build
 ```
 
 ### 백엔드

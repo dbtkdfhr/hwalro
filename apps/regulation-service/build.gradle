@@ -5,7 +5,7 @@ plugins {
     id 'com.diffplug.spotless' version '7.0.2'
 }
 
-group = 'com.hwallo'
+group = 'com.hwalro'
 version = '0.0.1-SNAPSHOT'
 
 java {

@@ -1,5 +1,5 @@
 {
-  "name": "hwallo",
+  "name": "hwalro",
   "private": true,
   "scripts": {
     "dev": "turbo dev --ui tui",

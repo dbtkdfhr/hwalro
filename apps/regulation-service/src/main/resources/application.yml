@@ -13,7 +13,7 @@ spring:
 
   # Datasource Configuration (아래 exclude 제거 후 활성화)
   # datasource:
-  #   url: ${DB_URL:jdbc:mysql://localhost:3306/hwallo?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+  #   url: ${DB_URL:jdbc:mysql://localhost:3306/hwalro?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
   #   username: ${DB_USERNAME:root}
   #   password: ${DB_PASSWORD:password}
   #   driver-class-name: com.mysql.cj.jdbc.Driver

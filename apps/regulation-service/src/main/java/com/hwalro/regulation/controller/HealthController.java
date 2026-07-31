@@ -1,4 +1,4 @@
-package com.hwallo.regulation.controller;
+package com.hwalro.regulation.controller;
 
 import java.time.LocalDateTime;
 import java.util.Map;

@@ -1,5 +1,5 @@
 {
-  "name": "@hwallo/simulation-service",
+  "name": "@hwalro/simulation-service",
   "private": true,
   "scripts": {
     "dev": "dotenv -e ../../.env -- ./gradlew bootRun",

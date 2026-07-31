@@ -1,5 +1,5 @@
 server:
-  port: 8082
+  port: ${REGULATION_SERVICE_PORT:8082}
 
 spring:
   application:
@@ -11,11 +11,11 @@ spring:
       - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
       - org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration
 
-  # Datasource Configuration
+  # Datasource Configuration (아래 exclude 제거 후 활성화)
   # datasource:
-  #   url: jdbc:mysql://localhost:3306/hwallo?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-  #   username: root
-  #   password: ${MYSQL_PASSWORD:password}
+  #   url: ${DB_URL:jdbc:mysql://localhost:3306/hwallo?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+  #   username: ${DB_USERNAME:root}
+  #   password: ${DB_PASSWORD:password}
   #   driver-class-name: com.mysql.cj.jdbc.Driver
 
 # MyBatis Configuration

@@ -2,7 +2,7 @@
   "name": "@hwallo/auth-service",
   "private": true,
   "scripts": {
-    "dev": "./gradlew bootRun",
+    "dev": "dotenv -e ../../.env -- ./gradlew bootRun",
     "build": "./gradlew compileJava -q",
     "lint": "./gradlew spotlessCheck -q",
     "format": "./gradlew spotlessApply -q",

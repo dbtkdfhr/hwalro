@@ -4,3 +4,46 @@
   box-sizing: border-box;
   margin: 0;
 }
+
+@font-face {
+  font-family: 'Happiness Sans Print';
+  src: url('/fonts/Happiness-Sans-Print-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Happiness Sans Print';
+  src: url('/fonts/Happiness-Sans-Print-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Happiness Sans Print';
+  src: url('/fonts/Happiness-Sans-Print-Title.ttf') format('truetype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  font-family:
+    'Happiness Sans Print',
+    -apple-system,
+    'Apple SD Gothic Neo',
+    'Noto Sans KR',
+    'Malgun Gothic',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}

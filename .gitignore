@@ -52,4 +52,5 @@ logs/
 .mvn/
 .gradle
 build
+.project
 

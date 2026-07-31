@@ -1,11 +1,11 @@
-package com.hwallo.auth;
+package com.hwalro.simulation;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class AuthServiceApplication {
+public class SimulationServiceApplication {
     public static void main(String[] args) {
-        SpringApplication.run(AuthServiceApplication.class, args);
+        SpringApplication.run(SimulationServiceApplication.class, args);
     }
 }

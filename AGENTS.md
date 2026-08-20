@@ -8,7 +8,7 @@
 
 ## 프로젝트 개요
 
-활로(HWALLO)는 팝업·전시·행사 공간의 배치안을 대피 시뮬레이션으로 사전 검증하고, 위험 발견과 개선·안전 점검을 거쳐 안전 검토 보고서 작성까지 지원하는 시스템이다.
+활로(HWALRO)는 팝업·전시·행사 공간의 배치안을 대피 시뮬레이션으로 사전 검증하고, 위험 발견과 개선·안전 점검을 거쳐 안전 검토 보고서 작성까지 지원하는 시스템이다.
 
 - 핵심 검토 파이프라인: 검토 등록 → 도면·배치 작성 → 시뮬레이션 실행 → 결과 분석
 - 결과 분석이 완료되면 해당 결과를 기반으로 AI 보고서 작성 화면으로 이어질 수 있다.
@@ -113,9 +113,9 @@ apps/
 - 모든 백엔드 서비스는 Java 17을 기준으로 작성한다.
 - Java 17에서 지원하지 않는 문법이나 API를 사용하지 않는다.
 - 각 서비스의 기본 패키지 경로를 유지한다.
-  - `auth-service`: `com.hwallo.auth`
-  - `simulation-service`: `com.hwallo.simulation`
-  - `regulation-service`: `com.hwallo.regulation`
+  - `auth-service`: `com.hwalro.auth`
+  - `simulation-service`: `com.hwalro.simulation`
+  - `regulation-service`: `com.hwalro.regulation`
 - Controller에 핵심 비즈니스 로직을 직접 작성하지 않는다.
 - HTTP 요청·응답 DTO와 내부 도메인·영속성 객체의 역할을 구분한다.
 - 입력값은 신뢰하지 말고 서버에서 검증한다.
@@ -136,8 +136,8 @@ pnpm build
 프론트엔드만 검증할 때는 다음 명령을 사용한다.
 
 ```bash
-pnpm --filter @hwallo/frontend lint
-pnpm --filter @hwallo/frontend build
+pnpm --filter @hwalro/frontend lint
+pnpm --filter @hwalro/frontend build
 ```
 
 백엔드 서비스는 변경한 서비스 디렉터리에서 검증한다.
@@ -159,9 +159,9 @@ macOS/Linux:
 서비스별 pnpm 필터는 다음과 같다.
 
 ```text
-@hwallo/auth-service
-@hwallo/simulation-service
-@hwallo/regulation-service
+@hwalro/auth-service
+@hwalro/simulation-service
+@hwalro/regulation-service
 ```
 
 ## 검증 원칙

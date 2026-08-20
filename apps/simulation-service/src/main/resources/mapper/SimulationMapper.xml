@@ -1,0 +1,516 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hwalro.simulation.simulation.mapper.SimulationMapper">
+
+    <sql id="layoutContextColumns">
+        SELECT lv.id AS layout_version_id,
+               l.id AS layout_id,
+               l.created_by,
+               l.title,
+               lv.version AS layout_version_number,
+               lv.status AS layout_version_status,
+               fp.width,
+               fp.height
+        FROM layout_versions lv
+        JOIN layouts l ON l.id = lv.layout_id
+        JOIN floor_plans fp ON fp.id = l.floor_plan_id
+        WHERE lv.id = #{layoutVersionId}
+    </sql>
+
+    <select id="findLayoutContext" resultType="com.hwalro.simulation.simulation.domain.LayoutSimulationContext">
+        <include refid="layoutContextColumns"/>
+    </select>
+
+    <select id="findLayoutContextForUpdate" resultType="com.hwalro.simulation.simulation.domain.LayoutSimulationContext">
+        <include refid="layoutContextColumns"/>
+        FOR UPDATE
+    </select>
+
+    <select id="findSimulationById" resultType="com.hwalro.simulation.simulation.domain.Simulation">
+        SELECT id,
+               layout_version_id,
+               parent_simulation_id,
+               created_by,
+               title,
+               status,
+               created_at,
+               requested_at,
+               started_at,
+               finished_at,
+               failure_message,
+               failure_detail
+        FROM simulations
+        WHERE id = #{id}
+    </select>
+
+    <select id="findSimulationByIdForUpdate" resultType="com.hwalro.simulation.simulation.domain.Simulation">
+        SELECT id,
+               layout_version_id,
+               parent_simulation_id,
+               created_by,
+               title,
+               status,
+               created_at,
+               requested_at,
+               started_at,
+               finished_at,
+               failure_message,
+               failure_detail
+        FROM simulations
+        WHERE id = #{id}
+        FOR UPDATE
+    </select>
+
+    <select id="findSimulationsByLayoutVersion" resultType="com.hwalro.simulation.simulation.domain.Simulation">
+        SELECT s.id,
+               s.layout_version_id,
+               s.parent_simulation_id,
+               s.created_by,
+               s.title,
+               s.status,
+               s.created_at,
+               so.total_people
+        FROM simulations s
+        JOIN simulation_options so ON so.simulation_id = s.id
+        WHERE s.layout_version_id = #{layoutVersionId}
+        <if test="createdBy != null">
+            AND s.created_by = #{createdBy}
+        </if>
+        ORDER BY s.created_at DESC, s.id DESC
+    </select>
+
+    <select id="findSimulationOverviewPage" resultType="com.hwalro.simulation.simulation.domain.Simulation">
+        SELECT s.id,
+               s.layout_version_id,
+               s.parent_simulation_id,
+               s.created_by,
+               s.title,
+               s.status,
+               s.created_at,
+               s.requested_at,
+               s.started_at,
+               s.finished_at,
+               so.total_people,
+               l.id AS layout_id,
+               l.title AS layout_title,
+               lv.version AS layout_version_number,
+               sr.termination_reason
+        FROM simulations s
+        LEFT JOIN simulation_options so ON so.simulation_id = s.id
+        LEFT JOIN layout_versions lv ON lv.id = s.layout_version_id
+        LEFT JOIN layouts l ON l.id = lv.layout_id
+        LEFT JOIN simulation_results sr ON sr.simulation_id = s.id
+        <where>
+            <if test="createdBy != null">
+                AND s.created_by = #{createdBy}
+            </if>
+            <if test="query != null and query != ''">
+                AND s.title LIKE CONCAT('%', #{query}, '%')
+            </if>
+        </where>
+        ORDER BY s.created_at DESC, s.id DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="countSimulationOverview" resultType="long">
+        SELECT COUNT(*)
+        FROM simulations s
+        <where>
+            <if test="createdBy != null">
+                AND s.created_by = #{createdBy}
+            </if>
+            <if test="query != null and query != ''">
+                AND s.title LIKE CONCAT('%', #{query}, '%')
+            </if>
+        </where>
+    </select>
+
+    <select id="findSimulationMonitor" resultType="com.hwalro.simulation.simulation.domain.Simulation">
+        SELECT s.id,
+               s.layout_version_id,
+               s.parent_simulation_id,
+               s.created_by,
+               s.title,
+               s.status,
+               s.created_at,
+               s.requested_at,
+               s.started_at,
+               s.finished_at,
+               so.total_people,
+               l.id AS layout_id,
+               l.title AS layout_title,
+               lv.version AS layout_version_number,
+               sr.termination_reason
+        FROM simulations s
+        JOIN simulation_options so ON so.simulation_id = s.id
+        JOIN layout_versions lv ON lv.id = s.layout_version_id
+        JOIN layouts l ON l.id = lv.layout_id
+        LEFT JOIN simulation_results sr ON sr.simulation_id = s.id
+        WHERE s.created_by = #{createdBy}
+          AND (
+              s.status IN ('REQUESTED', 'RUNNING')
+              OR (
+                  s.status = 'COMPLETED'
+                  AND s.finished_at >= CURRENT_TIMESTAMP(6) - INTERVAL 10 MINUTE
+              )
+          )
+        ORDER BY s.created_at DESC, s.id DESC
+    </select>
+
+    <!-- 홈 화면 "진행 중인 안전 검토" 카드가 마지막 작업 포인터를 채울 때 사용한다.
+         findSimulationMonitor와 같은 조인 구조를 사용하되 단건만 조회한다. -->
+    <select id="findSimulationOverviewById" resultType="com.hwalro.simulation.simulation.domain.Simulation">
+        SELECT s.id,
+               s.layout_version_id,
+               s.parent_simulation_id,
+               s.created_by,
+               s.title,
+               s.status,
+               s.created_at,
+               s.requested_at,
+               s.started_at,
+               s.finished_at,
+               so.total_people,
+               l.id AS layout_id,
+               l.title AS layout_title,
+               lv.version AS layout_version_number,
+               sr.termination_reason
+        FROM simulations s
+        JOIN simulation_options so ON so.simulation_id = s.id
+        JOIN layout_versions lv ON lv.id = s.layout_version_id
+        JOIN layouts l ON l.id = lv.layout_id
+        LEFT JOIN simulation_results sr ON sr.simulation_id = s.id
+        WHERE s.id = #{id}
+    </select>
+
+    <!-- 홈 화면 "내 업무 현황" 집계. 실행 대기와 실행 중을 처리 중으로 본다. -->
+    <select id="countInProgress" resultType="long">
+        SELECT COUNT(*)
+        FROM simulations s
+        WHERE s.created_by = #{createdBy}
+          AND s.status IN ('REQUESTED', 'RUNNING')
+    </select>
+
+    <!-- 이번 주(월요일 00:00 KST) 이후 완료된 건수.
+         시뮬레이션 시간값은 UTC 세션 기준(CURRENT_TIMESTAMP)으로 저장되므로,
+         KST 주간 시작 시각을 UTC로 변환한 값을 서버에서 파라미터로 넘겨 비교한다. -->
+    <select id="countCompletedThisWeek" resultType="long">
+        SELECT COUNT(*)
+        FROM simulations s
+        WHERE s.created_by = #{createdBy}
+          AND s.status = 'COMPLETED'
+          AND s.finished_at &gt;= #{weekStart}
+    </select>
+
+    <select id="findSimulationOption" resultType="com.hwalro.simulation.simulation.domain.SimulationOption">
+        SELECT id,
+               simulation_id,
+               random_seed,
+               model_profile,
+               routing_profile,
+               total_people,
+               walking_speed,
+               reaction_time,
+               initial_response_time_mean,
+               initial_response_time_std_dev
+        FROM simulation_options
+        WHERE simulation_id = #{simulationId}
+    </select>
+
+    <select id="findInitialStateJson" resultType="string">
+        SELECT agent_positions
+        FROM simulation_initial_states
+        WHERE simulation_id = #{simulationId}
+    </select>
+
+    <select id="findHazardZones" resultType="com.hwalro.simulation.simulation.domain.HazardZone">
+        SELECT id,
+               simulation_id,
+               center_x,
+               center_y,
+               radius
+        FROM hazard_zones
+        WHERE simulation_id = #{simulationId}
+        ORDER BY id ASC
+    </select>
+
+    <select id="findSelectedExitIds" resultType="long">
+        SELECT layout_exit_id
+        FROM simulation_exits
+        WHERE simulation_id = #{simulationId}
+        ORDER BY layout_exit_id ASC
+    </select>
+
+    <select id="findSimulationResult" resultType="com.hwalro.simulation.simulation.domain.SimulationResult">
+        SELECT sr.id,
+               sr.simulation_id,
+               sr.engine_version,
+               sr.termination_reason,
+               sr.frame_interval_seconds,
+               sr.termination_detail,
+               sr.recovery_detail,
+               sr.created_at,
+               (SELECT COUNT(*) FROM timelines t WHERE t.simulation_result_id = sr.id) AS timeline_chunk_count,
+               (SELECT COUNT(*) FROM heatmaps h WHERE h.simulation_result_id = sr.id) AS heatmap_chunk_count,
+               COALESCE(
+                   (SELECT CAST(JSON_UNQUOTE(JSON_EXTRACT(t.frame_data, '$.schemaVersion')) AS UNSIGNED)
+                    FROM timelines t
+                    WHERE t.simulation_result_id = sr.id
+                    ORDER BY t.chunk_sequence
+                    LIMIT 1),
+                   0
+               ) AS timeline_schema_version
+        FROM simulation_results sr
+        WHERE sr.simulation_id = #{simulationId}
+    </select>
+
+    <select id="findSimulationMetrics" resultType="com.hwalro.simulation.simulation.domain.SimulationMetric">
+        SELECT id,
+               simulation_result_id,
+               unit,
+               metric_type,
+               metric_value
+        FROM simulation_metrics
+        WHERE simulation_result_id = #{simulationResultId}
+        ORDER BY id ASC
+    </select>
+
+    <select id="findTimelineJson" resultType="string">
+        SELECT t.frame_data
+        FROM timelines t
+        JOIN simulation_results sr ON sr.id = t.simulation_result_id
+        WHERE sr.simulation_id = #{simulationId}
+          AND t.chunk_sequence = #{chunkSequence}
+    </select>
+
+    <select id="findHeatmapJson" resultType="string">
+        SELECT h.density_data
+        FROM heatmaps h
+        JOIN simulation_results sr ON sr.id = h.simulation_result_id
+        WHERE sr.simulation_id = #{simulationId}
+          AND h.chunk_sequence = #{chunkSequence}
+    </select>
+
+    <insert id="insertSimulation" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO simulations (layout_version_id, parent_simulation_id, created_by, title, status)
+        VALUES (#{layoutVersionId}, #{parentSimulationId}, #{createdBy}, #{title}, #{status})
+    </insert>
+
+    <insert id="insertSimulationOption" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO simulation_options
+            (simulation_id, random_seed, model_profile, routing_profile, total_people, walking_speed, reaction_time,
+             initial_response_time_mean, initial_response_time_std_dev)
+        VALUES
+            (#{simulationId}, #{randomSeed}, #{modelProfile}, #{routingProfile}, #{totalPeople}, #{walkingSpeed},
+             #{reactionTime}, #{initialResponseTimeMean}, #{initialResponseTimeStdDev})
+    </insert>
+
+    <insert id="insertInitialState">
+        INSERT INTO simulation_initial_states (simulation_id, agent_positions)
+        VALUES (#{simulationId}, CAST(#{agentPositions} AS JSON))
+    </insert>
+
+    <insert id="insertHazardZones">
+        INSERT INTO hazard_zones (simulation_id, center_x, center_y, radius)
+        VALUES
+        <foreach collection="list" item="hazard" separator=",">
+            (#{hazard.simulationId}, #{hazard.centerX}, #{hazard.centerY}, #{hazard.radius})
+        </foreach>
+    </insert>
+
+    <insert id="insertSimulationExits">
+        INSERT INTO simulation_exits (simulation_id, layout_exit_id, layout_version_id)
+        VALUES
+        <foreach collection="layoutExitIds" item="layoutExitId" separator=",">
+            (#{simulationId}, #{layoutExitId}, #{layoutVersionId})
+        </foreach>
+    </insert>
+
+    <update id="updateSimulationOption">
+        UPDATE simulation_options
+        SET total_people = #{totalPeople},
+            walking_speed = #{walkingSpeed},
+            reaction_time = 0.5000,
+            initial_response_time_mean = #{initialResponseTimeMean},
+            initial_response_time_std_dev = #{initialResponseTimeStdDev}
+        WHERE simulation_id = #{simulationId}
+    </update>
+
+    <update id="updateSimulationTitle">
+        UPDATE simulations
+        SET title = #{title}
+        WHERE id = #{simulationId}
+    </update>
+
+    <update id="updateExecutionProfiles">
+        UPDATE simulation_options
+        SET model_profile = #{modelProfile},
+            routing_profile = #{routingProfile}
+        WHERE simulation_id = #{simulationId}
+    </update>
+
+    <update id="updateInitialState">
+        UPDATE simulation_initial_states
+        SET agent_positions = CAST(#{agentPositions} AS JSON)
+        WHERE simulation_id = #{simulationId}
+    </update>
+
+    <delete id="deleteHazardZones">
+        DELETE FROM hazard_zones
+        WHERE simulation_id = #{simulationId}
+    </delete>
+
+    <delete id="deleteSimulationExits">
+        DELETE FROM simulation_exits
+        WHERE simulation_id = #{simulationId}
+    </delete>
+
+    <update id="lockLayoutVersion">
+        UPDATE layout_versions
+        SET status = '잠금'
+        WHERE id = #{layoutVersionId}
+          AND status = '초안'
+    </update>
+
+    <update id="unlockLayoutVersionIfNoSimulations">
+        UPDATE layout_versions
+        SET status = '초안'
+        WHERE id = #{layoutVersionId}
+          AND status = '잠금'
+          AND (SELECT COUNT(*) FROM simulations WHERE layout_version_id = #{layoutVersionId}) = 0
+    </update>
+
+    <update id="requestExecution">
+        UPDATE simulations
+        SET status = 'REQUESTED',
+            requested_at = CURRENT_TIMESTAMP(6),
+            started_at = NULL,
+            finished_at = NULL,
+            failure_message = NULL,
+            failure_detail = NULL
+        WHERE id = #{simulationId}
+          AND status IN ('DRAFT', 'FAILED', 'CANCELLED')
+    </update>
+
+    <update id="markExecutionRunning">
+        UPDATE simulations
+        SET status = 'RUNNING',
+            started_at = CURRENT_TIMESTAMP(6)
+        WHERE id = #{simulationId}
+          AND status = 'REQUESTED'
+    </update>
+
+    <update id="markExecutionCompleted">
+        UPDATE simulations
+        SET status = 'COMPLETED',
+            finished_at = CURRENT_TIMESTAMP(6),
+            failure_message = NULL,
+            failure_detail = NULL
+        WHERE id = #{simulationId}
+          AND status = 'RUNNING'
+    </update>
+
+    <update id="markExecutionFailed">
+        UPDATE simulations
+        SET status = 'FAILED',
+            finished_at = CURRENT_TIMESTAMP(6),
+            failure_message = #{message},
+            failure_detail = CASE WHEN #{detail} IS NULL THEN NULL ELSE CAST(#{detail} AS JSON) END
+        WHERE id = #{simulationId}
+          AND status IN ('REQUESTED', 'RUNNING')
+    </update>
+
+    <update id="cancelExecution">
+        UPDATE simulations
+        SET status = 'CANCELLED',
+            finished_at = CURRENT_TIMESTAMP(6),
+            failure_message = NULL
+        WHERE id = #{simulationId}
+          AND status IN ('REQUESTED', 'RUNNING')
+    </update>
+
+    <update id="markInterruptedExecutionsFailed">
+        UPDATE simulations
+        SET status = 'FAILED',
+            finished_at = CURRENT_TIMESTAMP(6),
+            failure_message = #{message},
+            failure_detail = NULL
+        WHERE status IN ('REQUESTED', 'RUNNING')
+    </update>
+
+    <insert id="insertSimulationResult" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO simulation_results
+            (simulation_id, engine_version, termination_reason, frame_interval_seconds, termination_detail, recovery_detail)
+        VALUES
+            (#{simulationId}, #{engineVersion}, #{terminationReason}, #{frameIntervalSeconds},
+             <choose>
+                 <when test="terminationDetail != null">CAST(#{terminationDetail} AS JSON)</when>
+                 <otherwise>NULL</otherwise>
+             </choose>,
+             <choose>
+                 <when test="recoveryDetail != null">CAST(#{recoveryDetail} AS JSON)</when>
+                 <otherwise>NULL</otherwise>
+             </choose>)
+    </insert>
+
+    <insert id="insertSimulationMetrics">
+        INSERT INTO simulation_metrics
+            (simulation_result_id, unit, metric_type, metric_value)
+        VALUES
+        <foreach collection="list" item="metric" separator=",">
+            (#{metric.simulationResultId}, #{metric.unit}, #{metric.metricType}, #{metric.metricValue})
+        </foreach>
+    </insert>
+
+    <insert id="insertTimeline">
+        INSERT INTO timelines (simulation_result_id, chunk_sequence, frame_data)
+        VALUES (#{simulationResultId}, #{chunkSequence}, CAST(#{frameData} AS JSON))
+    </insert>
+
+    <insert id="insertHeatmap">
+        INSERT INTO heatmaps (simulation_result_id, chunk_sequence, density_data)
+        VALUES (#{simulationResultId}, #{chunkSequence}, CAST(#{densityData} AS JSON))
+    </insert>
+
+    <insert id="insertDetectedBottlenecks">
+        INSERT INTO detected_bottlenecks
+            (simulation_result_id, bottleneck_order, start_time_seconds, end_time_seconds,
+             peak_density, threshold_value, geometry, analysis_version)
+        VALUES
+        <foreach collection="bottlenecks" item="bottleneck" separator=",">
+            (#{simulationResultId}, #{bottleneck.order}, #{bottleneck.startTimeSeconds},
+             #{bottleneck.endTimeSeconds}, #{bottleneck.peakDensity}, #{bottleneck.thresholdValue},
+             JSON_OBJECT(
+                 'type', #{bottleneck.geometry.type},
+                 'name', #{bottleneck.geometry.name},
+                 'x', #{bottleneck.geometry.x},
+                 'y', #{bottleneck.geometry.y},
+                 'width', #{bottleneck.geometry.width},
+                 'height', #{bottleneck.geometry.height}
+             ),
+             #{bottleneck.analysisVersion})
+        </foreach>
+    </insert>
+
+    <select id="countImprovementReferences" resultType="int">
+        SELECT
+            (SELECT COUNT(*) FROM improvement_proposals WHERE source_simulation_id = #{simulationId}) +
+            (SELECT COUNT(*) FROM proposal_simulations WHERE simulation_id = #{simulationId} OR source_simulation_id = #{simulationId}) +
+            (SELECT COUNT(*) FROM layout_searches WHERE baseline_simulation_id = #{simulationId}) +
+            (SELECT COUNT(*) FROM layout_search_candidates WHERE prepared_simulation_id = #{simulationId})
+    </select>
+
+    <select id="countChildSimulations" resultType="int">
+        SELECT COUNT(*)
+        FROM simulations
+        WHERE parent_simulation_id = #{simulationId}
+    </select>
+
+    <delete id="deleteSimulation">
+        DELETE FROM simulations
+        WHERE id = #{simulationId}
+    </delete>
+
+</mapper>

@@ -1,0 +1,13 @@
+spring:
+  ai:
+    model:
+      chat: openai
+    openai:
+      api-key: ${OPENAI_API_KEY}
+      chat:
+        options:
+          model: ${OPENAI_MODEL:gpt-5.4-nano}
+          max-completion-tokens: ${OPENAI_MAX_COMPLETION_TOKENS:1800}
+          reasoning-effort: none
+    retry:
+      max-attempts: ${OPENAI_RETRY_MAX_ATTEMPTS:3}

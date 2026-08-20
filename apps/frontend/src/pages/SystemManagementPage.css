@@ -1,0 +1,602 @@
+.system-management-page {
+  width: 100%;
+  min-height: 0;
+  color: var(--color-ink);
+}
+
+.system-management-page {
+  --role-reviewer: #7655c9;
+  --role-reviewer-soft: #f0ecfa;
+}
+
+.system-management-content {
+  width: 100%;
+  max-width: 1360px;
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: 8px 4px 0;
+}
+
+.system-management-page button {
+  border: 0;
+  font: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.system-management-page .page-header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.system-management-page .page-eyebrow {
+  margin: 0;
+  color: var(--color-primary);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.system-management-page .page-header h1 {
+  margin: 8px 0 0;
+  color: var(--color-ink);
+  font-size: 30px;
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+}
+
+.system-management-page .page-header p {
+  margin: 12px 0 0;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  line-height: 24px;
+}
+
+.system-management-page .account-control {
+  margin: 0;
+}
+
+.system-management-page .account-control button {
+  min-width: 112px;
+  height: 44px;
+  padding: 0 20px;
+  border-radius: 8px;
+  color: var(--color-white);
+  background: var(--color-primary);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: default;
+  transition: background-color 150ms ease;
+}
+
+.system-management-page .account-control button:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.system-management-page .account-control button:active:not(:disabled) {
+  background: var(--color-primary-active);
+}
+
+.system-management-page .account-control button:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.system-management-page .account-control button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.system-management-page .management-card {
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  background: var(--color-white);
+  box-shadow: var(--shadow-card);
+}
+
+.system-management-page .card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.system-management-page .card-heading h2 {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.system-management-page .card-heading span {
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+.system-management-page .table-wrap {
+  overflow-x: auto;
+}
+
+.system-management-page table {
+  width: 100%;
+  border-spacing: 0;
+  color: var(--color-text-strong);
+  font-size: 14px;
+}
+
+.system-management-page th,
+.system-management-page td {
+  height: 68px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--color-line);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.system-management-page thead th {
+  height: 48px;
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.system-management-page tbody th {
+  font-weight: 700;
+}
+
+.system-management-page .user-identity {
+  display: grid;
+  gap: 3px;
+}
+
+.system-management-page .user-identity small {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.system-management-page tbody tr:last-child th,
+.system-management-page tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.system-management-page tbody tr.selected {
+  background: var(--color-primary-soft);
+}
+
+.system-management-page .status {
+  display: inline-grid;
+  min-width: 52px;
+  height: 28px;
+  padding: 0 10px;
+  place-items: center;
+  border-radius: 999px;
+  color: var(--color-success);
+  background: var(--color-success-soft);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: default;
+  transition: box-shadow 150ms ease;
+}
+
+.system-management-page .status.stopped {
+  color: var(--color-danger-strong);
+  background: var(--color-danger-soft);
+}
+
+.system-management-page .status:hover:not(:disabled),
+.system-management-page .status:focus-visible {
+  box-shadow: 0 0 0 2px var(--color-focus-ring);
+}
+
+.system-management-page .status:focus-visible {
+  outline: none;
+}
+
+.system-management-page .status:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.system-management-page .status-error {
+  margin: 0 0 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--color-danger-strong);
+  background: var(--color-danger-soft);
+  font-size: 12px;
+}
+
+.system-management-page .empty-row {
+  height: 90px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.system-management-page .notice-state {
+  display: grid;
+  min-height: 180px;
+  margin: 0;
+  place-items: center;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.system-management-page .error-state {
+  align-content: center;
+  gap: 10px;
+  color: var(--color-danger-strong);
+}
+
+.system-management-page .error-state p {
+  margin: 0;
+}
+
+.system-management-page .error-state button {
+  padding: 6px 12px;
+  border-radius: 8px;
+  color: var(--color-white);
+  background: var(--color-primary);
+  cursor: default;
+  transition: background-color 150ms ease;
+}
+
+.system-management-page .error-state button:hover {
+  background: var(--color-primary-hover);
+}
+
+.system-management-page .error-state button:active {
+  background: var(--color-primary-active);
+}
+
+.system-management-page .error-state button:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.system-management-page .role-section {
+  margin-top: 0;
+  padding: 24px 20px 28px;
+  border-top: 1px solid var(--color-line);
+}
+
+.system-management-page .role-section h3 {
+  margin: 0 0 16px;
+  color: var(--color-ink);
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.system-management-page .role-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.system-management-page .role-empty-state {
+  margin: 0;
+  padding: 24px;
+  border: 1px dashed var(--color-line);
+  border-radius: 12px;
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  font-size: 12px;
+  text-align: center;
+}
+
+.system-management-page .role-card {
+  position: relative;
+  min-height: 100px;
+  padding: 16px;
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+}
+
+.system-management-page .role-card::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: currentcolor;
+  content: '';
+}
+
+.system-management-page .role-card h4 {
+  margin: 0 0 7px;
+  color: var(--color-ink);
+  font-size: 14px;
+}
+
+.system-management-page .role-card p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.system-management-page .role-card.operator {
+  color: var(--color-info);
+  background: var(--color-info-soft);
+}
+
+.system-management-page .role-card.reviewer {
+  color: var(--role-reviewer);
+  background: var(--role-reviewer-soft);
+}
+
+.system-management-page .role-card.admin {
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.system-management-page .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.system-management-page .modal-backdrop {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  padding: 24px;
+  place-items: center;
+  background: color-mix(in srgb, var(--color-ink) 45%, transparent);
+}
+
+.system-management-page .invite-modal {
+  width: min(440px, 100%);
+  max-height: calc(100dvh - 2.5rem);
+  padding: 24px;
+  overflow-y: auto;
+  border-radius: 16px;
+  background: var(--color-white);
+  box-shadow: var(--shadow-overlay);
+}
+
+.system-management-page .modal-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+
+.system-management-page .modal-heading h2 {
+  margin: 0 0 6px;
+  color: var(--color-ink);
+  font-size: 19px;
+}
+
+.system-management-page .modal-heading p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.system-management-page .close-button {
+  width: 28px;
+  height: 28px;
+  color: var(--color-text-muted);
+  background: transparent;
+  font-size: 24px;
+  line-height: 1;
+  cursor: default;
+}
+
+.system-management-page .close-button:hover {
+  color: var(--color-text-strong);
+}
+
+.system-management-page .close-button:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.system-management-page .invite-modal form {
+  display: grid;
+  gap: 16px;
+}
+
+.system-management-page .invite-modal form > label,
+.system-management-page .invite-modal legend {
+  color: var(--color-text-strong);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.system-management-page .invite-modal form > label {
+  display: grid;
+  gap: 7px;
+}
+
+.system-management-page .invite-modal input[type='text'],
+.system-management-page .invite-modal input:not([type]),
+.system-management-page .invite-modal input[type='password'] {
+  width: 100%;
+  height: 39px;
+  padding: 0 11px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  color: var(--color-ink-deep);
+  background: var(--color-white);
+  font: inherit;
+  font-size: 12px;
+  outline: none;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.system-management-page .invite-modal input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+.system-management-page .invite-modal label > small {
+  color: var(--color-text-faint);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.system-management-page .invite-modal fieldset {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+
+.system-management-page .invite-modal legend {
+  margin-bottom: 8px;
+  padding: 0;
+}
+
+.system-management-page .role-options {
+  display: grid;
+  gap: 7px;
+}
+
+.system-management-page .role-options label {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 10px 11px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  color: var(--color-text-strong);
+  font-size: 12px;
+  cursor: default;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.system-management-page .role-options label:hover {
+  border-color: var(--color-line-strong);
+}
+
+.system-management-page .role-options label:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+.system-management-page .role-options input {
+  width: 15px;
+  height: 15px;
+  margin: 1px 0 0;
+  accent-color: var(--color-primary);
+}
+
+.system-management-page .role-options span {
+  display: grid;
+  gap: 4px;
+  font-weight: 700;
+}
+
+.system-management-page .role-options small {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.system-management-page .form-error {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--color-danger-strong);
+  background: var(--color-danger-soft);
+  font-size: 12px;
+}
+
+.system-management-page .modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.system-management-page .modal-actions button {
+  min-width: 88px;
+  height: 44px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: default;
+  transition: background-color 150ms ease;
+}
+
+.system-management-page .modal-actions button:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.system-management-page .secondary-button {
+  color: var(--color-text-strong);
+  background: var(--color-soft-gray);
+}
+
+.system-management-page .secondary-button:hover:not(:disabled) {
+  background: var(--color-line-subtle);
+}
+
+.system-management-page .primary-button {
+  color: var(--color-white);
+  background: var(--color-primary);
+}
+
+.system-management-page .primary-button:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.system-management-page .primary-button:active:not(:disabled) {
+  background: var(--color-primary-active);
+}
+
+.system-management-page .primary-button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+@media (min-width: 640px) {
+  .system-management-content {
+    padding: 8px 16px 0;
+  }
+
+  .system-management-page .page-header {
+    flex-direction: row;
+    align-items: flex-end;
+  }
+
+  .system-management-page .page-header h1 {
+    font-size: 36px;
+    line-height: 1.11;
+  }
+}
+
+@media (min-width: 1024px) {
+  .system-management-content {
+    padding-top: 16px;
+  }
+}
+
+@media (max-width: 520px) {
+  .system-management-page .page-header {
+    gap: 32px;
+  }
+
+  .system-management-page .role-list {
+    grid-template-columns: 1fr;
+  }
+}

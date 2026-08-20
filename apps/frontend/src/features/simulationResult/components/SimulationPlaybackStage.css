@@ -1,0 +1,40 @@
+.simulation-canvas-error {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: 50%;
+  display: flex;
+  transform: translate(-50%, -50%);
+  align-items: center;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid rgba(151, 177, 170, 0.45);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.94);
+  padding: 22px 26px;
+  color: var(--color-text-strong);
+  text-align: center;
+  box-shadow: 0 18px 50px rgba(22, 55, 49, 0.15);
+  backdrop-filter: blur(14px);
+}
+
+.simulation-canvas-error span {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.simulation-canvas-error button {
+  margin-top: 4px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--color-primary);
+  padding: 9px 14px;
+  color: var(--color-white);
+  font-weight: 800;
+  cursor: default;
+  transition: background-color 160ms ease;
+}
+
+.simulation-canvas-error button:hover {
+  background-color: var(--color-primary-hover);
+}

@@ -1,0 +1,372 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hwalro.simulation.drawing.mapper.DrawingMapper">
+
+    <select id="findLayoutById" resultType="com.hwalro.simulation.drawing.domain.Layout">
+        SELECT id,
+               floor_plan_id,
+               created_by,
+               current_version_id,
+               title,
+               description,
+               created_at
+        FROM layouts
+        WHERE id = #{id}
+    </select>
+
+    <select id="lockLayout" resultType="long">
+        SELECT id
+        FROM layouts
+        WHERE id = #{layoutId}
+        FOR UPDATE
+    </select>
+
+    <select id="findNextLayoutVersionNumber" resultType="int">
+        SELECT COALESCE(MAX(version), 0) + 1
+        FROM layout_versions
+        WHERE layout_id = #{layoutId}
+    </select>
+
+    <select id="findLayoutPage" resultType="com.hwalro.simulation.drawing.domain.Layout">
+        SELECT id,
+               floor_plan_id,
+               created_by,
+               current_version_id,
+               title,
+               description,
+               created_at
+        FROM layouts
+        <where>
+            <if test="createdBy != null">
+                AND created_by = #{createdBy}
+            </if>
+            <if test="query != null and query != ''">
+                AND title LIKE CONCAT('%', #{query}, '%')
+            </if>
+        </where>
+        ORDER BY id DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="countLayouts" resultType="long">
+        SELECT COUNT(*)
+        FROM layouts
+        <where>
+            <if test="createdBy != null">
+                AND created_by = #{createdBy}
+            </if>
+            <if test="query != null and query != ''">
+                AND title LIKE CONCAT('%', #{query}, '%')
+            </if>
+        </where>
+    </select>
+
+    <select id="findFloorPlanById" resultType="com.hwalro.simulation.drawing.domain.FloorPlan">
+        SELECT id,
+               name,
+               image_url,
+               width,
+               height
+        FROM floor_plans
+        WHERE id = #{id}
+    </select>
+
+    <select id="findLayoutVersionById" resultType="com.hwalro.simulation.drawing.domain.LayoutVersion">
+        SELECT id,
+               layout_id,
+               version,
+               status,
+               optimistic_lock,
+               created_at
+        FROM layout_versions
+        WHERE id = #{id}
+    </select>
+
+    <select id="findWallsByVersionId" resultType="com.hwalro.simulation.drawing.domain.Wall">
+        SELECT id,
+               layout_version_id,
+               name,
+               start_x,
+               start_y,
+               end_x,
+               end_y
+        FROM walls
+        WHERE layout_version_id = #{layoutVersionId}
+        ORDER BY id ASC
+    </select>
+
+    <select id="findPillarsByVersionId" resultType="com.hwalro.simulation.drawing.domain.Pillar">
+        SELECT id,
+               layout_version_id,
+               name,
+               start_x,
+               start_y,
+               end_x,
+               end_y,
+               rotation
+        FROM pillars
+        WHERE layout_version_id = #{layoutVersionId}
+        ORDER BY id ASC
+    </select>
+
+    <select id="findFabricsByVersionId" resultType="com.hwalro.simulation.drawing.domain.Fabric">
+        SELECT id,
+               layout_version_id,
+               name,
+               start_x,
+               start_y,
+               end_x,
+               end_y,
+               rotation
+        FROM fabrics
+        WHERE layout_version_id = #{layoutVersionId}
+        ORDER BY id ASC
+    </select>
+
+    <select id="findOutsideWallsByVersionId" resultType="com.hwalro.simulation.drawing.domain.OutsideWall">
+        SELECT id,
+               layout_version_id,
+               name,
+               start_x,
+               start_y,
+               end_x,
+               end_y
+        FROM outside_walls
+        WHERE layout_version_id = #{layoutVersionId}
+        ORDER BY id ASC
+    </select>
+
+    <select id="findLayoutTextsByVersionId" resultType="com.hwalro.simulation.drawing.domain.LayoutText">
+        SELECT id,
+               layout_version_id,
+               text,
+               x,
+               y
+        FROM layout_texts
+        WHERE layout_version_id = #{layoutVersionId}
+        ORDER BY id ASC
+    </select>
+
+    <select id="findLayoutExitsByVersionId" resultType="com.hwalro.simulation.drawing.domain.LayoutExit">
+        SELECT id,
+               layout_version_id,
+               name,
+               start_x,
+               start_y,
+               end_x,
+               end_y
+        FROM layout_exits
+        WHERE layout_version_id = #{layoutVersionId}
+        ORDER BY id ASC
+    </select>
+
+    <insert id="insertFloorPlan" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO floor_plans (name, image_url, width, height)
+        VALUES (#{name}, #{imageUrl}, #{width}, #{height})
+    </insert>
+
+    <insert id="insertLayout" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO layouts (floor_plan_id, created_by, title, description)
+        VALUES (#{floorPlanId}, #{createdBy}, #{title}, #{description})
+    </insert>
+
+    <insert id="insertLayoutVersion" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO layout_versions (layout_id, version, status, optimistic_lock)
+        VALUES (#{layoutId}, #{version}, #{status}, #{optimisticLock})
+    </insert>
+
+    <insert id="insertWalls">
+        INSERT INTO walls (layout_version_id, name, start_x, start_y, end_x, end_y)
+        VALUES
+        <foreach collection="list" item="wall" separator=",">
+            (#{wall.layoutVersionId},
+             #{wall.name},
+             #{wall.startX},
+             #{wall.startY},
+             #{wall.endX},
+             #{wall.endY})
+        </foreach>
+    </insert>
+
+    <insert id="insertPillars">
+        INSERT INTO pillars (layout_version_id, name, start_x, start_y, end_x, end_y, rotation)
+        VALUES
+        <foreach collection="list" item="pillar" separator=",">
+            (#{pillar.layoutVersionId},
+             #{pillar.name},
+             #{pillar.startX},
+             #{pillar.startY},
+             #{pillar.endX},
+             #{pillar.endY},
+             #{pillar.rotation})
+        </foreach>
+    </insert>
+
+    <insert id="insertFabrics">
+        INSERT INTO fabrics (layout_version_id, name, start_x, start_y, end_x, end_y, rotation)
+        VALUES
+        <foreach collection="list" item="fabric" separator=",">
+            (#{fabric.layoutVersionId},
+             #{fabric.name},
+             #{fabric.startX},
+             #{fabric.startY},
+             #{fabric.endX},
+             #{fabric.endY},
+             #{fabric.rotation})
+        </foreach>
+    </insert>
+
+    <insert id="insertOutsideWalls">
+        INSERT INTO outside_walls (layout_version_id, name, start_x, start_y, end_x, end_y)
+        VALUES
+        <foreach collection="list" item="outsideWall" separator=",">
+            (#{outsideWall.layoutVersionId},
+             #{outsideWall.name},
+             #{outsideWall.startX},
+             #{outsideWall.startY},
+             #{outsideWall.endX},
+             #{outsideWall.endY})
+        </foreach>
+    </insert>
+
+    <insert id="insertLayoutTexts">
+        INSERT INTO layout_texts (layout_version_id, text, x, y)
+        VALUES
+        <foreach collection="list" item="layoutText" separator=",">
+            (#{layoutText.layoutVersionId}, #{layoutText.text}, #{layoutText.x}, #{layoutText.y})
+        </foreach>
+    </insert>
+
+    <insert id="insertLayoutExits">
+        INSERT INTO layout_exits (layout_version_id, name, start_x, start_y, end_x, end_y)
+        VALUES
+        <foreach collection="list" item="layoutExit" separator=",">
+            (#{layoutExit.layoutVersionId},
+             #{layoutExit.name},
+             #{layoutExit.startX},
+             #{layoutExit.startY},
+             #{layoutExit.endX},
+             #{layoutExit.endY})
+        </foreach>
+    </insert>
+
+    <insert id="insertLayoutExit" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO layout_exits (layout_version_id, name, start_x, start_y, end_x, end_y)
+        VALUES (#{layoutVersionId}, #{name}, #{startX}, #{startY}, #{endX}, #{endY})
+    </insert>
+
+    <insert id="copyWalls">
+        INSERT INTO walls (layout_version_id, name, start_x, start_y, end_x, end_y)
+        SELECT #{targetVersionId}, name, start_x, start_y, end_x, end_y
+        FROM walls
+        WHERE layout_version_id = #{sourceVersionId}
+        ORDER BY id
+    </insert>
+
+    <insert id="copyPillars">
+        INSERT INTO pillars (layout_version_id, name, start_x, start_y, end_x, end_y, rotation)
+        SELECT #{targetVersionId}, name, start_x, start_y, end_x, end_y, rotation
+        FROM pillars
+        WHERE layout_version_id = #{sourceVersionId}
+        ORDER BY id
+    </insert>
+
+    <insert id="copyOutsideWalls">
+        INSERT INTO outside_walls (layout_version_id, name, start_x, start_y, end_x, end_y)
+        SELECT #{targetVersionId}, name, start_x, start_y, end_x, end_y
+        FROM outside_walls
+        WHERE layout_version_id = #{sourceVersionId}
+        ORDER BY id
+    </insert>
+
+    <insert id="copyLayoutTexts">
+        INSERT INTO layout_texts (layout_version_id, text, x, y)
+        SELECT #{targetVersionId}, text, x, y
+        FROM layout_texts
+        WHERE layout_version_id = #{sourceVersionId}
+        ORDER BY id
+    </insert>
+
+    <update id="updateLayout">
+        UPDATE layouts
+        SET title = #{title},
+            description = #{description}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateLayoutCurrentVersion">
+        UPDATE layouts
+        SET current_version_id = #{currentVersionId}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateLayoutVersionLock">
+        UPDATE layout_versions
+        SET optimistic_lock = #{nextLock}
+        WHERE id = #{id}
+          AND optimistic_lock = #{expectedLock}
+          AND status = '초안'
+    </update>
+
+    <delete id="deleteWallsByVersionId">
+        DELETE FROM walls
+        WHERE layout_version_id = #{layoutVersionId}
+    </delete>
+
+    <delete id="deletePillarsByVersionId">
+        DELETE FROM pillars
+        WHERE layout_version_id = #{layoutVersionId}
+    </delete>
+
+    <delete id="deleteFabricsByVersionId">
+        DELETE FROM fabrics
+        WHERE layout_version_id = #{layoutVersionId}
+    </delete>
+
+    <delete id="deleteOutsideWallsByVersionId">
+        DELETE FROM outside_walls
+        WHERE layout_version_id = #{layoutVersionId}
+    </delete>
+
+    <delete id="deleteLayoutTextsByVersionId">
+        DELETE FROM layout_texts
+        WHERE layout_version_id = #{layoutVersionId}
+    </delete>
+
+    <delete id="deleteLayoutExitsByVersionId">
+        DELETE FROM layout_exits
+        WHERE layout_version_id = #{layoutVersionId}
+    </delete>
+
+    <delete id="deleteLayoutById">
+        DELETE FROM layouts
+        WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteFloorPlanById">
+        DELETE FROM floor_plans
+        WHERE id = #{id}
+    </delete>
+
+    <select id="countSimulationsByLayoutId" resultType="int">
+        SELECT COUNT(*)
+        FROM simulations s
+        JOIN layout_versions lv ON s.layout_version_id = lv.id
+        WHERE lv.layout_id = #{layoutId}
+    </select>
+
+    <select
+            id="countSimulationsByLayoutIds"
+            resultType="com.hwalro.simulation.drawing.dto.SimulationCountByLayout">
+        SELECT lv.layout_id AS layoutId, COUNT(*) AS simulationCount
+        FROM simulations s
+        JOIN layout_versions lv ON s.layout_version_id = lv.id
+        WHERE lv.layout_id IN
+        <foreach collection="layoutIds" item="layoutId" open="(" separator="," close=")">
+            #{layoutId}
+        </foreach>
+        GROUP BY lv.layout_id
+    </select>
+
+</mapper>

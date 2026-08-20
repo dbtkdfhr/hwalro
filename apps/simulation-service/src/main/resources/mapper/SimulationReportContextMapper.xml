@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hwalro.simulation.result.mapper.SimulationReportContextMapper">
+
+    <sql id="resultIds">
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </sql>
+
+    <select id="findSummaries" resultType="com.hwalro.simulation.result.mapper.SimulationReportContextMapper$SummaryRow">
+        SELECT result.id AS simulationResultId,
+               simulation.id AS simulationId,
+               simulation.created_by AS createdBy,
+               layout.title AS layoutTitle,
+               simulation.title AS title
+        FROM simulation_results result
+        JOIN simulations simulation ON simulation.id = result.simulation_id
+        JOIN layout_versions layout_version ON layout_version.id = simulation.layout_version_id
+        JOIN layouts layout ON layout.id = layout_version.layout_id
+        WHERE result.id IN <include refid="resultIds" />
+        <if test="createdBy != null">
+            AND simulation.created_by = #{createdBy}
+        </if>
+    </select>
+
+    <select id="findMetrics" resultType="com.hwalro.simulation.result.mapper.SimulationReportContextMapper$MetricRow">
+        SELECT simulation_result_id AS simulationResultId,
+               metric_type AS metricType,
+               metric_value AS metricValue,
+               unit
+        FROM simulation_metrics
+        WHERE simulation_result_id IN <include refid="resultIds" />
+        ORDER BY simulation_result_id, id
+    </select>
+
+    <select id="findBottlenecks" resultType="com.hwalro.simulation.result.mapper.SimulationReportContextMapper$BottleneckRow">
+        SELECT simulation_result_id AS simulationResultId,
+               bottleneck_order AS bottleneckOrder,
+               start_time_seconds AS startTimeSeconds,
+               end_time_seconds AS endTimeSeconds,
+               peak_density AS peakDensity,
+               threshold_value AS thresholdValue
+        FROM detected_bottlenecks
+        WHERE simulation_result_id IN <include refid="resultIds" />
+        ORDER BY simulation_result_id, bottleneck_order
+    </select>
+
+</mapper>

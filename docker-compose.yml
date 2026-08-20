@@ -1,0 +1,52 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: hwalro-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-hwalro_auth}
+      AUTH_DB_PASSWORD: ${AUTH_DB_PASSWORD:-hwalro_auth}
+      SIMULATION_DB_PASSWORD: ${SIMULATION_DB_PASSWORD:-hwalro_simulation}
+      REGULATION_DB_PASSWORD: ${REGULATION_DB_PASSWORD:-hwalro_regulation}
+      TZ: Asia/Seoul
+    ports:
+      - '${MYSQL_PORT:-3307}:3306'
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./apps/auth-service/src/main/resources/db/schema.sql:/docker-entrypoint-initdb.d/01-auth-schema.sql:ro
+      - ./apps/simulation-service/src/main/resources/db/schema.sql:/docker-entrypoint-initdb.d/02-simulation-schema.sql:ro
+      - ./apps/regulation-service/src/main/resources/db/schema.sql:/docker-entrypoint-initdb.d/03-regulation-schema.sql:ro
+      - ./db/grants.sh:/docker-entrypoint-initdb.d/04-grants.sh:ro
+      - ./apps/auth-service/src/main/resources/db/dml.sql:/docker-entrypoint-initdb.d/05-auth-dml.sql:ro
+      - ./apps/regulation-service/src/main/resources/db/safety-check-dml.sql:/docker-entrypoint-initdb.d/06-safety-check-dml.sql:ro
+      - ./apps/simulation-service/src/main/resources/db/density-threshold-dml.sql:/docker-entrypoint-initdb.d/07-density-threshold-dml.sql:ro
+    healthcheck:
+      # The MySQL image exposes a temporary socket-only server while init scripts run.
+      # Check TCP so Compose reports healthy only after initialization and the final server restart.
+      test:
+        [
+          'CMD-SHELL',
+          'MYSQL_PWD="$${MYSQL_ROOT_PASSWORD}" mysqladmin ping --protocol=TCP -h 127.0.0.1 -P 3306 -uroot',
+        ]
+      interval: 5s
+      retries: 30
+
+  redis:
+    image: redis:8-alpine
+    container_name: hwalro-redis
+    restart: unless-stopped
+    command: ['redis-server', '--requirepass', '${REDIS_PASSWORD:-hwalro-dev-redis}']
+    ports:
+      - '127.0.0.1:${REDIS_PORT:-6380}:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD-SHELL', 'redis-cli -a "${REDIS_PASSWORD:-hwalro-dev-redis}" ping | grep PONG']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  mysql-data:
+  redis-data:

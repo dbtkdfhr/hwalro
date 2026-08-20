@@ -1,4 +1,4 @@
-package com.hwallo.simulation.controller;
+package com.hwalro.simulation.controller;
 
 import java.time.LocalDateTime;
 import java.util.Map;

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hwalro.auth.mapper.UserMapper">
+
+    <select id="findByLoginId" resultType="com.hwalro.auth.domain.User">
+        SELECT user_id,
+               login_id,
+               password,
+               name,
+               enabled,
+               created_at
+        FROM users
+        WHERE login_id = #{loginId}
+    </select>
+
+    <select id="findByUserIds" resultType="com.hwalro.auth.domain.User">
+        SELECT user_id,
+               login_id,
+               name
+        FROM users
+        WHERE user_id IN
+        <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+            #{userId}
+        </foreach>
+        ORDER BY user_id
+    </select>
+
+    <select id="findRoleNamesByLoginId" resultType="string">
+        SELECT r.role_name
+        FROM roles r
+        INNER JOIN user_roles ur ON r.role_id = ur.role_id
+        INNER JOIN users u ON u.user_id = ur.user_id
+        WHERE u.login_id = #{loginId}
+        ORDER BY r.role_id
+    </select>
+
+</mapper>

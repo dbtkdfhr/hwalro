@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hwalro.regulation.report.mapper.ReportMapper">
+
+    <sql id="reportFilter">
+        <where>
+            <if test="query != null">
+                AND title LIKE CONCAT('%', #{query}, '%')
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+            <if test="authorId != null">
+                AND author_id = #{authorId}
+            </if>
+        </where>
+    </sql>
+
+    <select id="countReports" resultType="long">
+        SELECT COUNT(*)
+        FROM reports
+        <include refid="reportFilter" />
+    </select>
+
+    <select id="findReports" resultType="com.hwalro.regulation.report.dto.ReportListItem">
+        SELECT id,
+               author_id AS authorId,
+               NULL AS authorName,
+               title,
+               status,
+               updated_at AS updatedAt
+        FROM reports
+        <include refid="reportFilter" />
+        ORDER BY updated_at DESC, id DESC
+        LIMIT #{limit} OFFSET #{offset}
+    </select>
+
+    <select id="findAiDraftMonitorItems" resultType="com.hwalro.regulation.report.dto.AiReportDraftMonitorItem">
+        SELECT id,
+               title,
+               status
+        FROM reports
+        WHERE author_id = #{authorId}
+          AND generation_request IS NOT NULL
+        ORDER BY updated_at DESC, id DESC
+        LIMIT 100
+    </select>
+
+    <select id="findDetailById" resultType="com.hwalro.regulation.report.dto.ReportDetailRow">
+        SELECT id,
+               author_id AS authorId,
+               title,
+               content,
+               status,
+               created_at AS createdAt,
+               updated_at AS updatedAt
+        FROM reports
+        WHERE id = #{id}
+    </select>
+
+    <select id="findSimulationResultIds" resultType="long">
+        SELECT simulation_result_id
+        FROM report_simulations
+        WHERE report_id = #{reportId}
+        ORDER BY simulation_result_id
+    </select>
+
+    <select id="countBySimulationResultId" resultType="int">
+        SELECT COUNT(*)
+        FROM report_simulations
+        WHERE simulation_result_id = #{simulationResultId}
+    </select>
+
+    <select id="findAiGenerationRequest" resultType="string">
+        SELECT generation_request
+        FROM reports
+        WHERE id = #{reportId}
+    </select>
+
+    <update id="updateReport">
+        UPDATE reports
+        SET title = #{title},
+            content = #{content},
+            status = #{status}
+        WHERE id = #{id}
+          AND status IN ('초안', '작성 중', '완료')
+    </update>
+
+    <update id="startEditing">
+        UPDATE reports
+        SET status = '작성 중'
+        WHERE id = #{id}
+          AND status = '초안'
+    </update>
+
+    <update id="completeAiGeneration">
+        UPDATE reports
+        SET title = #{title},
+            content = #{content},
+            status = '초안'
+        WHERE id = #{id}
+          AND status = 'AI 작성 중'
+    </update>
+
+    <update id="failAiGeneration">
+        UPDATE reports
+        SET status = '생성 실패'
+        WHERE id = #{id}
+          AND status = 'AI 작성 중'
+    </update>
+
+    <update id="restartAiGeneration">
+        UPDATE reports
+        SET status = 'AI 작성 중'
+        WHERE id = #{id}
+          AND status = '생성 실패'
+    </update>
+
+    <update id="failStaleAiGenerations">
+        UPDATE reports
+        SET status = '생성 실패'
+        WHERE status = 'AI 작성 중'
+          AND updated_at &lt; #{cutoff}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM reports
+        WHERE id = #{id}
+    </delete>
+
+    <insert id="insertDraft" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO reports (author_id, title, content, status, generation_request)
+        VALUES (#{authorId}, #{title}, #{content}, #{status}, #{generationRequest})
+    </insert>
+
+    <insert id="insertSimulationLinks">
+        INSERT INTO report_simulations (report_id, simulation_result_id)
+        VALUES
+        <foreach collection="simulationResultIds" item="simulationResultId" separator=",">
+            (#{reportId}, #{simulationResultId})
+        </foreach>
+    </insert>
+</mapper>

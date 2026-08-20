@@ -1,30 +1,47 @@
 {
-  "name": "@hwallo/frontend",
+  "name": "@hwalro/frontend",
   "private": true,
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "vite dev --port 3000",
+    "dev": "vite dev --port 4173",
     "build": "tsc --noEmit && vite build",
     "lint": "eslint src/ --max-warnings 0",
+    "test": "vitest run",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json}\"",
     "preview": "vite preview",
     "clean": "rm -rf .turbo dist node_modules"
   },
   "dependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@tanstack/charts": "^0.11.0",
+    "@tanstack/react-query": "^5.101.4",
+    "axios": "^1.19.0",
+    "d3-shape": "^3.2.0",
+    "konva": "^10.3.0",
+    "lucide-react": "^1.31.0",
+    "pixi.js": "8.19.0",
+    "qrcode": "^1.5.4",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-konva": "^19.2.5",
+    "react-router-dom": "^7.18.2",
+    "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
-    "@vitejs/plugin-react": "^4.3.4",
-    "typescript": "^5.7.3",
-    "vite": "^6.1.0",
+    "@types/d3-shape": "^3.1.8",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
-    "eslint": "^9.19.0",
     "@typescript-eslint/eslint-plugin": "^8.22.0",
     "@typescript-eslint/parser": "^8.22.0",
-    "prettier": "^3.5.3"
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.19.0",
+    "happy-dom": "^20.0.0",
+    "prettier": "^3.5.3",
+    "typescript": "^5.7.3",
+    "vite": "^6.1.0",
+    "vitest": "^3.2.4"
   }
 }

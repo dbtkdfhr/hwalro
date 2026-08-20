@@ -1,5 +1,6 @@
 # Node
 node_modules/
+.pnpm-store/
 .pnp
 .pnp.js
 
@@ -19,6 +20,10 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+# AI agent tooling (로컬 전용 스킬·설정)
+.agents/
+.claude/
+
 # IDE
 .idea/
 *.iml
@@ -26,6 +31,8 @@ target/
 *.swp
 *.swo
 *~
+apps/*/.settings/
+apps/*/bin/
 
 # OS
 .DS_Store
@@ -37,6 +44,7 @@ Thumbs.db
 .env.development.local
 .env.test.local
 .env.production.local
+deploy/.env.rds-init
 
 # Spring Boot
 **/application-local.yml
@@ -47,10 +55,23 @@ logs/
 
 .omo/
 
+# AI agent tooling (로컬 전용 스킬·설정)
+.playwright-mcp/
+
+# Screenshots (로컬 검증 산출물)
+*.png
+
+# Engine artifacts (로컬 학습·산출물)
+apps/simulation-service/engine/train/
+*.joblib
+
 .classpath
 .factorypath
 .mvn/
 .gradle
 build
 .project
+
+# Local documentation
+docs/
 

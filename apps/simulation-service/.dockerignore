@@ -1,0 +1,6 @@
+.gradle/
+build/
+engine/.venv/
+engine/__pycache__/
+engine/*.pyc
+node_modules/

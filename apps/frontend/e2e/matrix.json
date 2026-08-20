@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "comment": [
+    "배치 개선안 탐색 심층 E2E 테스트의 단일 매트릭스 정의.",
+    "cells는 axes의 전체 조합(2^5=32)이고, constraintCombos는 4개 제약 차원의 조합(2^4=16)이다.",
+    "여기에는 축의 '값'만 두고 기하 생성은 engine/matrix_cells.py가 base 도면에 적용한다.",
+    "TS 시더는 matrix_cells.py --emit이 뽑아준 도면 JSON을 그대로 POST하므로 해석 로직이 중복되지 않는다."
+  ],
+
+  "base": "apps/simulation-service/src/main/resources/drawings/default-drawing-v7.json",
+
+  "axes": {
+    "A": {
+      "label": "도면 시작",
+      "values": {
+        "default": { "withDefaultData": true },
+        "empty": { "withDefaultData": false }
+      }
+    },
+    "B": {
+      "label": "구조물 수",
+      "values": {
+        "many": { "fabrics": null, "pillars": null },
+        "few": { "fabrics": 6, "pillars": 3 }
+      }
+    },
+    "C": {
+      "label": "회전",
+      "values": {
+        "ortho": { "rotations": [0.0] },
+        "mixed": { "rotations": [15.0, 37.5, 52.5, 90.0] }
+      }
+    },
+    "D": {
+      "label": "인원 분포",
+      "values": {
+        "uniform": { "mode": "grid" },
+        "skewed": { "mode": "cluster", "towardExitIndex": 0, "fraction": 0.75, "radius": 12.0 }
+      }
+    },
+    "E": {
+      "label": "위험구역",
+      "values": {
+        "none": { "count": 0 },
+        "some": { "count": 3, "radius": 6.0 }
+      }
+    }
+  },
+
+  "scale": {
+    "comment": [
+      "계층 2(축소 실측)는 밀도를 보존한 채 인원을 낮춰 비용을 줄인다.",
+      "계층 3(브라우저 E2E)은 원본 스케일을 그대로 쓴다.",
+      "축소 셀은 기준 시뮬에서 finding >= 1을 내야 유효로 집계한다 - 그렇지 않으면 '후보 0개'가 정상이 되어 테스트가 공허해진다."
+    ],
+    "scaled": { "agents": 120 },
+    "full": { "agents": 292 }
+  },
+
+  "findings": {
+    "comment": [
+      "계층 1은 JuPedSim을 돌리지 않으므로 진단을 Java에서 받을 수 없다.",
+      "따라서 레이아웃에서 결정론적으로 합성한다 - 혼잡이 실제로 생기는 지점(출구 앞, 중심부)에 배치한다.",
+      "진짜 진단 경로는 계층 2/3이 검증한다.",
+      "anchor: null은 region 자체가 없다는 뜻이다. 운영에서 EXIT_IMBALANCE는 항상 region이 null이므로",
+      "(ExitBalanceFindingExtractor.java:68) 여기서도 region을 주면 안 된다 - 주면 운영에 없는 경로를 테스트하게 된다."
+    ],
+    "synthetic": [
+      { "type": "BOTTLENECK", "anchor": "exit", "exitIndex": 0, "halfSize": 8.0 },
+      { "type": "BOTTLENECK", "anchor": "exit", "exitIndex": 1, "halfSize": 8.0 },
+      { "type": "CONGESTION_HOTSPOT", "anchor": "centroid", "halfSize": 12.0 },
+      { "type": "EXIT_IMBALANCE", "anchor": null }
+    ]
+  },
+
+  "constraintCombos": {
+    "comment": [
+      "SearchConstraints의 4개 차원(SearchConstraints.java:10)을 유/무로 교차한다.",
+      "fixed = moveRadii를 0으로 (구조물 고정), forbidden = forbiddenZones,",
+      "noRotate = rotationAllowed false, wallAnchor = wallAnchored true.",
+      "대상 fabric은 matrix_cells.py가 각 셀에서 결정론적으로 고른다."
+    ],
+    "dimensions": ["fixed", "forbidden", "noRotate", "wallAnchor"],
+    "targetFabricCount": 2,
+    "forbiddenZone": { "count": 2, "size": 15.0 }
+  },
+
+  "tier3Cells": [
+    "default-many-ortho-uniform-none",
+    "default-many-mixed-skewed-some",
+    "empty-few-ortho-skewed-some",
+    "empty-few-mixed-uniform-none",
+    "default-few-mixed-skewed-none",
+    "empty-many-ortho-uniform-some",
+    "default-many-mixed-uniform-some",
+    "empty-few-ortho-skewed-none"
+  ],
+
+  "tier3Constraints": {
+    "default-many-ortho-uniform-none": "none",
+    "default-many-mixed-skewed-some": "fixed+forbidden+noRotate+wallAnchor",
+    "empty-few-ortho-skewed-some": "none",
+    "empty-few-mixed-uniform-none": "fixed+forbidden",
+    "default-few-mixed-skewed-none": "noRotate",
+    "empty-many-ortho-uniform-some": "wallAnchor",
+    "default-many-mixed-uniform-some": "none",
+    "empty-few-ortho-skewed-none": "fixed+forbidden+noRotate+wallAnchor"
+  }
+}

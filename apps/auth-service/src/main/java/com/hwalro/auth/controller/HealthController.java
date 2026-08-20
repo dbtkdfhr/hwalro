@@ -1,4 +1,4 @@
-package com.hwallo.auth.controller;
+package com.hwalro.auth.controller;
 
 import java.time.LocalDateTime;
 import java.util.Map;

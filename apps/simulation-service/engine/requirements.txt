@@ -1,0 +1,8 @@
+# Runtime baseline: Python 3.12. GUI/visualization dependencies are not used by the headless runner.
+jupedsim @ https://github.com/gugukorn/jupedsim-hwalro/releases/download/hwalro-v1.4.2.2/jupedsim-1.4.2-cp312-cp312-win_amd64.whl#sha256=f84035e88fb903be77236dc6070bf29cafae8b1abaab0a8e00efe3c93fd8e5b8 ; sys_platform == "win32" and platform_machine == "AMD64"
+jupedsim @ https://github.com/gugukorn/jupedsim-hwalro/releases/download/hwalro-v1.4.2.2/jupedsim-1.4.2-cp312-cp312-macosx_12_0_arm64.whl#sha256=f4a8b68b0fd3e989d398c2af1b3004532258c10df1de309060fcc60c12f1c845 ; sys_platform == "darwin" and platform_machine == "arm64"
+jupedsim @ https://github.com/gugukorn/jupedsim-hwalro/releases/download/hwalro-v1.4.2.2/jupedsim-1.4.2-cp312-cp312-macosx_12_0_x86_64.whl#sha256=7f563c0489acf0a79b448f477a47a40f0f3fdd675862fe3ad998cd960b6a889f ; sys_platform == "darwin" and platform_machine == "x86_64"
+numpy==2.2.6
+shapely==2.1.2
+Deprecated==1.2.18
+wrapt==1.17.3

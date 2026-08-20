@@ -1,5 +1,5 @@
 {
-  "name": "@hwallo/regulation-service",
+  "name": "@hwalro/regulation-service",
   "private": true,
   "scripts": {
     "dev": "dotenv -e ../../.env -- ./gradlew bootRun",

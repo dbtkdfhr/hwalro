@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hwalro.simulation.improvement.mapper.ImprovementProposalMapper">
+
+    <select id="findBySourceSimulationId" resultType="com.hwalro.simulation.improvement.domain.ImprovementProposal">
+        SELECT id, source_simulation_id, saved_layout_version_id, proposal_order, proposal_type,
+               title, description, change_data, change_summary, created_at, saved_at
+        FROM improvement_proposals
+        WHERE source_simulation_id = #{sourceSimulationId}
+        ORDER BY proposal_order ASC
+    </select>
+
+    <select id="findById" resultType="com.hwalro.simulation.improvement.domain.ImprovementProposal">
+        SELECT id, source_simulation_id, saved_layout_version_id, proposal_order, proposal_type,
+               title, description, change_data, change_summary, created_at, saved_at
+        FROM improvement_proposals
+        WHERE id = #{id}
+    </select>
+
+    <select id="findCreatedByBySimulationId" resultType="long">
+        SELECT created_by
+        FROM simulations
+        WHERE id = #{simulationId}
+    </select>
+
+    <select id="lockProposalId" resultType="long">
+        SELECT id
+        FROM improvement_proposals
+        WHERE id = #{proposalId}
+        FOR UPDATE
+    </select>
+
+    <select id="findSimulationIdByProposalId" resultType="long">
+        SELECT simulation_id
+        FROM proposal_simulations
+        WHERE improvement_proposal_id = #{proposalId}
+    </select>
+
+    <insert id="insertSimulationLink">
+        INSERT INTO proposal_simulations (improvement_proposal_id, simulation_id, source_simulation_id)
+        VALUES (#{proposalId}, #{simulationId}, #{sourceSimulationId})
+    </insert>
+
+    <select id="existsSavedBySourceSimulationId" resultType="boolean">
+        SELECT EXISTS(
+            SELECT 1
+            FROM improvement_proposals
+            WHERE source_simulation_id = #{sourceSimulationId}
+              AND (saved_layout_version_id IS NOT NULL OR saved_at IS NOT NULL)
+        )
+    </select>
+
+    <select id="lockSourceSimulationId" resultType="long">
+        SELECT id
+        FROM simulations
+        WHERE id = #{sourceSimulationId}
+        FOR UPDATE
+    </select>
+
+    <!-- 저장되지 않은 후보만 교체해 확정된 개선안 이력을 보존합니다. -->
+    <delete id="deleteUnsavedBySourceSimulationId">
+        DELETE FROM improvement_proposals
+        WHERE source_simulation_id = #{sourceSimulationId}
+          AND saved_layout_version_id IS NULL
+          AND saved_at IS NULL
+    </delete>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO improvement_proposals (
+            source_simulation_id, proposal_order, proposal_type, title, description, change_data, change_summary
+        ) VALUES (
+            #{sourceSimulationId}, #{proposalOrder}, #{proposalType}, #{title}, #{description},
+            #{changeData}, #{changeSummary}
+        )
+    </insert>
+</mapper>

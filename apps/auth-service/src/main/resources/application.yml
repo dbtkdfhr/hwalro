@@ -2,5 +2,65 @@ server:
   port: ${AUTH_SERVICE_PORT:8080}
 
 spring:
+  config:
+    import:
+      - optional:file:.env[.properties]
+      - optional:file:../../.env[.properties]
   application:
     name: auth-service
+
+  # Datasource (MySQL) - auth-service 전용 DB/계정
+  datasource:
+    url: ${AUTH_DB_URL:jdbc:mysql://localhost:3306/hwalro_auth?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${AUTH_DB_USERNAME:hwalro_auth}
+    password: ${AUTH_DB_PASSWORD:hwalro_auth}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # 스키마 자동 초기화 (개발용. idempotent: CREATE IF NOT EXISTS + INSERT IGNORE)
+  sql:
+    init:
+      mode: ${DB_INIT_MODE:never}
+      schema-locations: classpath:db/schema.sql
+      continue-on-error: false
+
+  # Redis (Refresh Token 저장)
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: ${REDIS_TIMEOUT:3s}
+
+# MyBatis Configuration
+mybatis:
+  mapper-locations: classpath:mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET:}
+  access-token-expiration-minutes: ${JWT_ACCESS_TOKEN_EXPIRATION_MINUTES:30}
+  refresh-token-expiration-days: ${JWT_REFRESH_TOKEN_EXPIRATION_DAYS:7}
+  issuer: ${JWT_ISSUER:hwalro-auth-service}
+
+# Cookie Configuration
+# 보안 요구사항: /api/auth/refresh와 /api/auth/logout은 REFRESH_TOKEN 쿠키에 의존하므로
+# SameSite=Lax(기본값)를 유지해야 한다. SameSite=None으로 변경하면 CSRF 위험이 생긴다.
+cookie:
+  same-site: ${COOKIE_SAME_SITE:Lax}
+  # 로컬 HTTP 개발 서버에서는 Secure 쿠키를 사용할 수 없다. 운영 환경은 COOKIE_SECURE=true로 설정한다.
+  secure: ${COOKIE_SECURE:false}
+
+# CORS Configuration
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:4173}
+
+# Swagger / OpenAPI
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs

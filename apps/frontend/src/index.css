@@ -1,8 +1,119 @@
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-  margin: 0;
+@import 'tailwindcss';
+
+@theme {
+  /* 브랜드 */
+  --color-ink: #0d1917;
+  --color-ink-deep: #172a26;
+  --color-lime: #c2e84b;
+  --color-background: #f3f6f4;
+  --color-white: #ffffff;
+
+  /* 브랜드 에메랄드 램프 */
+  --color-primary: #168f80;
+  --color-primary-hover: #14796d;
+  --color-primary-active: #11695f;
+  --color-primary-soft: #e4f3f0;
+  --color-primary-faint: #eef7f5;
+
+  /* 뉴트럴(그린 틴트) */
+  --color-surface: #f7faf9;
+  --color-line-subtle: #e5edeb;
+  --color-line: #d6e2df;
+  --color-line-strong: #b8cbc7;
+
+  /* 텍스트 */
+  --color-text-strong: #2f514c;
+  --color-text-muted: #718884;
+  --color-text-faint: #96aaa5;
+
+  /* 시맨틱 상태 */
+  --color-success: #188e63;
+  --color-success-strong: #106841;
+  --color-success-soft: #e5f4ec;
+  --color-warning: #b4721e;
+  --color-warning-strong: #8a5a14;
+  --color-warning-soft: #faf0e1;
+  --color-info: #3a7a9e;
+  --color-info-strong: #2d5f7d;
+  --color-info-soft: #eaf3f6;
+  --color-danger: #c94f47;
+  --color-danger-strong: #a83a33;
+  --color-danger-soft: #fcecea;
+
+  /* 상태 배지 공용 (기존 soft-gray 유지) */
+  --color-soft-gray: #edf2f1;
+
+  /* 포커스 링 */
+  --color-focus-ring: rgb(22 143 128 / 0.3);
+
+  /* 전체 화면 캔버스 워크스페이스 - 딥그린 패널 */
+  --color-panel: #19312d;
+  --color-panel-soft: #243e39;
+  --color-panel-border: #39534d;
+  --color-panel-text: #e7efed;
+  --color-panel-muted: #b9cac6;
+  --color-panel-faint: #8fa6a0;
+  --color-panel-divider: #34504a;
+  --color-panel-accent: #c9f438;
+  --color-panel-danger: #e95a52;
+
+  /* 도면 배치 편집기 - 줌 컨트롤 */
+  --color-zoom-soft: #e9f8f1;
+  --color-zoom-border: #32a96b;
+  --color-zoom-text: #23945a;
+
+  /* 시뮬레이션 결과 페이지 — 차트 툴팁 */
+  --color-chart-tooltip-bg: rgba(13, 25, 23, 0.92);
+  --color-chart-tooltip-border: rgba(255, 255, 255, 0.08);
+  --color-chart-tooltip-shadow: rgba(7, 32, 28, 0.28);
+
+  /* 승강도(그린 틴트 그림자) */
+  --shadow-card: 0 1px 2px rgb(22 55 49 / 0.04), 0 1px 4px rgb(22 55 49 / 0.05);
+  --shadow-raised: 0 4px 10px rgb(22 55 49 / 0.07), 0 1px 3px rgb(22 55 49 / 0.05);
+  --shadow-floating: 0 18px 50px rgb(22 55 49 / 0.12), 0 2px 8px rgb(22 55 49 / 0.06);
+  --shadow-overlay: 0 24px 64px rgb(13 25 23 / 0.24), 0 8px 20px rgb(13 25 23 / 0.12);
+
+  --font-sans:
+    'Happiness Sans Print', -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic',
+    sans-serif;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+  }
+
+  a[href],
+  area[href] {
+    cursor: pointer;
+  }
+
+  button,
+  input[type='button'],
+  input[type='reset'],
+  input[type='submit'],
+  input[type='checkbox'],
+  input[type='radio'],
+  input[type='range'],
+  label:has(input[type='checkbox']),
+  label:has(input[type='radio']),
+  select,
+  summary {
+    cursor: default;
+  }
+
+  ::selection {
+    background-color: rgb(194 232 75 / 0.35);
+    color: var(--color-ink);
+  }
 }
 
 @font-face {
@@ -29,21 +140,36 @@
   font-display: swap;
 }
 
-:root {
-  font-family:
-    'Happiness Sans Print',
-    -apple-system,
-    'Apple SD Gothic Neo',
-    'Noto Sans KR',
-    'Malgun Gothic',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+@media print {
+  body * {
+    visibility: hidden;
+  }
 
-button,
-input,
-select,
-textarea {
-  font: inherit;
+  .report-print-area,
+  .report-print-area * {
+    visibility: visible;
+  }
+
+  .report-print-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .checklist-print-area,
+  .checklist-print-area * {
+    visibility: visible;
+  }
+
+  .checklist-print-area {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
 }

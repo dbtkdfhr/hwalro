@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hwalro.simulation.search.mapper.LayoutSearchSourceMapper">
+
+    <select id="findLayoutVersionIdBySimulationId" resultType="long">
+        SELECT simulation.layout_version_id
+        FROM simulations simulation
+        JOIN simulation_results result ON result.simulation_id = simulation.id
+        WHERE simulation.id = #{simulationId}
+          AND simulation.status = 'COMPLETED'
+    </select>
+
+    <select id="findBottlenecksBySimulationId" resultType="com.hwalro.simulation.search.domain.StoredBottleneck">
+        SELECT bottleneck.start_time_seconds,
+               bottleneck.end_time_seconds,
+               bottleneck.peak_density,
+               bottleneck.threshold_value,
+               bottleneck.geometry
+        FROM detected_bottlenecks bottleneck
+        JOIN simulation_results result ON result.id = bottleneck.simulation_result_id
+        WHERE result.simulation_id = #{simulationId}
+        ORDER BY bottleneck.bottleneck_order ASC
+    </select>
+
+    <select id="findHeatmapChunksBySimulationId" resultType="com.hwalro.simulation.search.domain.HeatmapChunk">
+        SELECT heatmap.chunk_sequence,
+               heatmap.density_data
+        FROM heatmaps heatmap
+        JOIN simulation_results result ON result.id = heatmap.simulation_result_id
+        WHERE result.simulation_id = #{simulationId}
+        ORDER BY heatmap.chunk_sequence ASC
+    </select>
+
+    <select id="findTimelineChunksBySimulationId" resultType="com.hwalro.simulation.search.domain.TimelineChunk">
+        SELECT timeline.chunk_sequence,
+               timeline.frame_data
+        FROM timelines timeline
+        JOIN simulation_results result ON result.id = timeline.simulation_result_id
+        WHERE result.simulation_id = #{simulationId}
+        ORDER BY timeline.chunk_sequence ASC
+    </select>
+
+    <select id="findBaselineMetricsBySimulationId" resultType="com.hwalro.simulation.search.domain.BaselineMetric">
+        SELECT metric.metric_type,
+               metric.unit,
+               metric.metric_value
+        FROM simulation_metrics metric
+        JOIN simulation_results result ON result.id = metric.simulation_result_id
+        WHERE result.simulation_id = #{simulationId}
+    </select>
+
+</mapper>

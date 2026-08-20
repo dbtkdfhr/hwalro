@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hwalro.regulation.risk.mapper.RiskMapper">
+
+    <select id="findById" resultType="com.hwalro.regulation.risk.domain.Risk">
+        SELECT id,
+               simulation_result_id,
+               assignee_id,
+               title,
+               description,
+               start_x,
+               start_y,
+               end_x,
+               end_y,
+               severity,
+               status,
+               created_at
+        FROM risks
+        WHERE id = #{id}
+    </select>
+
+    <select id="findPage" resultType="com.hwalro.regulation.risk.domain.Risk">
+        SELECT id,
+               simulation_result_id,
+               assignee_id,
+               title,
+               description,
+               start_x,
+               start_y,
+               end_x,
+               end_y,
+               severity,
+               status,
+               created_at
+        FROM risks
+        <where>
+            <if test="assigneeId != null">
+                AND assignee_id = #{assigneeId}
+            </if>
+            <if test="query != null and query != ''">
+                AND (title LIKE CONCAT('%', #{query}, '%') OR description LIKE CONCAT('%', #{query}, '%'))
+            </if>
+        </where>
+        ORDER BY id DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*)
+        FROM risks
+        <where>
+            <if test="assigneeId != null">
+                AND assignee_id = #{assigneeId}
+            </if>
+            <if test="query != null and query != ''">
+                AND (title LIKE CONCAT('%', #{query}, '%') OR description LIKE CONCAT('%', #{query}, '%'))
+            </if>
+        </where>
+    </select>
+
+    <select id="findBySimulationResultId" resultType="com.hwalro.regulation.risk.domain.Risk">
+        SELECT id,
+               simulation_result_id,
+               assignee_id,
+               title,
+               description,
+               start_x,
+               start_y,
+               end_x,
+               end_y,
+               severity,
+               status,
+               created_at
+        FROM risks
+        WHERE simulation_result_id = #{simulationResultId}
+        <if test="assigneeId != null">AND assignee_id = #{assigneeId}</if>
+        ORDER BY id DESC
+    </select>
+
+    <select id="findBySimulationResultIds" resultType="com.hwalro.regulation.risk.domain.Risk">
+        SELECT id,
+               simulation_result_id,
+               assignee_id,
+               title,
+               description,
+               start_x,
+               start_y,
+               end_x,
+               end_y,
+               severity,
+               status,
+               created_at
+        FROM risks
+        WHERE simulation_result_id IN
+        <foreach collection="simulationResultIds" item="simulationResultId" open="(" separator="," close=")">
+            #{simulationResultId}
+        </foreach>
+        ORDER BY simulation_result_id, id
+    </select>
+
+    <select id="countBySimulationResultId" resultType="int">
+        SELECT COUNT(*)
+        FROM risks
+        WHERE simulation_result_id = #{simulationResultId}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO risks (simulation_result_id, assignee_id, title, description, start_x, start_y, end_x, end_y, severity, status)
+        VALUES (#{simulationResultId}, #{assigneeId}, #{title}, #{description}, #{startX}, #{startY}, #{endX}, #{endY}, #{severity}, #{status})
+    </insert>
+
+    <update id="update">
+        UPDATE risks
+        SET assignee_id = #{assigneeId},
+            title = #{title},
+            description = #{description},
+            severity = #{severity},
+            status = #{status}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM risks
+        WHERE id = #{id}
+    </delete>
+
+    <insert id="insertAttachedLaws">
+        INSERT INTO risk_attached_laws (risk_id, law_serial_number, law_article_number)
+        VALUES
+        <foreach collection="attachedLaws" item="law" separator=",">
+            (#{riskId}, #{law.lawSerialNumber}, #{law.lawArticleNumber})
+        </foreach>
+    </insert>
+
+    <delete id="deleteAttachedLawsByRiskId">
+        DELETE FROM risk_attached_laws
+        WHERE risk_id = #{riskId}
+    </delete>
+
+    <select id="findAttachedLawsByRiskIds" resultType="com.hwalro.regulation.risk.dto.RiskAttachedLaw">
+        SELECT risk_id,
+               law_serial_number,
+               law_article_number
+        FROM risk_attached_laws
+        WHERE risk_id IN
+        <foreach collection="riskIds" item="riskId" open="(" separator="," close=")">
+            #{riskId}
+        </foreach>
+        ORDER BY id
+    </select>
+
+</mapper>

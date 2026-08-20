@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hwalro.simulation.result.mapper.SimulationResultDetailMapper">
+
+    <select id="findSummary" resultType="com.hwalro.simulation.result.mapper.SimulationResultDetailMapper$SummaryRow">
+        SELECT result.id AS simulationResultId,
+               simulation.id AS simulationId,
+               simulation.created_by AS createdBy,
+               simulation.layout_version_id AS layoutVersionId,
+               layout.title AS layoutTitle,
+               simulation.title AS title,
+               floor_plan.name AS drawingName,
+               floor_plan.width AS drawingWidth,
+               floor_plan.height AS drawingHeight,
+               simulation_option.total_people AS totalPeople
+        FROM simulations simulation
+        JOIN simulation_results result ON result.simulation_id = simulation.id
+        JOIN simulation_options simulation_option ON simulation_option.simulation_id = simulation.id
+        JOIN layout_versions layout_version ON layout_version.id = simulation.layout_version_id
+        JOIN layouts layout ON layout.id = layout_version.layout_id
+        JOIN floor_plans floor_plan ON floor_plan.id = layout.floor_plan_id
+        WHERE simulation.id = #{simulationId}
+    </select>
+
+    <select id="findMetrics" resultType="com.hwalro.simulation.result.mapper.SimulationResultDetailMapper$MetricRow">
+        SELECT metric_type AS metricType,
+               metric_value AS metricValue
+        FROM simulation_metrics
+        WHERE simulation_result_id = #{simulationResultId}
+        ORDER BY id
+    </select>
+
+    <select id="findWalls" resultType="com.hwalro.simulation.result.mapper.SimulationResultDetailMapper$SegmentRow">
+        SELECT name, start_x AS startX, start_y AS startY, end_x AS endX, end_y AS endY, 0 AS rotation
+        FROM walls
+        WHERE layout_version_id = #{layoutVersionId}
+        ORDER BY id
+    </select>
+
+    <select id="findExits" resultType="com.hwalro.simulation.result.mapper.SimulationResultDetailMapper$SegmentRow">
+        SELECT name, start_x AS startX, start_y AS startY, end_x AS endX, end_y AS endY, 0 AS rotation
+        FROM layout_exits
+        WHERE layout_version_id = #{layoutVersionId}
+        ORDER BY id
+    </select>
+
+    <select id="findPillars" resultType="com.hwalro.simulation.result.mapper.SimulationResultDetailMapper$SegmentRow">
+        SELECT name, start_x AS startX, start_y AS startY, end_x AS endX, end_y AS endY, rotation
+        FROM pillars
+        WHERE layout_version_id = #{layoutVersionId}
+        ORDER BY id
+    </select>
+
+    <select id="findFabrics" resultType="com.hwalro.simulation.result.mapper.SimulationResultDetailMapper$SegmentRow">
+        SELECT name, start_x AS startX, start_y AS startY, end_x AS endX, end_y AS endY, rotation
+        FROM fabrics
+        WHERE layout_version_id = #{layoutVersionId}
+        ORDER BY id
+    </select>
+
+    <select id="findHazardZones" resultType="com.hwalro.simulation.result.mapper.SimulationResultDetailMapper$HazardZoneRow">
+        SELECT id,
+               center_x AS centerX,
+               center_y AS centerY,
+               radius
+        FROM hazard_zones
+        WHERE simulation_id = #{simulationId}
+        ORDER BY id
+    </select>
+
+    <select id="findBottlenecks" resultType="com.hwalro.simulation.result.mapper.SimulationResultDetailMapper$BottleneckRow">
+        SELECT id,
+               bottleneck_order AS bottleneckOrder,
+               start_time_seconds AS startTimeSeconds,
+               end_time_seconds AS endTimeSeconds,
+               peak_density AS peakDensity,
+               threshold_value AS thresholdValue,
+               CAST(geometry AS CHAR) AS geometry
+        FROM detected_bottlenecks
+        WHERE simulation_result_id = #{simulationResultId}
+        ORDER BY bottleneck_order
+    </select>
+
+    <select id="countComparableSimulations" resultType="long">
+        SELECT COUNT(*)
+        FROM simulations candidate
+        JOIN simulation_results candidate_result ON candidate_result.simulation_id = candidate.id
+        JOIN simulation_metrics metric
+          ON metric.simulation_result_id = candidate_result.id
+         AND metric.metric_type = 'TOTAL_EVACUATION_TIME_SECONDS'
+        WHERE candidate.created_by = #{createdBy}
+          AND candidate.id != #{simulationId}
+    </select>
+
+    <select id="findComparableSimulationPage" resultType="com.hwalro.simulation.result.mapper.SimulationResultDetailMapper$ComparableRow">
+        SELECT candidate.id AS simulationId,
+               candidate_result.id AS simulationResultId,
+               COALESCE(proposal.title, candidate.title, CONCAT('비교 시뮬레이션 #', candidate.id)) AS name,
+               metric.metric_value AS totalEvacuationTime
+        FROM simulations candidate
+        JOIN simulation_results candidate_result ON candidate_result.simulation_id = candidate.id
+        JOIN simulation_metrics metric
+          ON metric.simulation_result_id = candidate_result.id
+         AND metric.metric_type = 'TOTAL_EVACUATION_TIME_SECONDS'
+        LEFT JOIN proposal_simulations proposal_simulation ON proposal_simulation.simulation_id = candidate.id
+        LEFT JOIN improvement_proposals proposal ON proposal.id = proposal_simulation.improvement_proposal_id
+        WHERE candidate.created_by = #{createdBy}
+          AND candidate.id != #{simulationId}
+        ORDER BY candidate.created_at DESC,
+                 candidate.id DESC
+        LIMIT #{offset}, #{size}
+    </select>
+
+</mapper>

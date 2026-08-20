@@ -10,6 +10,71 @@ spring:
     exclude:
       - org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration
 
+  datasource:
+    url: ${SIMULATION_DB_URL:jdbc:mysql://localhost:3307/hwalro_simulation?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${SIMULATION_DB_USERNAME:hwalro_simulation}
+    password: ${SIMULATION_DB_PASSWORD:hwalro_simulation}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  sql:
+    init:
+      mode: ${DB_INIT_MODE:never}
+      schema-locations: classpath:db/schema.sql
+      continue-on-error: false
+
+mybatis:
+  mapper-locations: classpath:mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+jwt:
+  secret: ${JWT_SECRET:}
+  issuer: ${JWT_ISSUER:hwalro-auth-service}
+
+regulation-service:
+  base-url: ${REGULATION_SERVICE_URL:http://localhost:8082}
+  connect-timeout: ${REGULATION_SERVICE_CONNECT_TIMEOUT:2s}
+  read-timeout: ${REGULATION_SERVICE_READ_TIMEOUT:5s}
+
+simulation:
+  engine:
+    python: ${SIMULATION_ENGINE_PYTHON:python}
+    script: ${SIMULATION_ENGINE_SCRIPT:engine/runner.py}
+    work-directory: ${SIMULATION_ENGINE_WORK_DIRECTORY:}
+    timeout: ${SIMULATION_ENGINE_TIMEOUT:60m}
+    max-simulation-time: 400
+    frame-interval: 1
+    shared-target-recovery-enabled: ${SIMULATION_ENGINE_SHARED_TARGET_RECOVERY_ENABLED:false}
+  layout-search:
+    script: ${LAYOUT_SEARCH_SCRIPT:engine/layout_search.py}
+    work-directory: ${LAYOUT_SEARCH_WORK_DIRECTORY:}
+    search-timeout: ${LAYOUT_SEARCH_TIMEOUT:25m}
+    beam-width: ${LAYOUT_SEARCH_BEAM_WIDTH:2}
+    improvement-margin: ${LAYOUT_SEARCH_IMPROVEMENT_MARGIN:0.02}
+    abort-margin: ${LAYOUT_SEARCH_ABORT_MARGIN:0.15}
+    trial-concurrency: ${LAYOUT_SEARCH_TRIAL_CONCURRENCY:2}
+    keep-job-directory: ${LAYOUT_SEARCH_KEEP_JOB_DIRECTORY:false}
+    surrogate-mode: ${LAYOUT_SEARCH_SURROGATE_MODE:OFF}
+    surrogate-bundle: ${LAYOUT_SEARCH_SURROGATE_BUNDLE:}
+    budgets:
+      QUICK:
+        trials: 3
+        rounds: 1
+      STANDARD:
+        trials: 6
+        rounds: 2
+      THOROUGH:
+        trials: 10
+        rounds: 2
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+
   # Spring AI Configuration
   # ai:
   #   openai:

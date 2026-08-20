@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hwalro.regulation.safetycheck.mapper.SafetyCheckMapper">
+
+    <select id="findAreas"
+            resultType="com.hwalro.regulation.safetycheck.dto.InspectionAreaResponse">
+        SELECT area.id,
+               area.name,
+               area.description,
+               area.active,
+               COUNT(inspection.id) AS inspection_count,
+               MAX(inspection.created_at) AS last_inspected_at,
+               EXISTS (
+                   SELECT 1
+                   FROM checklist_templates template
+                   WHERE template.inspection_area_id = area.id
+                     AND template.status = 'ACTIVE'
+               ) AS has_active_template
+        FROM inspection_areas area
+        LEFT JOIN safety_inspections inspection
+               ON inspection.inspection_area_id = area.id
+        <if test="inspectorId != null">
+           AND inspection.inspector_id = #{inspectorId}
+        </if>
+        WHERE area.active = TRUE
+        GROUP BY area.id,
+                 area.name,
+                 area.description,
+                 area.active,
+                 area.created_at
+        ORDER BY area.created_at DESC, area.id DESC
+    </select>
+
+    <select id="findArea"
+            resultType="com.hwalro.regulation.safetycheck.dto.InspectionAreaResponse">
+        SELECT area.id,
+               area.name,
+               area.description,
+               area.active,
+               COUNT(inspection.id) AS inspection_count,
+               MAX(inspection.created_at) AS last_inspected_at,
+               EXISTS (
+                   SELECT 1
+                   FROM checklist_templates template
+                   WHERE template.inspection_area_id = area.id
+                     AND template.status = 'ACTIVE'
+               ) AS has_active_template
+        FROM inspection_areas area
+        LEFT JOIN safety_inspections inspection
+               ON inspection.inspection_area_id = area.id
+        <if test="inspectorId != null">
+           AND inspection.inspector_id = #{inspectorId}
+        </if>
+        WHERE area.id = #{areaId}
+        GROUP BY area.id,
+                 area.name,
+                 area.description,
+                 area.active
+    </select>
+
+    <insert id="insertArea" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO inspection_areas (name, description)
+        VALUES (#{name}, #{description})
+    </insert>
+
+    <update id="updateArea">
+        UPDATE inspection_areas
+        SET name = #{name},
+            description = #{description}
+        WHERE id = #{id}
+          AND active = TRUE
+    </update>
+
+    <update id="deactivateArea">
+        UPDATE inspection_areas
+        SET active = FALSE
+        WHERE id = #{areaId}
+          AND active = TRUE
+    </update>
+
+    <select id="areaExists" resultType="boolean">
+        SELECT COUNT(*) &gt; 0
+        FROM inspection_areas
+        WHERE id = #{areaId}
+          AND active = TRUE
+    </select>
+
+    <select id="lockInspectionArea" resultType="long">
+        SELECT id
+        FROM inspection_areas
+        WHERE id = #{areaId}
+          AND active = TRUE
+        FOR UPDATE
+    </select>
+
+    <select id="findInspectionHistory"
+            resultType="com.hwalro.regulation.safetycheck.dto.InspectionHistoryResponse">
+        SELECT inspection.id,
+               inspection.inspector_id,
+               inspection.status,
+               COALESCE(SUM(item.result != 'PENDING'), 0) AS completed_item_count,
+               COUNT(item.id) AS total_item_count,
+               COALESCE(SUM(item.result = 'FAIL'), 0) AS fail_count,
+               COALESCE(SUM(item.result = 'REVIEW_REQUIRED'), 0) AS review_required_count,
+               inspection.created_at
+        FROM safety_inspections inspection
+        LEFT JOIN safety_inspection_items item
+               ON item.safety_inspection_id = inspection.id
+        WHERE inspection.inspection_area_id = #{areaId}
+        <if test="inspectorId != null">
+          AND inspection.inspector_id = #{inspectorId}
+        </if>
+        GROUP BY inspection.id,
+                 inspection.inspector_id,
+                 inspection.status,
+                 inspection.created_at
+        ORDER BY inspection.created_at DESC, inspection.id DESC
+    </select>
+
+    <select id="findInspectionHeader"
+            resultType="com.hwalro.regulation.safetycheck.dto.InspectionDetailHeader">
+        SELECT inspection.id,
+               inspection.inspection_area_id,
+               area.name AS area_name,
+               inspection.simulation_result_id,
+               inspection.inspector_id,
+               inspection.status,
+               inspection.comment,
+               inspection.updated_at,
+               inspection.completed_at
+        FROM safety_inspections inspection
+        JOIN inspection_areas area ON area.id = inspection.inspection_area_id
+        WHERE inspection.id = #{inspectionId}
+    </select>
+
+    <select id="findInspectionItems"
+            resultType="com.hwalro.regulation.safetycheck.dto.InspectionItemResponse">
+        SELECT id,
+               title,
+               criterion,
+               category,
+               display_order,
+               result,
+               comment
+        FROM safety_inspection_items
+        WHERE safety_inspection_id = #{inspectionId}
+        ORDER BY display_order, id
+    </select>
+
+    <select id="findActiveTemplateId" resultType="long">
+        SELECT id
+        FROM checklist_templates
+        WHERE inspection_area_id = #{areaId}
+          AND status = 'ACTIVE'
+        ORDER BY version DESC
+        LIMIT 1
+    </select>
+
+    <select id="findOpenDraftId" resultType="long">
+        SELECT id
+        FROM safety_inspections
+        WHERE inspection_area_id = #{areaId}
+          AND inspector_id = #{inspectorId}
+          AND status = 'DRAFT'
+        ORDER BY id DESC
+        LIMIT 1
+    </select>
+
+    <select id="findTemplateVersion" resultType="int">
+        SELECT version
+        FROM checklist_templates
+        WHERE id = #{templateId}
+    </select>
+
+    <select id="findTemplateItems"
+            resultType="com.hwalro.regulation.safetycheck.dto.ChecklistTemplateItemResponse">
+        SELECT id,
+               title,
+               criterion,
+               category,
+               display_order
+        FROM checklist_template_items
+        WHERE checklist_template_id = #{templateId}
+        ORDER BY display_order, id
+    </select>
+
+    <select id="findNextTemplateVersion" resultType="int">
+        SELECT COALESCE(MAX(version), 0) + 1
+        FROM checklist_templates
+        WHERE inspection_area_id = #{areaId}
+    </select>
+
+    <update id="retireActiveTemplates">
+        UPDATE checklist_templates
+        SET status = 'RETIRED'
+        WHERE inspection_area_id = #{areaId}
+          AND status = 'ACTIVE'
+    </update>
+
+    <insert id="insertChecklistTemplate" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO checklist_templates (
+            inspection_area_id,
+            version,
+            status
+        ) VALUES (
+            #{inspectionAreaId},
+            #{version},
+            'ACTIVE'
+        )
+    </insert>
+
+    <insert id="insertChecklistTemplateItem">
+        INSERT INTO checklist_template_items (
+            checklist_template_id,
+            title,
+            criterion,
+            category,
+            display_order
+        ) VALUES (
+            #{templateId},
+            #{title},
+            #{criterion},
+            #{category},
+            #{displayOrder}
+        )
+    </insert>
+
+    <insert id="insertInspection" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO safety_inspections (
+            inspection_area_id,
+            checklist_template_id,
+            simulation_result_id,
+            inspector_id,
+            status
+        ) VALUES (
+            #{inspectionAreaId},
+            #{checklistTemplateId},
+            #{simulationResultId},
+            #{inspectorId},
+            'DRAFT'
+        )
+    </insert>
+
+    <insert id="insertInspectionItems">
+        INSERT INTO safety_inspection_items (
+            safety_inspection_id,
+            template_item_id,
+            title,
+            criterion,
+            category,
+            display_order,
+            result
+        )
+        SELECT #{inspectionId},
+               item.id,
+               item.title,
+               item.criterion,
+               item.category,
+               item.display_order,
+               'PENDING'
+        FROM checklist_template_items item
+        WHERE item.checklist_template_id = #{templateId}
+        ORDER BY item.display_order
+    </insert>
+
+    <update id="updateInspectionItem">
+        UPDATE safety_inspection_items item
+        JOIN safety_inspections inspection
+          ON inspection.id = item.safety_inspection_id
+        SET item.result = #{result},
+            item.comment = #{comment},
+            item.checked_at = #{checkedAt}
+        WHERE item.id = #{itemId}
+          AND item.safety_inspection_id = #{inspectionId}
+          AND inspection.status = 'DRAFT'
+    </update>
+
+    <select id="countInspectionItems" resultType="int">
+        SELECT COUNT(*)
+        FROM safety_inspection_items
+        WHERE safety_inspection_id = #{inspectionId}
+    </select>
+
+    <select id="countPendingItems" resultType="int">
+        SELECT COUNT(*)
+        FROM safety_inspection_items
+        WHERE safety_inspection_id = #{inspectionId}
+          AND result = 'PENDING'
+    </select>
+
+    <update id="updateInspection">
+        UPDATE safety_inspections
+        SET status = #{status},
+            comment = #{comment},
+            completed_at = #{completedAt}
+        WHERE id = #{inspectionId}
+          AND status = 'DRAFT'
+    </update>
+
+    <delete id="deleteInspection">
+        DELETE FROM safety_inspections
+        WHERE id = #{inspectionId}
+          AND status = 'DRAFT'
+    </delete>
+
+</mapper>

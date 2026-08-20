@@ -40,11 +40,11 @@ jobs:
 
       - name: Lint frontend (ESLint)
         continue-on-error: true
-        run: pnpm --filter @hwallo/frontend run lint
+        run: pnpm --filter @hwalro/frontend run lint
 
       - name: Format frontend (Prettier)
         continue-on-error: true
-        run: pnpm --filter @hwallo/frontend run format
+        run: pnpm --filter @hwalro/frontend run format
 
       # ── Backend: Spotless ──
       - name: Set up JDK 17

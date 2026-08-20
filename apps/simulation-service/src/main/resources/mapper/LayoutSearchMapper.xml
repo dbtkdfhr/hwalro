@@ -1,0 +1,282 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hwalro.simulation.search.mapper.LayoutSearchMapper">
+
+    <insert id="insertSearch" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO layout_searches (
+            baseline_simulation_id, baseline_layout_version_id, planner_version, status,
+            baseline_metrics, diagnosis, budget, constraints, requested_by
+        ) VALUES (
+            #{baselineSimulationId}, #{baselineLayoutVersionId}, #{plannerVersion}, #{status},
+            #{baselineMetrics}, #{diagnosis}, #{budget}, #{constraints}, #{requestedBy}
+        )
+    </insert>
+
+    <select id="lockBaselineSimulation" resultType="long">
+        SELECT id
+        FROM simulations
+        WHERE id = #{simulationId}
+        FOR UPDATE
+    </select>
+
+    <select id="findSearchById" resultType="com.hwalro.simulation.search.domain.LayoutSearchEntity">
+        SELECT id, baseline_simulation_id, baseline_layout_version_id, planner_version, status,
+               baseline_metrics, diagnosis, budget, constraints, requested_by, created_at, started_at,
+               finished_at, failure_code, failure_message
+        FROM layout_searches
+        WHERE id = #{id}
+    </select>
+
+    <select id="findLatestSearchByBaselineSimulationId"
+            resultType="com.hwalro.simulation.search.domain.LayoutSearchEntity">
+        SELECT id, baseline_simulation_id, baseline_layout_version_id, planner_version, status,
+               baseline_metrics, diagnosis, budget, constraints, requested_by, created_at, started_at,
+               finished_at, failure_code, failure_message
+        FROM layout_searches
+        WHERE baseline_simulation_id = #{simulationId}
+        ORDER BY created_at DESC, id DESC
+        LIMIT 1
+    </select>
+
+    <select id="findActiveSearchByBaselineSimulationId"
+            resultType="com.hwalro.simulation.search.domain.LayoutSearchEntity">
+        SELECT id, baseline_simulation_id, baseline_layout_version_id, planner_version, status,
+               baseline_metrics, diagnosis, budget, constraints, requested_by, created_at, started_at,
+               finished_at, failure_code, failure_message
+        FROM layout_searches
+        WHERE baseline_simulation_id = #{simulationId}
+          AND status IN ('PENDING', 'DIAGNOSING', 'GENERATING', 'VERIFYING')
+        ORDER BY created_at DESC, id DESC
+        LIMIT 1
+    </select>
+
+    <select id="findActiveStudies" resultType="com.hwalro.simulation.search.domain.LayoutSearchEntity">
+        SELECT id, baseline_simulation_id, baseline_layout_version_id, planner_version, status,
+               baseline_metrics, diagnosis, budget, constraints, requested_by, created_at, started_at,
+               finished_at, failure_code, failure_message
+        FROM layout_searches
+        WHERE status IN ('PENDING', 'DIAGNOSING', 'GENERATING', 'VERIFYING')
+        ORDER BY created_at ASC, id ASC
+    </select>
+
+    <update id="updateStudyStarted">
+        UPDATE layout_searches
+        SET status = 'DIAGNOSING', started_at = #{startedAt}
+        WHERE id = #{id}
+          AND status = 'PENDING'
+    </update>
+
+    <update id="updateStudyDiagnosis">
+        UPDATE layout_searches
+        SET diagnosis = #{diagnosis}
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateSearchStatus">
+        UPDATE layout_searches
+        SET status = #{status}
+        WHERE id = #{id}
+          AND status IN ('PENDING', 'DIAGNOSING', 'GENERATING', 'VERIFYING')
+    </update>
+
+    <update id="updatePlannerVersion">
+        UPDATE layout_searches
+        SET planner_version = #{plannerVersion}
+        WHERE id = #{id}
+          AND status IN ('PENDING', 'DIAGNOSING', 'GENERATING', 'VERIFYING')
+    </update>
+
+    <update id="finishSearch">
+        UPDATE layout_searches
+        SET status = #{status}, finished_at = #{finishedAt},
+            failure_code = #{failureCode}, failure_message = #{failureMessage}
+        WHERE id = #{id}
+          AND status IN ('PENDING', 'DIAGNOSING', 'GENERATING', 'VERIFYING')
+    </update>
+
+    <insert id="insertCandidate" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO layout_search_candidates (
+            study_id, parent_candidate_id, round_index, candidate_order,
+            origin_finding_type, operator_type, status, change_set, rationale, proxy_score, reject_reason, constraints_snapshot
+        ) VALUES (
+            #{studyId}, #{parentCandidateId}, #{roundIndex}, #{candidateOrder},
+            #{originFindingType}, #{operatorType}, #{status}, #{changeSet}, #{rationale}, #{proxyScore}, #{rejectReason}, #{constraintsSnapshot}
+        )
+    </insert>
+
+    <update id="updateCandidateStatus">
+        UPDATE layout_search_candidates
+        SET status = #{status}, reject_reason = #{rejectReason}
+        WHERE id = #{id}
+          AND status = 'RUNNING'
+    </update>
+
+    <update id="updateCandidateMetricDelta">
+        UPDATE layout_search_candidates
+        SET metric_delta = #{metricDelta}
+        WHERE id = #{id}
+    </update>
+
+    <update id="markCandidatePrepared">
+        UPDATE layout_search_candidates
+        SET adopted_layout_version_id = #{layoutVersionId},
+            prepared_simulation_id = #{simulationId},
+            adopted_at = #{adoptedAt}
+        WHERE id = #{id}
+    </update>
+
+    <update id="claimCandidate">
+        UPDATE layout_search_candidates candidate
+        JOIN layout_searches search ON search.id = candidate.study_id
+        SET candidate.status = 'RUNNING'
+        WHERE candidate.id = #{id}
+          AND candidate.status = 'QUEUED'
+          AND search.status IN ('PENDING', 'DIAGNOSING', 'GENERATING', 'VERIFYING')
+    </update>
+
+    <update id="cancelOutstandingTrials">
+        UPDATE layout_search_trials trial
+        JOIN layout_search_candidates candidate ON candidate.id = trial.candidate_id
+        SET trial.finished_at = #{finishedAt},
+            trial.failure_message = #{failureMessage}
+        WHERE candidate.study_id = #{searchId}
+          AND candidate.status IN ('QUEUED', 'RUNNING')
+          AND trial.finished_at IS NULL
+    </update>
+
+    <update id="cancelOutstandingCandidates">
+        UPDATE layout_search_candidates
+        SET status = 'FAILED', reject_reason = #{rejectReason}
+        WHERE study_id = #{searchId}
+          AND status IN ('QUEUED', 'RUNNING')
+    </update>
+
+    <select id="findCandidateById" resultType="com.hwalro.simulation.search.domain.LayoutSearchCandidateEntity">
+        SELECT id, study_id, parent_candidate_id, round_index, candidate_order,
+               origin_finding_type, operator_type, status, change_set, rationale,
+               proxy_score, metric_delta, reject_reason, constraints_snapshot, adopted_layout_version_id,
+               prepared_simulation_id,
+               (SELECT status FROM simulations
+                WHERE simulations.id = layout_search_candidates.prepared_simulation_id) AS prepared_simulation_status,
+               adopted_at, created_at
+        FROM layout_search_candidates
+        WHERE id = #{id}
+    </select>
+
+    <select id="findCandidateByIdForUpdate"
+            resultType="com.hwalro.simulation.search.domain.LayoutSearchCandidateEntity">
+        SELECT id, study_id, parent_candidate_id, round_index, candidate_order,
+               origin_finding_type, operator_type, status, change_set, rationale,
+               proxy_score, metric_delta, reject_reason, constraints_snapshot, adopted_layout_version_id,
+               prepared_simulation_id, adopted_at, created_at
+        FROM layout_search_candidates
+        WHERE id = #{id}
+        FOR UPDATE
+    </select>
+
+    <select id="findCandidatesBySearchId"
+            resultType="com.hwalro.simulation.search.domain.LayoutSearchCandidateEntity">
+        SELECT id, study_id, parent_candidate_id, round_index, candidate_order,
+               origin_finding_type, operator_type, status, change_set, rationale,
+               proxy_score, metric_delta, reject_reason, constraints_snapshot, adopted_layout_version_id,
+               prepared_simulation_id,
+               (SELECT status FROM simulations
+                WHERE simulations.id = layout_search_candidates.prepared_simulation_id) AS prepared_simulation_status,
+               adopted_at, created_at
+        FROM layout_search_candidates
+        WHERE study_id = #{searchId}
+        ORDER BY round_index ASC, candidate_order ASC, id ASC
+    </select>
+
+    <select id="findCandidatesByStudyIdAndRound"
+            resultType="com.hwalro.simulation.search.domain.LayoutSearchCandidateEntity">
+        SELECT id, study_id, parent_candidate_id, round_index, candidate_order,
+               origin_finding_type, operator_type, status, change_set, rationale,
+               proxy_score, metric_delta, reject_reason, constraints_snapshot, adopted_layout_version_id,
+               prepared_simulation_id,
+               (SELECT status FROM simulations
+                WHERE simulations.id = layout_search_candidates.prepared_simulation_id) AS prepared_simulation_status,
+               adopted_at, created_at
+        FROM layout_search_candidates
+        WHERE study_id = #{studyId}
+          AND round_index = #{roundIndex}
+        ORDER BY candidate_order ASC, id ASC
+    </select>
+
+    <select id="findCandidatesByIds" resultType="com.hwalro.simulation.search.domain.LayoutSearchCandidateEntity">
+        SELECT id, study_id, parent_candidate_id, round_index, candidate_order,
+               origin_finding_type, operator_type, status, change_set, rationale,
+               proxy_score, metric_delta, reject_reason, constraints_snapshot, adopted_layout_version_id,
+               prepared_simulation_id,
+               (SELECT status FROM simulations
+                WHERE simulations.id = layout_search_candidates.prepared_simulation_id) AS prepared_simulation_status,
+               adopted_at, created_at
+        FROM layout_search_candidates
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <insert id="insertTrial" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO layout_search_trials (candidate_id, started_at, attempt_count, total_move_distance)
+        VALUES (#{candidateId}, #{startedAt}, 1, #{totalMoveDistance})
+    </insert>
+
+    <update id="restartTrial">
+        UPDATE layout_search_trials
+        SET engine_version = NULL,
+            termination_reason = NULL,
+            metrics = NULL,
+            started_at = #{startedAt},
+            finished_at = NULL,
+            failure_message = NULL,
+            attempt_count = attempt_count + 1
+        WHERE id = #{id}
+          AND attempt_count &lt; 2
+    </update>
+
+    <update id="updateTrialResult">
+        UPDATE layout_search_trials
+        SET engine_version = #{engineVersion}, termination_reason = #{terminationReason},
+            metrics = #{metrics}, total_move_distance = #{totalMoveDistance}, finished_at = #{finishedAt}, failure_message = #{failureMessage}
+        WHERE id = #{id}
+          AND finished_at IS NULL
+    </update>
+
+    <select id="findTrialByCandidateId" resultType="com.hwalro.simulation.search.domain.LayoutSearchTrialEntity">
+        SELECT id, candidate_id, engine_version, termination_reason, metrics, total_move_distance,
+               started_at, finished_at, failure_message, attempt_count
+        FROM layout_search_trials
+        WHERE candidate_id = #{candidateId}
+    </select>
+
+    <select id="findTrialsBySearchId" resultType="com.hwalro.simulation.search.domain.LayoutSearchTrialEntity">
+        SELECT trial.id, trial.candidate_id, trial.engine_version, trial.termination_reason, trial.total_move_distance,
+               trial.metrics, trial.started_at, trial.finished_at, trial.failure_message, trial.attempt_count
+        FROM layout_search_trials trial
+        JOIN layout_search_candidates candidate ON candidate.id = trial.candidate_id
+        WHERE candidate.study_id = #{searchId}
+        ORDER BY trial.started_at ASC, trial.id ASC
+    </select>
+
+    <select id="findRunningTrials" resultType="com.hwalro.simulation.search.domain.LayoutSearchTrialEntity">
+        SELECT id, candidate_id, engine_version, termination_reason, metrics, total_move_distance,
+               started_at, finished_at, failure_message, attempt_count
+        FROM layout_search_trials
+        WHERE finished_at IS NULL
+    </select>
+
+    <update id="recoverInterruptedCandidates">
+        UPDATE layout_search_candidates candidate
+        JOIN layout_search_trials trial ON trial.candidate_id = candidate.id
+        JOIN layout_searches search ON search.id = candidate.study_id
+        SET candidate.status = IF(trial.attempt_count &lt; 2, 'QUEUED', 'FAILED'),
+            candidate.reject_reason = IF(trial.attempt_count &lt; 2, NULL, 'SERVICE_RESTARTED'),
+            trial.finished_at = IF(trial.attempt_count &lt; 2, NULL, #{finishedAt}),
+            trial.failure_message = IF(trial.attempt_count &lt; 2, NULL, #{failureMessage})
+        WHERE candidate.status = 'RUNNING'
+          AND search.status IN ('PENDING', 'DIAGNOSING', 'GENERATING', 'VERIFYING')
+    </update>
+</mapper>

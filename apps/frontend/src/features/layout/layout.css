@@ -1,0 +1,322 @@
+.layout-canvas-wrap {
+  position: absolute;
+  inset: 0;
+  background: var(--color-background);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.layout-cursor-default {
+  cursor: default;
+}
+
+.layout-cursor-wall {
+  cursor: crosshair;
+}
+
+.layout-cursor-outside-wall {
+  cursor: crosshair;
+}
+
+.layout-cursor-exit {
+  cursor: crosshair;
+}
+
+.layout-cursor-pillar {
+  cursor: crosshair;
+}
+
+.layout-cursor-fabric {
+  cursor: crosshair;
+}
+
+.layout-cursor-erase {
+  cursor:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cg transform='rotate(-45 12 12)'%3E%3Crect x='4' y='8' width='16' height='8' rx='2.5' fill='%23fda4af' stroke='%239f1239' stroke-width='1.4'/%3E%3Crect x='4' y='8' width='6' height='8' rx='2.5' fill='%23e11d48' stroke='%239f1239' stroke-width='1.4'/%3E%3C/g%3E%3C/svg%3E")
+      4 20,
+    crosshair;
+}
+
+.layout-cursor-text {
+  cursor: text;
+}
+
+.layout-cursor-grab {
+  cursor: grab;
+}
+
+.layout-cursor-grabbing {
+  cursor: grabbing;
+}
+
+.layout-workspace-title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  font: inherit;
+}
+
+.layout-workspace-title__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.layout-workspace-title button {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.layout-workspace-title button:hover {
+  background: var(--color-primary-faint);
+  color: var(--color-primary);
+}
+
+.layout-workspace-title button:focus-visible,
+.layout-workspace-title-input:focus-visible,
+.layout-panel-actions button:focus-visible,
+.layout-tool-button:focus-visible,
+.layout-zoom-control button:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.layout-workspace-title button svg {
+  width: 14px;
+  height: 14px;
+}
+
+.layout-workspace-title-input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--color-line-strong);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
+  padding: 4px 8px;
+  color: var(--color-ink);
+  font: inherit;
+  outline: 0;
+}
+
+.layout-panel-actions {
+  flex: 0 0 auto;
+  padding: 18px 18px 12px;
+}
+
+.layout-panel-actions__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.layout-panel-actions__header small {
+  display: block;
+  color: #9cb2ad;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.layout-panel-actions__header h2 {
+  margin: 3px 0 0;
+  color: var(--color-white);
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1.08;
+}
+
+.layout-panel-actions__collapse {
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-white);
+}
+
+.layout-panel-actions__collapse:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.layout-panel-actions__collapse svg {
+  width: 17px;
+  height: 17px;
+}
+
+.layout-panel-actions__buttons {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.layout-settings-content {
+  padding: 0 18px 18px;
+}
+
+.layout-workspace-tool-dock {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  z-index: 20;
+  transform: translateX(-50%);
+}
+
+.layout-tool-toolbar {
+  display: flex;
+  max-width: calc(100vw - 420px);
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  overflow-x: auto;
+  border: 1px solid rgba(151, 177, 170, 0.16);
+  border-radius: 999px;
+  background: rgba(15, 48, 42, 0.92);
+  padding: 7px 10px;
+  box-shadow: 0 18px 40px rgba(10, 39, 34, 0.25);
+  scrollbar-width: none;
+  backdrop-filter: blur(16px) saturate(115%);
+}
+
+.layout-tool-toolbar::-webkit-scrollbar {
+  display: none;
+}
+
+.layout-tool-button {
+  height: 36px;
+  min-width: 52px;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0 10px;
+  color: var(--color-panel-text);
+  font-size: 12px;
+  font-weight: 700;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease,
+    transform 150ms ease;
+}
+
+.layout-tool-button:not(.is-active):not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.14);
+  transform: translateY(-1px);
+}
+
+.layout-tool-button.is-active {
+  background: var(--color-lime);
+  color: var(--color-ink-deep);
+  font-weight: 900;
+}
+
+.layout-tool-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.layout-workspace-zoom {
+  position: absolute;
+  left: 22px;
+  bottom: 24px;
+  z-index: 20;
+}
+
+.layout-zoom-control {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid rgba(151, 177, 170, 0.4);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 5px;
+  box-shadow: 0 12px 30px rgba(22, 55, 49, 0.12);
+  color: var(--color-text-strong);
+  backdrop-filter: blur(14px);
+}
+
+.layout-zoom-control button {
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font-weight: 700;
+}
+
+.layout-zoom-control button:hover {
+  background: var(--color-primary-faint);
+  color: var(--color-primary);
+}
+
+.layout-zoom-control__icon {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+}
+
+.layout-zoom-control__value {
+  min-width: 44px;
+  text-align: center;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.layout-zoom-control__fit {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+@media (max-width: 1100px) {
+  .layout-tool-toolbar {
+    max-width: calc(100vw - 360px);
+  }
+}
+
+@media (max-width: 840px) {
+  .layout-workspace-zoom {
+    left: 12px;
+    bottom: 76px;
+  }
+
+  .layout-workspace-tool-dock {
+    bottom: 12px;
+    max-width: calc(100vw - 24px);
+  }
+
+  .layout-tool-toolbar {
+    max-width: calc(100vw - 24px);
+    justify-content: flex-start;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .layout-tool-toolbar {
+    background: var(--color-panel);
+    backdrop-filter: none;
+  }
+
+  .layout-zoom-control {
+    background: var(--color-white);
+    backdrop-filter: none;
+  }
+}

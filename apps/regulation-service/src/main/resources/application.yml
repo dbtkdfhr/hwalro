@@ -1,30 +1,65 @@
 server:
   port: ${REGULATION_SERVICE_PORT:8082}
 
+law-api:
+  # 국가법령정보센터의 공식 API 주소. 호출 대상이 바뀔 때만 수정한다.
+  base-url: https://www.law.go.kr
+  # 인증값은 로컬 .env 또는 배포 환경 변수에서만 주입하며 Git에 기록하지 않는다.
+  oc: ${LAW_API_OC:}
+  # 검색 전 좌측 목록을 구성하는 대피·공간 안전 관련 기본 키워드다.
+  default-keywords:
+    - 소방
+    - 피난
+    - 건축
+    - 다중이용업소
+    - 재난
+    - 시설안전
+
 spring:
   application:
     name: regulation-service
 
-  # 개발 환경에서는 DB/OpenAI 없이 실행 (아래 exclude 제거 후 각각 설정)
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
-      - org.springframework.ai.autoconfigure.openai.OpenAiAutoConfiguration
+  # 기본 실행에서는 AI 모델을 만들지 않는다. OpenAI 사용 시 ai 프로필을 활성화한다.
+  ai:
+    model:
+      chat: none
 
-  # Datasource Configuration (아래 exclude 제거 후 활성화)
-  # datasource:
-  #   url: ${DB_URL:jdbc:mysql://localhost:3306/hwallo?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
-  #   username: ${DB_USERNAME:root}
-  #   password: ${DB_PASSWORD:password}
-  #   driver-class-name: com.mysql.cj.jdbc.Driver
+  datasource:
+    url: ${REGULATION_DB_URL:jdbc:mysql://localhost:3307/hwalro_regulation?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${REGULATION_DB_USERNAME:hwalro_regulation}
+    password: ${REGULATION_DB_PASSWORD:hwalro_regulation}
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
-# MyBatis Configuration
-# mybatis:
-#   mapper-locations: classpath:mapper/**/*.xml
-#   configuration:
-#     map-underscore-to-camel-case: true
+  sql:
+    init:
+      mode: ${DB_INIT_MODE:never}
+      schema-locations: classpath:db/schema.sql
+      continue-on-error: false
 
-  # Spring AI Configuration
-  # ai:
-  #   openai:
-  #     api-key: ${OPENAI_API_KEY}
+mybatis:
+  mapper-locations: classpath:mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+jwt:
+  secret: ${JWT_SECRET:}
+  issuer: ${JWT_ISSUER:hwalro-auth-service}
+
+auth-service:
+  base-url: ${AUTH_SERVICE_URL:http://localhost:8080}
+  connect-timeout: ${AUTH_SERVICE_CONNECT_TIMEOUT:2s}
+  read-timeout: ${AUTH_SERVICE_READ_TIMEOUT:10s}
+
+simulation-service:
+  base-url: ${SIMULATION_SERVICE_URL:http://localhost:8081}
+  connect-timeout: ${SIMULATION_SERVICE_CONNECT_TIMEOUT:2s}
+  read-timeout: ${SIMULATION_SERVICE_READ_TIMEOUT:10s}
+  max-result-count: ${SIMULATION_SERVICE_MAX_RESULT_COUNT:6}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs

@@ -1,0 +1,268 @@
+.canvas-workspace {
+  --canvas-workspace-gutter: 22px;
+  --canvas-workspace-top: 20px;
+  --canvas-workspace-panel-right: 26px;
+  --canvas-workspace-panel-top: 78px;
+  --canvas-workspace-panel-width: 346px;
+  --canvas-workspace-panel-radius: 27px;
+  position: relative;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--color-background);
+  color: var(--color-text-strong);
+  isolation: isolate;
+}
+
+.canvas-workspace-back {
+  position: absolute;
+  left: var(--canvas-workspace-gutter);
+  top: calc(var(--canvas-workspace-top) + 2px);
+  z-index: 30;
+  cursor: pointer;
+  border-color: color-mix(in srgb, var(--color-line-strong) 72%, transparent);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow-raised);
+  backdrop-filter: blur(14px);
+}
+
+.canvas-workspace-header {
+  position: absolute;
+  left: 50%;
+  top: var(--canvas-workspace-top);
+  z-index: 20;
+  display: flex;
+  min-width: 350px;
+  max-width: min(520px, calc(100vw - 460px));
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgba(151, 177, 170, 0.4);
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 10px 16px;
+  box-shadow: var(--shadow-floating);
+  transform: translateX(-50%);
+  backdrop-filter: blur(14px) saturate(110%);
+}
+
+.canvas-workspace-header__marker {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  border-radius: 50%;
+  background: var(--color-line-strong);
+}
+
+.canvas-workspace-header__marker--complete,
+.canvas-workspace-header__marker--editing {
+  background: var(--color-lime);
+}
+
+.canvas-workspace-header__marker--locked {
+  background: var(--color-warning);
+}
+
+.canvas-workspace-header__copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.canvas-workspace-header__title {
+  min-width: 0;
+  color: var(--color-ink);
+  font-size: 14px;
+  font-weight: 900;
+  line-height: 1.3;
+}
+
+.canvas-workspace-header__subtitle {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.canvas-workspace-header__status {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--color-soft-gray);
+  padding: 6px 12px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.canvas-workspace-header__status--complete,
+.canvas-workspace-header__status--editing {
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.canvas-workspace-header__status--locked {
+  background: var(--color-warning-soft);
+  color: var(--color-warning-strong);
+}
+
+.canvas-workspace-panel {
+  position: absolute;
+  right: var(--canvas-workspace-panel-right);
+  top: var(--canvas-workspace-panel-top);
+  z-index: 20;
+  display: flex;
+  width: var(--canvas-workspace-panel-width);
+  max-height: calc(100dvh - 102px);
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(151, 177, 170, 0.16);
+  border-radius: var(--canvas-workspace-panel-radius);
+  background: rgba(15, 48, 42, 0.92);
+  color: var(--color-white);
+  box-shadow: 0 24px 70px rgba(7, 32, 28, 0.25);
+  backdrop-filter: blur(16px) saturate(115%);
+}
+
+.canvas-workspace-panel--animated {
+  transform-origin: calc(100% - 17px) 17px;
+  animation: canvas-workspace-panel-enter 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.canvas-workspace-panel--animated.is-collapsing {
+  pointer-events: none;
+  animation: canvas-workspace-panel-collapse 240ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+.canvas-workspace-panel-restore {
+  position: absolute;
+  right: var(--canvas-workspace-panel-right);
+  top: var(--canvas-workspace-panel-top);
+  z-index: 20;
+  border: 1px solid rgba(151, 177, 170, 0.24);
+  border-radius: 999px;
+  background: rgba(15, 48, 42, 0.94);
+  padding: 11px 16px;
+  color: var(--color-white);
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: 0 16px 38px rgba(7, 32, 28, 0.2);
+  backdrop-filter: blur(14px) saturate(115%);
+}
+
+.canvas-workspace-panel-restore:not(:disabled):hover {
+  background: rgba(28, 69, 62, 0.96);
+  transform: translateY(-1px);
+}
+
+.canvas-workspace-panel-restore:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.canvas-workspace-state {
+  display: flex;
+  height: 100dvh;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--color-background);
+  color: var(--color-text-strong);
+  padding: 24px;
+  text-align: center;
+}
+
+.canvas-workspace-state > p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.canvas-workspace-state__actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+@keyframes canvas-workspace-panel-enter {
+  from {
+    opacity: 0;
+    transform: translate(10px, -8px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+@keyframes canvas-workspace-panel-collapse {
+  from {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(10px, -8px) scale(0.78);
+  }
+}
+
+@media (max-width: 1100px) {
+  .canvas-workspace {
+    --canvas-workspace-panel-right: 14px;
+    --canvas-workspace-panel-width: 300px;
+  }
+
+  .canvas-workspace-header {
+    max-width: calc(100vw - 430px);
+  }
+}
+
+@media (max-width: 760px) {
+  .canvas-workspace {
+    --canvas-workspace-gutter: 12px;
+    --canvas-workspace-top: 12px;
+    --canvas-workspace-panel-right: 12px;
+    --canvas-workspace-panel-top: 72px;
+    --canvas-workspace-panel-width: min(320px, calc(100vw - 24px));
+  }
+
+  .canvas-workspace-header {
+    left: auto;
+    right: 12px;
+    min-width: 0;
+    max-width: calc(100vw - 92px);
+    transform: none;
+  }
+
+  .canvas-workspace-header__subtitle,
+  .canvas-workspace-header__status {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .canvas-workspace-panel--animated,
+  .canvas-workspace-panel--animated.is-collapsing,
+  .canvas-workspace-panel--animated.is-expanding,
+  .canvas-workspace-panel-restore {
+    animation-duration: 1ms;
+    transition-duration: 1ms;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .canvas-workspace-back,
+  .canvas-workspace-header {
+    background: var(--color-white);
+    backdrop-filter: none;
+  }
+
+  .canvas-workspace-panel,
+  .canvas-workspace-panel-restore {
+    background: var(--color-panel);
+    backdrop-filter: none;
+  }
+}

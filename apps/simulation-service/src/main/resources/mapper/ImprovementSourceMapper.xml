@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hwalro.simulation.improvement.mapper.ImprovementSourceMapper">
+
+    <select id="findLayoutVersionIdBySimulationId" resultType="long">
+        SELECT layout_version_id
+        FROM simulations
+        WHERE id = #{simulationId}
+    </select>
+
+    <select id="findBottlenecksBySimulationId" resultType="com.hwalro.simulation.improvement.domain.StoredBottleneck">
+        SELECT bottleneck.start_time_seconds,
+               bottleneck.end_time_seconds,
+               bottleneck.geometry
+        FROM detected_bottlenecks bottleneck
+        JOIN simulation_results result ON result.id = bottleneck.simulation_result_id
+        WHERE result.simulation_id = #{simulationId}
+        ORDER BY bottleneck.bottleneck_order ASC
+    </select>
+
+    <select id="findHeatmapChunksBySimulationId" resultType="com.hwalro.simulation.improvement.domain.HeatmapChunk">
+        SELECT heatmap.chunk_sequence,
+               heatmap.density_data
+        FROM heatmaps heatmap
+        JOIN simulation_results result ON result.id = heatmap.simulation_result_id
+        WHERE result.simulation_id = #{simulationId}
+        ORDER BY heatmap.chunk_sequence ASC
+    </select>
+</mapper>

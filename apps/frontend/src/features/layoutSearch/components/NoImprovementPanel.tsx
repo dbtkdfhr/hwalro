@@ -19,6 +19,7 @@ export function getCandidateTabColorClass(operatorType: string): string {
       return 'is-hotspot';
     case 'REBALANCE_EXIT':
     case 'EXIT_OPENING':
+    case 'CLEAR_EXIT_PATH':
       return 'is-exit';
     case 'ROTATE_TO_OPEN':
       return 'is-rotate';

@@ -354,7 +354,7 @@ function SimulationListPage() {
                                 setCancelError(null);
                               }}
                               disabled={cancellingId !== null || deletingId !== null}
-                              className="h-8 rounded-lg border border-danger/25 px-3 text-xs font-bold text-danger-strong transition hover:bg-danger-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-50"
+                              className="h-8 min-w-[73px] whitespace-nowrap rounded-lg border border-danger/25 px-3 text-xs font-bold text-danger-strong transition hover:bg-danger-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               {cancellingId === simulation.id ? '취소 중…' : '실행 취소'}
                             </button>
@@ -366,7 +366,7 @@ function SimulationListPage() {
                                 setDeleteError(null);
                               }}
                               disabled={cancellingId !== null || deletingId !== null}
-                              className="h-8 rounded-lg border border-line px-3 text-xs font-bold text-text-muted transition hover:border-danger/40 hover:bg-danger-soft hover:text-danger-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-50"
+                              className="h-8 min-w-[73px] whitespace-nowrap rounded-lg border border-line px-3 text-xs font-bold text-text-muted transition hover:border-danger/40 hover:bg-danger-soft hover:text-danger-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               {deletingId === simulation.id ? '삭제 중…' : '삭제'}
                             </button>

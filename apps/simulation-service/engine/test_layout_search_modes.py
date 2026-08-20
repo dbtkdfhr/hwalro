@@ -44,7 +44,9 @@ def install_stub_booster(monkeypatch, result):
 def test_default_shadow_safely_falls_back_to_proxy_without_a_bundle():
     result = layout_search.generate(single_fabric_input(max_candidates=6))
     assert result["plannerVersion"] == layout_search.PLANNER_VERSION
-    assert result["candidates"] and result["rejected"] == []
+    # Rejections are expected on a small fixture now that the distance ladder reaches 8 m; what
+    # this test is about is the surrogate falling back to the proxy ranker, not the reject list.
+    assert result["candidates"]
     for candidate in result["candidates"]:
         assert candidate["selectionSource"] == layout_search.SELECTION_PROXY
         assert candidate["surrogateScore"] is None

@@ -338,7 +338,8 @@ def test_diagonal_variants_preserve_area():
     fabric = {"id": 1, "name": "f", "startX": 5, "startY": 5, "endX": 6, "endY": 7, "rotation": 0}
     before = layout_search._coords_only(fabric)
     variants = layout_search._mutation_variants("RELIEVE_DIAGONAL", finding, (fabric, before))
-    assert len(variants) == 4
+    # Two diagonals per distance; tied to the ladder so widening it does not re-break this.
+    assert len(variants) == 2 * len(layout_search.RELIEVE_HOTSPOT_DISTANCES)
     for after, direction, distance in variants:
         area = abs(after["endX"] - after["startX"]) * abs(after["endY"] - after["startY"])
         assert abs(area - 2.0) < 1e-6
@@ -728,7 +729,9 @@ def test_wall_contact_rotation_produces_rotate_candidates():
         walls=[{"id": 1, "startX": 5, "startY": 0, "endX": 5, "endY": 4}],
     )
     finding = bottleneck_finding(region={"startX": 5, "startY": 3, "endX": 7, "endY": 6})
-    result = layout_search.generate(base_input(drawing, findings=[finding], max_candidates=6))
+    # Budget wide enough to rank rotations: this is about wall-contact rotation being produced at
+    # all, not about it outscoring every slide the translation operators can reach.
+    result = layout_search.generate(base_input(drawing, findings=[finding], max_candidates=16))
     rotate_ops = [c for c in result["candidates"] if c["operatorType"] == "ROTATE_TO_OPEN"]
     assert rotate_ops
     for candidate in rotate_ops:

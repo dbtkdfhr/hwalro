@@ -50,9 +50,19 @@ SURROGATE_PLANNER_VERSION = "DIAGNOSTIC_BEAM_S1"
 EXHAUSTIVE_PLANNER_VERSION = "DIAGNOSTIC_EXHAUSTIVE_V1"
 CLEARANCE_METERS = 0.4
 CORRIDOR_CLEARANCE_METERS = GRID_STEP_METERS
-CLEAR_CORRIDOR_DISTANCES = (0.5, 1.0, 1.5)
-RELIEVE_HOTSPOT_DISTANCES = (0.75, 1.5)
-REBALANCE_EXIT_DISTANCES = (0.5, 1.0)
+# Geometric ladders, not linear ones. A fixed 1.5 m ceiling could only ever nudge a fabric far
+# enough for a path to *exist* past it - on a 100 m floor that leaves the passage barely wider
+# than one person, so the route shortens while throughput does not. Doubling steps cover 8 m for
+# two more variants per direction, and oversized moves cost almost nothing because the boundary
+# and overlap guards in `_assess_moves` reject them before any routing pass runs.
+CLEAR_CORRIDOR_DISTANCES = (0.5, 1.0, 2.0, 4.0, 8.0)
+RELIEVE_HOTSPOT_DISTANCES = (0.75, 1.5, 3.0, 6.0)
+REBALANCE_EXIT_DISTANCES = (0.5, 1.0, 2.0, 4.0)
+CLEAR_EXIT_PATH_DISTANCES = (1.0, 2.0, 4.0, 8.0)
+# A passage has to carry a crowd, not just one walker. Clearance gains are scored against this
+# width, so widening a pinch from 0.8 m to 2.8 m earns the full term and anything beyond it is
+# already wide enough to stop being the constraint.
+CLEARANCE_REFERENCE_METERS = 2.0
 # Coarse-to-fine. +-90 flips the long axis (the topological change); the smaller steps let a
 # fabric line up with a wall or corridor it currently cuts across at an angle. Every angle costs
 # one full routing pass over all agents, so this set is deliberately short - widen it only with a
@@ -61,7 +71,12 @@ ROTATE_ANGLES = (90.0, -90.0, 45.0, -45.0, 30.0, -30.0, 15.0, -15.0)
 WALL_ANCHOR_EPSILON = 0.05
 DUAL_GAP_DISTANCES = (0.5, 1.0)
 EXIT_OPENING_DISTANCES = (0.5, 1.0)
-POOL_CAP = 24
+POOL_CAP = 40
+# The pool is filled operator by operator, so without a per-operator ceiling the first operator
+# to run simply eats it: widening the distance ladder alone was enough to starve OPEN_DUAL_GAP,
+# which is generated last, out of every candidate list. This caps each operator's share of one
+# finding's pool. Final ranking stays purely best-first - this only decides what gets ranked.
+PER_OPERATOR_CAP = 12
 EPSILON = 1e-9
 # Layout coordinates are persisted as DECIMAL(12, 4); emitting more precision
 # than that cannot survive a round trip through the database anyway.
@@ -192,11 +207,21 @@ def _mutated_drawing(drawing: dict[str, Any], fabrics: Sequence[dict[str, Any]])
 
 
 class RouterSnapshot:
-    def __init__(self, router: GridRouter, routing_area: Any, route_costs: list[float], exit_counts: dict[Any, int]) -> None:
+    def __init__(
+        self,
+        router: GridRouter,
+        routing_area: Any,
+        route_costs: list[float],
+        exit_counts: dict[Any, int],
+        clearance_gain: float = 0.0,
+    ) -> None:
         self.router = router
         self.routing_area = routing_area
         self.route_costs = route_costs
         self.exit_counts = exit_counts
+        # Metres of extra room around the narrowest side of whatever this candidate moved.
+        # The baseline moved nothing, so it keeps 0.0.
+        self.clearance_gain = clearance_gain
 
 
 def _plan_all(router: GridRouter, agents) -> tuple[list[float], dict[Any, int]]:
@@ -220,6 +245,61 @@ def _routing_cells_in(routing_area: Any, region: Any | None) -> int:
 
 def _clamp01(value: float) -> float:
     return max(0.0, min(1.0, value))
+
+
+def _obstacles_except(drawing: dict[str, Any], fabrics: Sequence[dict[str, Any]], excluded: set[str]) -> list[Any]:
+    """Everything a fabric can be pinched against, minus the fabrics being moved."""
+    obstacles: list[Any] = []
+    boundary = _outside_polygon(drawing)
+    if not boundary.is_empty:
+        obstacles.append(boundary.exterior)
+    for wall in drawing.get("walls", []):
+        start = (_numeric(wall["startX"]), _numeric(wall["startY"]))
+        end = (_numeric(wall["endX"]), _numeric(wall["endY"]))
+        if start != end:
+            obstacles.append(LineString((start, end)))
+    obstacles.extend(_rect_geometry(pillar) for pillar in drawing.get("pillars", []))
+    obstacles.extend(_rect_geometry(fabric) for fabric in fabrics if _fabric_key(fabric) not in excluded)
+    return obstacles
+
+
+def _narrowest_side(geometry: Any, obstacles: Sequence[Any]) -> float:
+    """How much room the tightest side of this rectangle leaves.
+
+    This is the measure the route cost cannot see. A fabric wedged against a wall and the same
+    fabric a metre off it produce nearly the same shortest path once any path exists at all, but
+    only one of them lets a crowd through.
+    """
+    if not obstacles:
+        return float("inf")
+    return min(geometry.distance(obstacle) for obstacle in obstacles)
+
+
+def _clearance_gain(
+    drawing: dict[str, Any],
+    mutated_fabrics: Sequence[dict[str, Any]],
+    moves: Sequence[tuple[str, dict[str, Any], dict[str, Any]]],
+) -> float:
+    """Metres of room the tightest moved fabric gained, worst case across the move set.
+
+    Taking the worst case stops a candidate from buying room on one side by creating a new pinch
+    on another - the whole point of the term is the narrowest passage, wherever it ends up.
+    """
+    moved_ids = {fabric_id for fabric_id, _, _ in moves}
+    original = {_fabric_key(fabric): fabric for fabric in drawing.get("fabrics", [])}
+    gains = []
+    for fabric_id, before, after in moves:
+        source = original.get(fabric_id)
+        if source is None:
+            continue
+        obstacles_before = _obstacles_except(drawing, drawing.get("fabrics", []), moved_ids)
+        obstacles_after = _obstacles_except(drawing, mutated_fabrics, moved_ids)
+        room_before = _narrowest_side(_rect_geometry({**source, **before}), obstacles_before)
+        room_after = _narrowest_side(_rect_geometry({**source, **after}), obstacles_after)
+        if math.isinf(room_before) or math.isinf(room_after):
+            continue
+        gains.append(room_after - room_before)
+    return min(gains) if gains else 0.0
 
 
 def _relative_change(before: float, after: float) -> float:
@@ -249,7 +329,13 @@ def _proxy_score(baseline: RouterSnapshot, candidate: RouterSnapshot, region: An
     capacity_after = _exit_capacity_term(candidate.exit_counts)
     capacity = _clamp01(_relative_change(capacity_before, capacity_after) * -1.0)
     exit_term = _clamp01(_relative_change(_imbalance(baseline.exit_counts), _imbalance(candidate.exit_counts)) * -1.0)
-    return round(0.4 * corridor + 0.3 * congestion + 0.2 * capacity + 0.1 * exit_term, 4)
+    # Route cost saturates the moment a shortcut exists: sliding a fabric 1.5 m and sliding it
+    # 10 m score within 1% of each other on `congestion` even though one leaves a 0.9 m pinch and
+    # the other a 5.7 m passage. `clearance` is what separates them, so it carries real weight.
+    clearance = _clamp01(candidate.clearance_gain / CLEARANCE_REFERENCE_METERS)
+    return round(
+        0.30 * corridor + 0.25 * congestion + 0.25 * clearance + 0.10 * capacity + 0.10 * exit_term, 4
+    )
 
 
 def _percentile(values: Sequence[float], p: float) -> float:
@@ -285,6 +371,7 @@ def search_metrics(baseline: RouterSnapshot, candidate: RouterSnapshot, region: 
         "congestionAfter": _mean(candidate.route_costs),
         "imbalanceBefore": _imbalance(baseline.exit_counts),
         "imbalanceAfter": _imbalance(candidate.exit_counts),
+        "clearanceGain": candidate.clearance_gain,
         "agentCount": len(baseline.route_costs),
         "exitCount": len(baseline.exit_counts),
     }
@@ -433,6 +520,59 @@ def _find_exit_opening_targets(
         if corridor.intersects(_rect_geometry(fabric))
     ]
     return targets, exit_pos, center
+
+
+def _agent_centroid(agents) -> tuple[float, float] | None:
+    positions = list(agents)
+    if not positions:
+        return None
+    return (
+        sum(position[0] for position in positions) / len(positions),
+        sum(position[1] for position in positions) / len(positions),
+    )
+
+
+def _exit_centers(drawing: dict[str, Any]) -> list[tuple[float, float]]:
+    return [
+        (
+            (_numeric(item["startX"]) + _numeric(item["endX"])) / 2.0,
+            (_numeric(item["startY"]) + _numeric(item["endY"])) / 2.0,
+        )
+        for item in drawing.get("exits", [])
+    ]
+
+
+def _find_exit_path_targets(
+    drawing: dict[str, Any], agents, finding: dict[str, Any], constraints: SearchConstraints | None = None
+) -> tuple[list[tuple[dict[str, Any], dict[str, Any]]], tuple[float, float] | None]:
+    """Fabric standing between the congestion and the exit it has to reach.
+
+    Every other operator picks its direction from the shape of the finding's own rectangle, so it
+    can only ever push a fabric along that rectangle's normal. None of them ask the question a
+    person asks first - what is *in the way* between these people and that door - which is why a
+    layout whose obvious fix is "shift it clear of the run to the exit" never produced such a
+    candidate. Unlike `_find_exit_opening_targets` this needs no exit imbalance, so it also works
+    on the single-exit layouts where imbalance cannot exist by definition.
+    """
+    origin = _region_center(finding) or _agent_centroid(agents)
+    if origin is None:
+        return [], None
+    centers = _exit_centers(drawing)
+    if not centers:
+        return [], None
+    exit_pos = min(centers, key=lambda center: math.hypot(center[0] - origin[0], center[1] - origin[1]))
+    direction = _unit_vector(origin, exit_pos)
+    if direction is None:
+        return [], None
+    corridor = LineString((origin, exit_pos)).buffer(CLEARANCE_METERS)
+    targets = [
+        (fabric, dict(fabric))
+        for fabric in drawing.get("fabrics", [])
+        if (constraints is None or constraints.move_radius_of(fabric.get("id")) != 0.0)
+        and corridor.intersects(_rect_geometry(fabric))
+    ]
+    # Sideways, not along the run: pushing a fabric down the line keeps it in the way.
+    return targets, (-direction[1], direction[0])
 
 
 def _unit_vector(origin: tuple[float, float], target: tuple[float, float]) -> tuple[float, float] | None:
@@ -627,6 +767,7 @@ def _mutation_variants(
         "RELIEVE_HOTSPOT": RELIEVE_HOTSPOT_DISTANCES,
         "RELIEVE_DIAGONAL": RELIEVE_HOTSPOT_DISTANCES,
         "REBALANCE_EXIT": REBALANCE_EXIT_DISTANCES,
+        "CLEAR_EXIT_PATH": CLEAR_EXIT_PATH_DISTANCES,
     }
     allowed_distances = [d for d in distance_options.get(operator, CLEAR_CORRIDOR_DISTANCES) if d <= move_radius]
     if operator == "CLEAR_CORRIDOR":
@@ -698,6 +839,24 @@ def _mutation_variants(
             for sign, direction in ((1.0, "NORMAL_POSITIVE"), (-1.0, "NORMAL_NEGATIVE")):
                 delta = sign * distance
                 variants.append((_translated_after(before, dx * delta, dy * delta), direction, distance))
+        return variants
+    if operator == "CLEAR_EXIT_PATH":
+        # `move_direction` is already the sideways normal of the congestion-to-exit run.
+        dx, dy = (1.0, 0.0) if wall_anchored or move_direction is None else move_direction
+        variants = []
+        for distance in allowed_distances:
+            for sign, direction in ((1.0, "ASIDE_POSITIVE"), (-1.0, "ASIDE_NEGATIVE")):
+                delta = sign * distance
+                if wall_anchored:
+                    variants.append(
+                        (
+                            _translated_after(before, delta, 0.0),
+                            "SLIDE_EAST" if delta >= 0 else "SLIDE_WEST",
+                            distance,
+                        )
+                    )
+                else:
+                    variants.append((_translated_after(before, dx * delta, dy * delta), direction, distance))
         return variants
     if operator == "ROTATE_TO_OPEN":
         if constraints is not None and not constraints.rotation_allowed_of(fabric.get("id")):
@@ -817,7 +976,9 @@ def _assess_moves(
         route_costs, exit_counts = _plan_all(router, relocated)
     except (AgentRouteUnreachableError, ValueError):
         return "AGENT_UNREACHABLE_EXIT", None
-    return None, RouterSnapshot(router, routing_area, route_costs, exit_counts)
+    return None, RouterSnapshot(
+        router, routing_area, route_costs, exit_counts, _clearance_gain(drawing, fabrics, moves)
+    )
 
 
 def _assess(
@@ -1022,6 +1183,7 @@ class _Generation:
         self.rejections = _Rejections()
         self._keys: set[str] = set()
         self._per_finding: dict[int, int] = {}
+        self._per_operator: dict[tuple[int, str], int] = {}
 
     @property
     def exhaustive(self) -> bool:
@@ -1036,8 +1198,12 @@ class _Generation:
         """
         return self.baseline.router if drawing is self.drawing else None
 
-    def _full(self, finding_index: int) -> bool:
-        return self.per_finding_limit is not None and self._per_finding.get(finding_index, 0) >= self.per_finding_limit
+    def _full(self, finding_index: int, operator: str | None = None) -> bool:
+        if self.per_finding_limit is None:
+            return False
+        if self._per_finding.get(finding_index, 0) >= self.per_finding_limit:
+            return True
+        return operator is not None and self._per_operator.get((finding_index, operator), 0) >= PER_OPERATOR_CAP
 
     def add(
         self,
@@ -1052,7 +1218,7 @@ class _Generation:
         snapshot: RouterSnapshot,
         parent_candidate_id: Any = None,
     ) -> bool:
-        if self._full(finding_index):
+        if self._full(finding_index, operator):
             return False
         candidate = RawCandidate(
             finding_index=finding_index,
@@ -1071,6 +1237,8 @@ class _Generation:
             return False
         self._keys.add(candidate.key)
         self._per_finding[finding_index] = self._per_finding.get(finding_index, 0) + 1
+        key = (finding_index, operator)
+        self._per_operator[key] = self._per_operator.get(key, 0) + 1
         self.raw.append(candidate)
         return True
 
@@ -1091,7 +1259,7 @@ class _Generation:
             self.rejections.add("CONSTRAINT", _raw_fabric_id(fabric), "CONSTRAINT_FIXED", before)
             return
         for after, direction, distance in variants:
-            if self._full(finding_index):
+            if self._full(finding_index, operator):
                 return
             if self._violates_place_constraints(fabric, before, after):
                 continue
@@ -1144,7 +1312,7 @@ class _Generation:
                 return
         normal = _region_normal(finding)
         for distance in DUAL_GAP_DISTANCES:
-            if self._full(finding_index):
+            if self._full(finding_index, "OPEN_DUAL_GAP"):
                 return
             if normal == "Y":
                 after_a = _translated_after(before_a, 0.0, distance)
@@ -1273,6 +1441,28 @@ def _generate_from_findings(
                 fabric,
                 _mutation_variants("ROTATE_TO_OPEN", finding, target, generation.constraints, drawing),
             )
+        path_targets, path_normal = _find_exit_path_targets(
+            drawing, generation.agents, finding, generation.constraints
+        )
+        if path_targets and path_normal is not None:
+            for path_target in path_targets if generation.exhaustive else path_targets[:1]:
+                generation.try_single_moves(
+                    drawing,
+                    finding_index,
+                    finding,
+                    region,
+                    finding_type,
+                    "CLEAR_EXIT_PATH",
+                    path_target[0],
+                    _mutation_variants(
+                        "CLEAR_EXIT_PATH",
+                        finding,
+                        path_target,
+                        generation.constraints,
+                        drawing,
+                        path_normal,
+                    ),
+                )
         pairs = combinations(targets, 2) if generation.exhaustive else [tuple(targets[:2])]
         for pair in pairs:
             if len(pair) < 2:

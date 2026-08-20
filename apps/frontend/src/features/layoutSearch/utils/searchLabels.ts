@@ -29,6 +29,7 @@ export const OPERATOR_LABELS: Record<string, string> = {
   ROTATE_TO_OPEN: '회전 개방',
   OPEN_DUAL_GAP: '양쪽 통로 확보',
   EXIT_OPENING: '출구 전면 확보',
+  CLEAR_EXIT_PATH: '출구 직선 경로 확보',
   CONSTRAINT: '제약 위반',
 };
 

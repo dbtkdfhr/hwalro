@@ -130,6 +130,23 @@ class CandidateAdoptionServiceTest {
         verify(simulationMapper, never()).insertInitialState(any(), any());
     }
 
+    /**
+     * simulation_options의 초기 반응 시간 두 칼럼은 NOT NULL이다. 복사에서 빠뜨리면 초안 저장이
+     * 무결성 위반으로 통째로 롤백되고, 사용자에게는 충돌 메시지만 보인다.
+     */
+    @Test
+    void copiesInitialResponseTimeIntoTheDraftOption() {
+        stubAdoption("[[2,2],[3,2]]", movedFabric(), List.of());
+
+        service.prepare(STUDY_ID, CANDIDATE_ID, user);
+
+        ArgumentCaptor<SimulationOption> captor = ArgumentCaptor.forClass(SimulationOption.class);
+        verify(simulationMapper).insertSimulationOption(captor.capture());
+        SimulationOption copied = captor.getValue();
+        assertThat(copied.getInitialResponseTimeMean()).isEqualByComparingTo(BigDecimal.valueOf(5.0));
+        assertThat(copied.getInitialResponseTimeStdDev()).isEqualByComparingTo(BigDecimal.valueOf(2.0));
+    }
+
     @Test
     void returnsTheExistingDraftWithoutRelocatingAgain() {
         LayoutSearchEntity study = study();
@@ -203,6 +220,8 @@ class CandidateAdoptionServiceTest {
         option.setTotalPeople(2);
         option.setWalkingSpeed(BigDecimal.valueOf(1.2));
         option.setReactionTime(BigDecimal.valueOf(0.5));
+        option.setInitialResponseTimeMean(BigDecimal.valueOf(5.0));
+        option.setInitialResponseTimeStdDev(BigDecimal.valueOf(2.0));
         when(simulationMapper.findSimulationOption(BASELINE_SIMULATION_ID)).thenReturn(option);
         when(simulationMapper.findInitialStateJson(BASELINE_SIMULATION_ID)).thenReturn(baselineAgentsJson);
         when(simulationMapper.findHazardZones(BASELINE_SIMULATION_ID)).thenReturn(List.of());

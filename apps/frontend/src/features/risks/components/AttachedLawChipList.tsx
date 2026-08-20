@@ -16,8 +16,8 @@ function buildArticleLabel(
 
 function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
-    <span className="inline-flex max-w-full items-center gap-1.5 rounded-md border border-line-strong bg-surface px-2 py-1 text-xs font-bold text-text-strong">
-      <span className="truncate">{label}</span>
+    <span className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md border border-line-strong bg-surface px-2 py-1 text-xs font-bold text-text-strong">
+      <span className="min-w-0 truncate">{label}</span>
       <button
         type="button"
         onClick={onRemove}

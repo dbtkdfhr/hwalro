@@ -53,6 +53,7 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_ISSUER: ${JWT_ISSUER:-hwalro-auth-service}
       DB_INIT_MODE: ${DB_INIT_MODE:-never}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-}
     networks:
       - hwalro-network
 

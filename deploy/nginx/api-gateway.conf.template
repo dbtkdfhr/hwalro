@@ -1,3 +1,20 @@
+resolver 127.0.0.11 valid=10s ipv6=off;
+
+upstream auth_service_upstream {
+    zone auth_service_upstream 64k;
+    server ${AUTH_SERVICE_URL} resolve;
+}
+
+upstream simulation_service_upstream {
+    zone simulation_service_upstream 64k;
+    server ${SIMULATION_SERVICE_URL} resolve;
+}
+
+upstream regulation_service_upstream {
+    zone regulation_service_upstream 64k;
+    server ${REGULATION_SERVICE_URL} resolve;
+}
+
 server {
     listen 80;
     server_name _;
@@ -20,43 +37,43 @@ server {
     }
 
     location /api/auth {
-        proxy_pass http://${AUTH_SERVICE_URL};
+        proxy_pass http://auth_service_upstream;
     }
 
     location /api/admin {
-        proxy_pass http://${AUTH_SERVICE_URL};
+        proxy_pass http://auth_service_upstream;
     }
 
     location /api/drawings {
-        proxy_pass http://${SIMULATION_SERVICE_URL};
+        proxy_pass http://simulation_service_upstream;
     }
 
     location /api/simulations {
-        proxy_pass http://${SIMULATION_SERVICE_URL};
+        proxy_pass http://simulation_service_upstream;
     }
 
     location /api/simulation-results {
-        proxy_pass http://${SIMULATION_SERVICE_URL};
+        proxy_pass http://simulation_service_upstream;
     }
 
     location /api/layout-searches {
-        proxy_pass http://${SIMULATION_SERVICE_URL};
+        proxy_pass http://simulation_service_upstream;
     }
 
     location /api/regulations {
-        proxy_pass http://${REGULATION_SERVICE_URL};
+        proxy_pass http://regulation_service_upstream;
     }
 
     location /api/reports {
-        proxy_pass http://${REGULATION_SERVICE_URL};
+        proxy_pass http://regulation_service_upstream;
     }
 
     location /api/risks {
-        proxy_pass http://${REGULATION_SERVICE_URL};
+        proxy_pass http://regulation_service_upstream;
     }
 
     location /api/safety-checks {
-        proxy_pass http://${REGULATION_SERVICE_URL};
+        proxy_pass http://regulation_service_upstream;
     }
 
     location / {

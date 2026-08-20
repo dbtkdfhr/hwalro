@@ -16,6 +16,7 @@ import com.hwalro.simulation.simulation.engine.SimulationEngineRunner;
 import com.hwalro.simulation.simulation.engine.SimulationEngineRunner.EngineResult;
 import com.hwalro.simulation.simulation.engine.SimulationEngineRunner.EngineRun;
 import com.hwalro.simulation.simulation.engine.SimulationEngineRunner.EngineRunException;
+import com.hwalro.simulation.simulation.exception.InvalidSimulationGeometryException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -73,6 +74,13 @@ public class CandidateTrialService {
         } catch (EngineRunException exception) {
             log.warn("Candidate {} trial engine failed (timeout={})", candidate.getId(), exception.isTimeout());
             recordTrialFailure(candidate.getId(), engineFailureMessage(exception));
+            return new TrialOutcome(false, CandidateStatus.FAILED);
+        } catch (InvalidSimulationGeometryException exception) {
+            // 엔진 고장이 아니라 "이 배치에는 사람이 설 자리가 없다"는 결과다. 같은 메시지로 묶으면
+            // 화면에서 구분할 수 없어 탐색이 고장난 것처럼 보인다.
+            log.info("Candidate {} trial rejected: agents cannot be placed", candidate.getId());
+            recordTrialFailure(
+                    candidate.getId(), "AGENT_PLACEMENT_FAILED: 변경한 배치에 사람을 배치할 수 없습니다. " + exception.getMessage());
             return new TrialOutcome(false, CandidateStatus.FAILED);
         } catch (RuntimeException exception) {
             log.error("Candidate {} trial failed", candidate.getId(), exception);

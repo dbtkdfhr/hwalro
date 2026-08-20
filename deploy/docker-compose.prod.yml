@@ -53,7 +53,6 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       JWT_ISSUER: ${JWT_ISSUER:-hwalro-auth-service}
       DB_INIT_MODE: ${DB_INIT_MODE:-never}
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-}
     networks:
       - hwalro-network
 
@@ -76,6 +75,7 @@ services:
       OPENAI_MAX_COMPLETION_TOKENS: ${OPENAI_MAX_COMPLETION_TOKENS:-1800}
       OPENAI_RETRY_MAX_ATTEMPTS: ${OPENAI_RETRY_MAX_ATTEMPTS:-3}
       DB_INIT_MODE: ${DB_INIT_MODE:-never}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-}
     depends_on:
       auth-service:
         condition: service_started

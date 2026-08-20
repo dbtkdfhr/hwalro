@@ -97,15 +97,17 @@ pipeline {
             }
             steps {
                 script {
-                    def requiredVariables = [
-                        'REGISTRY_URL',
-                        'EC2_INSTANCE_ID',
-                        'S3_BUCKET',
-                        'CLOUDFRONT_DISTRIBUTION_ID'
-                    ]
-                    def missingVariables = requiredVariables.findAll { !env[it]?.trim() }
-                    if (missingVariables) {
-                        error "Missing required Jenkins environment variables: ${missingVariables.join(', ')}"
+                    if (!env.REGISTRY_URL?.trim()) {
+                        error 'Missing required Jenkins environment variable: REGISTRY_URL'
+                    }
+                    if (!env.EC2_INSTANCE_ID?.trim()) {
+                        error 'Missing required Jenkins environment variable: EC2_INSTANCE_ID'
+                    }
+                    if (!env.S3_BUCKET?.trim()) {
+                        error 'Missing required Jenkins environment variable: S3_BUCKET'
+                    }
+                    if (!env.CLOUDFRONT_DISTRIBUTION_ID?.trim()) {
+                        error 'Missing required Jenkins environment variable: CLOUDFRONT_DISTRIBUTION_ID'
                     }
                 }
                 sh 'aws sts get-caller-identity --no-cli-pager'

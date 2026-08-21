@@ -40,7 +40,7 @@ COPY --from=build /workspace/build/libs/*.jar app.jar
 RUN addgroup --system hwalro && adduser --system --ingroup hwalro hwalro
 
 ENV TZ=Asia/Seoul
-ENV JAVA_OPTS="-XX:MaxRAMPercentage=75.0"
+ENV JAVA_OPTS="-Xms512m -Xmx2048m"
 
 USER hwalro
 

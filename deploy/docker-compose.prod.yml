@@ -52,6 +52,7 @@ services:
       SIMULATION_DB_PASSWORD: ${SIMULATION_DB_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       JWT_ISSUER: ${JWT_ISSUER:-hwalro-auth-service}
+      REGULATION_SERVICE_URL: http://regulation-service:8082
       DB_INIT_MODE: ${DB_INIT_MODE:-never}
     networks:
       - hwalro-network

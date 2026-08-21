@@ -305,8 +305,8 @@ function SimulationListPage() {
                     <col className="w-[12%]" />
                     <col className="w-[12%]" />
                     <col className="w-[14%]" />
-                    <col className="w-[14%]" />
-                    <col className="w-[8%]" />
+                    <col className="w-[12%]" />
+                    <col className="w-[10%]" />
                   </colgroup>
                   <thead className="bg-surface text-xs font-bold tracking-wide text-text-muted">
                     <tr>
@@ -316,14 +316,14 @@ function SimulationListPage() {
                       <th className="px-4 py-4">인원</th>
                       <th className="px-4 py-4">결과</th>
                       <th className="px-4 py-4">생성일</th>
-                      <th className="px-6 py-4 text-right">작업</th>
+                      <th className="px-6 py-4 text-center">관리</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line">
                     {items.map((simulation) => (
                       <tr
                         key={simulation.id}
-                        className="transition-colors hover:bg-primary-soft/30"
+                        className="group transition-colors hover:bg-primary-soft/30"
                       >
                         <td className="px-6 py-4">{renderSimulationLink(simulation)}</td>
                         <td className="px-4 py-4 text-sm font-bold tabular-nums text-text-strong">
@@ -345,32 +345,35 @@ function SimulationListPage() {
                         <td className="px-4 py-4 text-sm tabular-nums text-text-muted">
                           {formatDateTime(simulation.startedAt ?? simulation.createdAt)}
                         </td>
-                        <td className="px-6 py-4 text-right">
-                          {simulation.status === 'REQUESTED' || simulation.status === 'RUNNING' ? (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setPendingCancellation(simulation);
-                                setCancelError(null);
-                              }}
-                              disabled={cancellingId !== null || deletingId !== null}
-                              className="h-8 min-w-[73px] whitespace-nowrap rounded-lg border border-danger/25 px-3 text-xs font-bold text-danger-strong transition hover:bg-danger-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              {cancellingId === simulation.id ? '취소 중…' : '실행 취소'}
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setPendingDeletion(simulation);
-                                setDeleteError(null);
-                              }}
-                              disabled={cancellingId !== null || deletingId !== null}
-                              className="h-8 min-w-[73px] whitespace-nowrap rounded-lg border border-line px-3 text-xs font-bold text-text-muted transition hover:border-danger/40 hover:bg-danger-soft hover:text-danger-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              {deletingId === simulation.id ? '삭제 중…' : '삭제'}
-                            </button>
-                          )}
+                        <td className="px-6 py-4 text-center">
+                          <div className="flex items-center justify-center opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100">
+                            {simulation.status === 'REQUESTED' ||
+                            simulation.status === 'RUNNING' ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPendingCancellation(simulation);
+                                  setCancelError(null);
+                                }}
+                                disabled={cancellingId !== null || deletingId !== null}
+                                className="h-8 min-w-[73px] whitespace-nowrap rounded-lg border border-danger/25 bg-white px-3 text-xs font-bold text-danger-strong transition hover:bg-danger-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                {cancellingId === simulation.id ? '취소 중…' : '실행 취소'}
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setPendingDeletion(simulation);
+                                  setDeleteError(null);
+                                }}
+                                disabled={cancellingId !== null || deletingId !== null}
+                                className="h-8 min-w-[52px] whitespace-nowrap rounded-lg border border-line bg-white px-2.5 text-xs font-bold text-text-muted transition hover:border-danger/40 hover:bg-danger-soft hover:text-danger-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                {deletingId === simulation.id ? '삭제 중…' : '삭제'}
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}

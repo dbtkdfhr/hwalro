@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Trash2 } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { useAuth } from '../../auth/context/AuthContext';
 import { reportApi } from '../api/reportApi';
 import type {
@@ -310,15 +310,17 @@ function ReportListPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4 text-center">
-                          <button
-                            type="button"
-                            onClick={() => openDeleteModal(report)}
-                            disabled={deletingId !== null}
-                            aria-label={`${report.title} 삭제`}
-                            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-text-muted outline-none transition hover:bg-danger-soft hover:text-danger-strong focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            <Trash2 aria-hidden="true" className="h-4 w-4" />
-                          </button>
+                          <div className="flex items-center justify-center opacity-0 transition-opacity duration-150 group-hover:opacity-100 focus-within:opacity-100">
+                            <button
+                              type="button"
+                              onClick={() => openDeleteModal(report)}
+                              disabled={deletingId !== null}
+                              aria-label={`${report.title} 삭제`}
+                              className="h-8 min-w-[52px] whitespace-nowrap rounded-lg border border-line bg-white px-2.5 text-xs font-bold text-text-muted transition hover:border-danger/40 hover:bg-danger-soft hover:text-danger-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              삭제
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}

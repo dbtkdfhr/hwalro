@@ -11,7 +11,6 @@ public class SimulationOption {
     private Integer totalPeople;
     private BigDecimal walkingSpeed;
     private BigDecimal reactionTime;
-    private BigDecimal initialResponseTimeMean;
     private BigDecimal initialResponseTimeStdDev;
 
     public Long getId() {
@@ -76,14 +75,6 @@ public class SimulationOption {
 
     public void setReactionTime(BigDecimal reactionTime) {
         this.reactionTime = reactionTime;
-    }
-
-    public BigDecimal getInitialResponseTimeMean() {
-        return initialResponseTimeMean;
-    }
-
-    public void setInitialResponseTimeMean(BigDecimal initialResponseTimeMean) {
-        this.initialResponseTimeMean = initialResponseTimeMean;
     }
 
     public BigDecimal getInitialResponseTimeStdDev() {

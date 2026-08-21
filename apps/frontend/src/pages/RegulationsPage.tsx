@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { RegulationDetailPanel } from './regulations/RegulationDetailPanel';
 import { RegulationSearchResults } from './regulations/RegulationSearchResults';
+import { PageHeader } from '../components/ui';
 import {
   RegulationDetail,
   RegulationSummary,
@@ -136,11 +137,13 @@ function RegulationsPage() {
   return (
     <main className="regulations-page">
       <div className="regulations-page__content">
-        <header className="regulations-page__heading">
-          <p className="regulations-page__eyebrow">법령 조회</p>
-          <h1>안전 법령</h1>
-          <p>안전 검토에 필요한 법령을 검색합니다.</p>
-        </header>
+        <div className="border-b border-line pb-6">
+          <PageHeader
+            eyebrow="법령 조회"
+            title="안전 법령"
+            description="안전 검토에 필요한 법령을 검색합니다."
+          />
+        </div>
         <form className="regulations-search" onSubmit={handleSubmit}>
           <label className="regulations-page__sr-only" htmlFor="law-search">
             법령 검색어

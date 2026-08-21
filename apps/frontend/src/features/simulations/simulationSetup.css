@@ -125,6 +125,12 @@
   transform: translateX(-50%);
 }
 
+.simulation-setup-alert.is-success {
+  border-color: color-mix(in srgb, var(--color-success) 25%, transparent);
+  background: var(--color-success-soft);
+  color: var(--color-success-strong);
+}
+
 .simulation-setup-agent-toast {
   right: calc(var(--canvas-workspace-panel-right) + var(--canvas-workspace-panel-width) + 14px);
   top: var(--canvas-workspace-panel-top);

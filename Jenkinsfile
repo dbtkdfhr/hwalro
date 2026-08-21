@@ -244,6 +244,7 @@ pipeline {
                         'docker compose --env-file /opt/hwalro/deploy/.env.prod -f /opt/hwalro/deploy/docker-compose.prod.yml config --quiet',
                         'docker compose --env-file /opt/hwalro/deploy/.env.prod -f /opt/hwalro/deploy/docker-compose.prod.yml pull',
                         'docker compose --env-file /opt/hwalro/deploy/.env.prod -f /opt/hwalro/deploy/docker-compose.prod.yml up -d --remove-orphans',
+                        'docker compose --env-file /opt/hwalro/deploy/.env.prod -f /opt/hwalro/deploy/docker-compose.prod.yml up -d --no-deps --force-recreate gateway',
                         'sleep 10',
                         'test "$(docker compose --env-file /opt/hwalro/deploy/.env.prod -f /opt/hwalro/deploy/docker-compose.prod.yml ps --status running --services | wc -l)" -eq 5',
                         'docker compose --env-file /opt/hwalro/deploy/.env.prod -f /opt/hwalro/deploy/docker-compose.prod.yml ps',

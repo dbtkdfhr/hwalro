@@ -137,11 +137,13 @@ function SafetyCheckAreasPage() {
   return (
     <main className="bg-background">
       <div className="mx-auto w-full max-w-[1360px] px-1 pt-2 pb-10 sm:px-4 lg:pt-4">
-        <SafetyCheckHeader
-          eyebrow="안전 운영"
-          title="안전 점검·체크리스트"
-          description="독립적으로 관리하는 점검 구역을 선택해 이전 점검 이력과 체크리스트 결과를 확인합니다."
-        />
+        <div className="border-b border-line pb-6">
+          <SafetyCheckHeader
+            eyebrow="안전 운영"
+            title="안전 점검·체크리스트"
+            description="독립적으로 관리하는 점검 구역을 선택해 이전 점검 이력과 체크리스트 결과를 확인합니다."
+          />
+        </div>
 
         <section className="mt-5" aria-labelledby="inspection-area-title">
           <div className="flex items-end justify-between gap-4">
@@ -192,7 +194,12 @@ function SafetyCheckAreasPage() {
                     type="text"
                     maxLength={1000}
                     value={editor.description}
-                    onChange={(event) => setEditor({ ...editor, description: event.target.value })}
+                    onChange={(event) =>
+                      setEditor({
+                        ...editor,
+                        description: event.target.value,
+                      })
+                    }
                   />
                 </Field>
               </div>

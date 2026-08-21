@@ -331,8 +331,6 @@ public class CandidateAdoptionService {
         target.setTotalPeople(source.getTotalPeople());
         target.setWalkingSpeed(source.getWalkingSpeed());
         target.setReactionTime(source.getReactionTime());
-        // 두 칼럼은 NOT NULL이다. 빠뜨리면 초안 저장이 무결성 위반으로 통째로 롤백된다.
-        target.setInitialResponseTimeMean(source.getInitialResponseTimeMean());
         target.setInitialResponseTimeStdDev(source.getInitialResponseTimeStdDev());
         return target;
     }

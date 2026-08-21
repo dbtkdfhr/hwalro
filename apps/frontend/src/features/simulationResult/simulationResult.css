@@ -764,12 +764,24 @@
 }
 
 /* Refinements added after the initial result-page layout. */
+.simulation-result-page {
+  --result-summary-support-gap: 24px;
+  --improvement-restore-block-size: 39px;
+  --improvement-panel-block-size: 162px;
+}
 .result-summary {
+  max-height: calc(
+    100dvh - var(--canvas-workspace-panel-top) - 25px - var(--improvement-restore-block-size) -
+      var(--result-summary-support-gap)
+  );
   padding: 0;
   font-size: 12px;
 }
 .result-summary.has-improvement-panel {
-  max-height: calc(100dvh - 262px);
+  max-height: calc(
+    100dvh - var(--canvas-workspace-panel-top) - 24px - var(--improvement-panel-block-size) -
+      var(--result-summary-support-gap)
+  );
 }
 .result-summary-scroll-content {
   min-height: 0;

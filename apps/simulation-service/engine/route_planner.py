@@ -28,6 +28,8 @@ from shapely.strtree import STRtree
 GRID_STEP_METERS = 0.25
 WALL_TOTAL_WIDTH_METERS = 0.02
 EXIT_SEED_MAX_DISTANCE_METERS = GRID_STEP_METERS * math.sqrt(2.0)
+# Keep exit-only rounding repair aligned with LayoutGeometryValidator.EPSILON.
+EXIT_OUTSIDE_SNAP_TOLERANCE_METERS = 0.1
 # 문 크기의 짧은 출구는 기존 경로를 보존한다.
 # endpoint-clamped seed 제외는 장출구 경계 구간에만 한정한다.
 # 5.0m는 현재 회귀 fixture로 검증된 보수적 적용 경계다.
@@ -187,12 +189,7 @@ def build_routing_geometry(drawing: dict[str, Any], clearance: float):
 
 
 def _build_geometry(drawing: dict[str, Any], clearance: float):
-    boundary = [_point(item, "drawing.outsideBoundary") for item in drawing.get("outsideBoundary", [])]
-    if len(boundary) < 3:
-        raise ValueError("drawing.outsideBoundary must contain at least three points")
-    outside = Polygon(boundary)
-    if not outside.is_valid or outside.is_empty or outside.area <= 0:
-        raise ValueError("drawing.outsideBoundary must be a valid polygon")
+    outside = _outside_polygon(drawing)
     if clearance:
         outside = outside.buffer(-clearance)
         if outside.is_empty or outside.area <= 0:
@@ -220,6 +217,16 @@ def _build_geometry(drawing: dict[str, Any], clearance: float):
         area = "routing area for agent clearance" if clearance else "walkable area"
         raise ValueError(f"drawing obstacles leave no {area}")
     return walkable
+
+
+def _outside_polygon(drawing: dict[str, Any]):
+    boundary = [_point(item, "drawing.outsideBoundary") for item in drawing.get("outsideBoundary", [])]
+    if len(boundary) < 3:
+        raise ValueError("drawing.outsideBoundary must contain at least three points")
+    outside = Polygon(boundary)
+    if not outside.is_valid or outside.is_empty or outside.area <= 0:
+        raise ValueError("drawing.outsideBoundary must be a valid polygon")
+    return outside
 
 
 def select_accessible_component(
@@ -340,17 +347,37 @@ def parse_hazards(items: Sequence[dict[str, Any]]) -> tuple[Hazard, ...]:
     return tuple(hazards)
 
 
+def _snap_exit_point_into_outside(point: Point, outside) -> Point:
+    target = ShapelyPoint(point)
+    if (
+        outside.covers(target)
+        or outside.distance(target)
+        > EXIT_OUTSIDE_SNAP_TOLERANCE_METERS + _EPSILON
+    ):
+        return point
+    snapped = nearest_points(target, outside.boundary)[1]
+    return (float(snapped.x), float(snapped.y))
+
+
+def _exit_points(item: dict[str, Any], label: str, outside) -> tuple[Point, Point]:
+    start, end = _line_points(item, label)
+    start = _snap_exit_point_into_outside(start, outside)
+    end = _snap_exit_point_into_outside(end, outside)
+    if start == end:
+        raise ValueError(f"{label} must have positive length")
+    return start, end
+
+
 def parse_exits(drawing: dict[str, Any], selected_exit_ids: Sequence[Any]) -> tuple[Exit, ...]:
     selected = {_id_key(value) for value in selected_exit_ids}
+    outside = _outside_polygon(drawing)
     exits = []
     for index, item in enumerate(drawing.get("exits", [])):
         if "id" not in item:
             raise ValueError(f"drawing.exits[{index}].id is required")
         if _id_key(item["id"]) not in selected:
             continue
-        start, end = _line_points(item, f"drawing.exits[{index}]")
-        if start == end:
-            raise ValueError(f"drawing.exits[{index}] must have positive length")
+        start, end = _exit_points(item, f"drawing.exits[{index}]", outside)
         exits.append(Exit(item["id"], start, end))
     found = {_id_key(item.id) for item in exits}
     missing = sorted(selected - found)
@@ -364,11 +391,10 @@ def parse_exits(drawing: dict[str, Any], selected_exit_ids: Sequence[Any]) -> tu
 
 def parse_exit_segments(drawing: dict[str, Any]) -> tuple[tuple[Point, Point], ...]:
     """Parse every physical exit segment, including exits not selected for routing."""
+    outside = _outside_polygon(drawing)
     segments = []
     for index, item in enumerate(drawing.get("exits", [])):
-        start, end = _line_points(item, f"drawing.exits[{index}]")
-        if start == end:
-            raise ValueError(f"drawing.exits[{index}] must have positive length")
+        start, end = _exit_points(item, f"drawing.exits[{index}]", outside)
         segments.append((start, end))
     return tuple(segments)
 

@@ -213,7 +213,6 @@
                total_people,
                walking_speed,
                reaction_time,
-               initial_response_time_mean,
                initial_response_time_std_dev
         FROM simulation_options
         WHERE simulation_id = #{simulationId}
@@ -301,10 +300,10 @@
     <insert id="insertSimulationOption" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO simulation_options
             (simulation_id, random_seed, model_profile, routing_profile, total_people, walking_speed, reaction_time,
-             initial_response_time_mean, initial_response_time_std_dev)
+             initial_response_time_std_dev)
         VALUES
             (#{simulationId}, #{randomSeed}, #{modelProfile}, #{routingProfile}, #{totalPeople}, #{walkingSpeed},
-             #{reactionTime}, #{initialResponseTimeMean}, #{initialResponseTimeStdDev})
+             #{reactionTime}, #{initialResponseTimeStdDev})
     </insert>
 
     <insert id="insertInitialState">
@@ -333,7 +332,6 @@
         SET total_people = #{totalPeople},
             walking_speed = #{walkingSpeed},
             reaction_time = 0.5000,
-            initial_response_time_mean = #{initialResponseTimeMean},
             initial_response_time_std_dev = #{initialResponseTimeStdDev}
         WHERE simulation_id = #{simulationId}
     </update>

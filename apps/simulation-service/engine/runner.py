@@ -408,7 +408,9 @@ def _load_dependencies():
     return jps, np, shapely, ENGINE_VERSION
 
 
-def run(input_path: Path, output_dir: Path) -> dict[str, Any]:
+def run(
+    input_path: Path, output_dir: Path, *, validate_only: bool = False
+) -> dict[str, Any]:
     phase_profile = _phase_profile_from_environment()
     setup_started = time.perf_counter_ns() if phase_profile is not None else 0
     jps, np, _shapely, engine_version = _load_dependencies()
@@ -452,21 +454,11 @@ def run(input_path: Path, output_dir: Path) -> dict[str, Any]:
     if routing_profile != REQUIRED_ROUTING_PROFILE:
         raise RunnerError(f"model.routingProfile must be {REQUIRED_ROUTING_PROFILE}")
     walking_speed = _positive_number(model.get("walkingSpeed"), "model.walkingSpeed")
-    initial_response_time_mean = _nonnegative_number(
-        model.get("initialResponseTimeMean", 0.0), "model.initialResponseTimeMean"
-    )
     initial_response_time_std_dev = _nonnegative_number(
         model.get("initialResponseTimeStdDev", 0.0), "model.initialResponseTimeStdDev"
     )
-    if initial_response_time_mean <= 0.0 and initial_response_time_std_dev > 0.0:
-        raise RunnerError(
-            "model.initialResponseTimeStdDev must be zero when the mean is zero"
-        )
-    if (
-        initial_response_time_mean > MAX_INITIAL_RESPONSE_TIME_SECONDS
-        or initial_response_time_std_dev > MAX_INITIAL_RESPONSE_TIME_SECONDS
-    ):
-        raise RunnerError("initial response time parameters must not exceed 600 seconds")
+    if initial_response_time_std_dev > MAX_INITIAL_RESPONSE_TIME_SECONDS:
+        raise RunnerError("initial response time standard deviation must not exceed 600 seconds")
     sfm_agent_scale = _positive_float_from_environment(
         SFM_AGENT_SCALE_ENVIRONMENT_VARIABLE, SFM_AGENT_SCALE_NEWTONS
     )
@@ -508,7 +500,6 @@ def run(input_path: Path, output_dir: Path) -> dict[str, Any]:
     initial_response_times = _sample_initial_response_times(
         np,
         len(agents),
-        initial_response_time_mean,
         initial_response_time_std_dev,
         random_seed,
     )
@@ -639,6 +630,10 @@ def run(input_path: Path, output_dir: Path) -> dict[str, Any]:
     if phase_profile is not None:
         phase_profile.add("routePlanning", route_started)
         setup_started = time.perf_counter_ns()
+    if validate_only:
+        if phase_profile is not None:
+            phase_profile.write()
+        return {"valid": True}
     for physical_component, router, indexed_agents in routing_groups:
         contexts.append(
             _create_context(
@@ -1582,9 +1577,10 @@ def mid_route_recovery_scan(context: SimulationContext, iteration: int) -> bool:
     active = np.flatnonzero(context.active)
     if not active.size:
         return False
-    mid_route_mask = context.cursors[active] + 1 < context.waypoint_counts[active]
+    route_following_mask = context.cursors[active] < context.waypoint_counts[active]
     eligible_mask = (
-        mid_route_mask
+        route_following_mask
+        & ~context.readiness_any[active]
         & (context.stationary_streak[active] >= MID_ROUTE_STATIONARY_STREAK_THRESHOLD)
         & ((iteration - context.last_invalid_iteration[active]) > RECOVERY_INVALID_QUIET_ITERATIONS)
         & ~context.recovered[active]
@@ -1818,14 +1814,11 @@ def _integer_number(value: Any, label: str) -> int:
     return result
 
 
-def _sample_initial_response_times(np, count: int, mean: float, std_dev: float, seed: int):
-    if count < 1 or mean <= 0.0:
+def _sample_initial_response_times(np, count: int, std_dev: float, seed: int):
+    if count < 1 or std_dev <= 0.0:
         return [0.0] * count
-    if std_dev <= 0.0:
-        return [mean] * count
-    shape = (mean / std_dev) ** 2
-    scale = (std_dev * std_dev) / mean
-    return np.random.default_rng(seed & 0xFFFFFFFF).gamma(shape, scale, size=count)
+    response_times = np.random.default_rng(seed & 0xFFFFFFFF).normal(0.0, std_dev, size=count)
+    return response_times - response_times.min()
 
 
 def _start_iteration(response_time: float) -> int:
@@ -1867,19 +1860,24 @@ def _write_json(path: Path, value: Any) -> None:
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--version", action="store_true", help="print the installed engine version")
+    parser.add_argument(
+        "--validate-only",
+        action="store_true",
+        help="validate initial routes without running simulation iterations",
+    )
     parser.add_argument("input", nargs="?", type=Path, help="input JSON path")
     parser.add_argument("output_dir", nargs="?", type=Path, help="output directory")
     args = parser.parse_args(argv)
     try:
         if args.version:
-            if args.input is not None or args.output_dir is not None:
+            if args.validate_only or args.input is not None or args.output_dir is not None:
                 parser.error("--version does not accept input or output paths")
             *_dependencies, version = _load_dependencies()
             print(f"jupedsim {version}")
             return 0
         if args.input is None or args.output_dir is None:
             parser.error("input and output_dir are required")
-        run(args.input, args.output_dir)
+        run(args.input, args.output_dir, validate_only=args.validate_only)
         return 0
     except NoReachableSelectedExitRunnerError:
         print("runner error: NO_REACHABLE_SELECTED_EXIT", file=sys.stderr)

@@ -27,13 +27,8 @@ const PAGE_SIZE = 5;
 
 function formatDateTime(value: string | null): string {
   if (!value) return '-';
-  return new Intl.DateTimeFormat('ko-KR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(value));
+  const [date, time = ''] = value.split('T');
+  return `${date.split('-').join('. ')}. ${time.slice(0, 5)}`;
 }
 
 function resultLabel(simulation: SimulationOverview): string {
@@ -300,22 +295,20 @@ function SimulationListPage() {
                 <table className="w-full min-w-[1040px] table-fixed border-collapse text-left">
                   <caption className="sr-only">시뮬레이션 실행 및 배치 목록</caption>
                   <colgroup>
-                    <col className="w-[32%]" />
-                    <col className="w-[8%]" />
-                    <col className="w-[12%]" />
-                    <col className="w-[12%]" />
+                    <col className="w-[31%]" />
+                    <col className="w-[13%]" />
+                    <col className="w-[11%]" />
                     <col className="w-[14%]" />
-                    <col className="w-[12%]" />
-                    <col className="w-[10%]" />
+                    <col className="w-[18%]" />
+                    <col className="w-[13%]" />
                   </colgroup>
                   <thead className="bg-surface text-xs font-bold tracking-wide text-text-muted">
                     <tr>
                       <th className="px-6 py-4">시뮬레이션</th>
-                      <th className="px-4 py-4">ID</th>
                       <th className="px-4 py-4">상태</th>
                       <th className="px-4 py-4">인원</th>
                       <th className="px-4 py-4">결과</th>
-                      <th className="px-4 py-4">생성일</th>
+                      <th className="whitespace-nowrap px-4 py-4">생성일</th>
                       <th className="px-6 py-4 text-center">관리</th>
                     </tr>
                   </thead>
@@ -326,9 +319,6 @@ function SimulationListPage() {
                         className="group transition-colors hover:bg-primary-soft/30"
                       >
                         <td className="px-6 py-4">{renderSimulationLink(simulation)}</td>
-                        <td className="px-4 py-4 text-sm font-bold tabular-nums text-text-strong">
-                          #{simulation.id}
-                        </td>
                         <td className="px-4 py-4">
                           <span
                             className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${STATUS_STYLES[simulation.status]}`}
@@ -342,7 +332,7 @@ function SimulationListPage() {
                         <td className="px-4 py-4 text-sm text-text-strong">
                           {resultLabel(simulation)}
                         </td>
-                        <td className="px-4 py-4 text-sm tabular-nums text-text-muted">
+                        <td className="whitespace-nowrap px-4 py-4 text-sm tabular-nums text-text-strong">
                           {formatDateTime(simulation.startedAt ?? simulation.createdAt)}
                         </td>
                         <td className="px-6 py-4 text-center">

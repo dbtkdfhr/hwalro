@@ -48,7 +48,6 @@ function setup(): SimulationSetup {
     randomSeed: 1,
     totalPeople: 100,
     walkingSpeed: 1.2,
-    initialResponseTimeMean: 0,
     initialResponseTimeStdDev: 0,
     modelProfile: 'DEFAULT',
     routingProfile: 'DEFAULT',

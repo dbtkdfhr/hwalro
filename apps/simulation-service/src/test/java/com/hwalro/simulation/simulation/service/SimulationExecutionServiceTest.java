@@ -116,6 +116,73 @@ class SimulationExecutionServiceTest {
     }
 
     @Test
+    void validatesDraftRoutingWithoutChangingExecutionState() throws Exception {
+        SimulationSetupResponse setup = validDraftSetup();
+        when(simulationService.getAccessibleSimulation(21L, user)).thenReturn(simulation("DRAFT"));
+        when(simulationService.getSetup(21L, user)).thenReturn(setup);
+        Semaphore capacity = (Semaphore) ReflectionTestUtils.getField(service, "executionCapacity");
+        int permitsBefore = capacity.availablePermits();
+
+        var response = service.validateRouting(21L, user);
+
+        assertThat(response.valid()).isTrue();
+        assertThat(response.message()).isEqualTo("경로 검증에 성공했습니다. 시뮬레이션 실행을 요청합니다.");
+        assertThat(response.failureDetail()).isNull();
+        assertThat(capacity.availablePermits()).isEqualTo(permitsBefore);
+        verify(engineRunner).validateRouting(21L, setup);
+        verify(simulationMapper, never()).requestExecution(anyLong());
+        verify(executor, never()).execute(any(Runnable.class));
+    }
+
+    @Test
+    void returnsTypedRoutingFailureWithoutQueuingExecution() throws Exception {
+        SimulationSetupResponse setup = validDraftSetup();
+        SimulationFailureDetailResponse detail = new SimulationFailureDetailResponse(
+                "NO_REACHABLE_SELECTED_EXIT",
+                null,
+                null,
+                null,
+                2L,
+                List.of(1L, 2L),
+                List.of(501L),
+                "NO_EXIT_SEED_IN_OCCUPIED_COMPONENT");
+        when(simulationService.getAccessibleSimulation(21L, user)).thenReturn(simulation("DRAFT"));
+        when(simulationService.getSetup(21L, user)).thenReturn(setup);
+        when(engineRunner.validateRouting(21L, setup)).thenReturn(detail);
+
+        var response = service.validateRouting(21L, user);
+
+        assertThat(response.valid()).isFalse();
+        assertThat(response.message()).isEqualTo("선택한 출입구에 도달할 수 없는 구역이 있습니다. 도면과 출입구를 확인해 주세요.");
+        assertThat(response.failureDetail()).isSameAs(detail);
+        verify(simulationMapper, never()).requestExecution(anyLong());
+        verify(executor, never()).execute(any(Runnable.class));
+    }
+
+    @Test
+    void rejectsRoutingValidationOutsideDraftState() {
+        when(simulationService.getAccessibleSimulation(21L, user)).thenReturn(simulation("FAILED"));
+
+        assertThatThrownBy(() -> service.validateRouting(21L, user))
+                .isInstanceOf(SimulationConflictException.class)
+                .hasMessageContaining("DRAFT");
+
+        verify(engineRunner, never()).assertAvailable();
+    }
+
+    @Test
+    void exposesRoutingValidationTimeoutAsEngineUnavailable() throws Exception {
+        SimulationSetupResponse setup = validDraftSetup();
+        when(simulationService.getAccessibleSimulation(21L, user)).thenReturn(simulation("DRAFT"));
+        when(simulationService.getSetup(21L, user)).thenReturn(setup);
+        when(engineRunner.validateRouting(21L, setup)).thenThrow(new EngineRunException("timeout", true));
+
+        assertThatThrownBy(() -> service.validateRouting(21L, user))
+                .isInstanceOf(SimulationEngineUnavailableException.class)
+                .hasMessageContaining("시간이 초과");
+    }
+
+    @Test
     void executesAndPersistsMetricsAndTimeline() throws Exception {
         stubDraftAndRequestedStatus();
         captureWorker();
@@ -277,6 +344,37 @@ class SimulationExecutionServiceTest {
     }
 
     @Test
+    void acceptsGroupAndSingleAgentMidRouteRecoverySummary() throws JsonProcessingException {
+        JsonNode valid = new ObjectMapper()
+                .readTree(
+                        """
+                        {"schemaVersion":1,"scanCount":2,"eligibleGroupCount":1,"skippedEligibleGroupCount":0,
+                         "infeasibleScanCount":1,"recoveredGroupCount":1,"recoveredAgentCount":3,
+                         "recoveredMidRouteAgentCount":1,"recoveryTimeSeconds":5.5,
+                         "recoveredExitLabels":[0,1],"recoveredExitIds":[501,502],
+                         "attemptedGroupSignatures":1,
+                         "events":[
+                           {"timeSeconds":5.5,"iteration":550,"contextIndex":0,"exitId":501,"exitLabel":0,
+                            "target":[9.7,4.0],"stableIds":[1,2,3],
+                            "oldTargets":[[9.7,4.0],[9.7,4.0],[9.7,4.0]],
+                            "newTargets":[[10.0,3.75],[10.0,4.0],[10.0,4.25]],
+                            "newApproaches":[[9.7,3.75],[9.7,4.0],[9.7,4.25]],"seedNodeIds":[11,12,13],
+                            "status":"RECOVERED","postRecoveryInvalidMoves":0,"postRecoveryFullRollbacks":0},
+                           {"timeSeconds":6.0,"iteration":600,"contextIndex":0,"exitId":502,"exitLabel":1,
+                            "target":[3.0,3.0],"stableIds":[4],"oldTargets":[[3.0,3.0]],
+                            "newTargets":[[4.0,4.0]],"newApproaches":[],"seedNodeIds":[],
+                            "status":"RECOVERED","postRecoveryInvalidMoves":0,"postRecoveryFullRollbacks":0},
+                           {"timeSeconds":6.5,"iteration":650,"contextIndex":0,"exitId":502,"exitLabel":1,
+                            "target":[4.0,4.0],"stableIds":[5],"oldTargets":[[4.0,4.0]],
+                            "newTargets":[],"newApproaches":[],"seedNodeIds":[],
+                            "status":"RECOVERY_INFEASIBLE","reasonCode":"REROUTE_UNCHANGED",
+                            "postRecoveryInvalidMoves":0,"postRecoveryFullRollbacks":0}]}
+                        """);
+
+        assertThat(SimulationExecutionService.validateRecoverySummary(valid)).isSameAs(valid);
+    }
+
+    @Test
     void rejectsRecoverySummaryWithMalformedEvents() throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
         JsonNode unknownField = mapper.readTree(VALID_RECOVERY_SUMMARY_JSON.replace(
@@ -287,8 +385,8 @@ class SimulationExecutionServiceTest {
                 VALID_RECOVERY_SUMMARY_JSON.replace("\"status\":\"RECOVERED\"", "\"status\":\"PANIC\""));
         JsonNode badReasonCode = mapper.readTree(VALID_RECOVERY_SUMMARY_JSON.replace(
                 "\"status\":\"RECOVERED\"", "\"status\":\"RECOVERY_INFEASIBLE\",\"reasonCode\":\"BOGUS\""));
-        JsonNode shortStableIds =
-                mapper.readTree(VALID_RECOVERY_SUMMARY_JSON.replace("\"stableIds\":[1,2,3]", "\"stableIds\":[1,2]"));
+        JsonNode oversizedStableIds = mapper.readTree(
+                VALID_RECOVERY_SUMMARY_JSON.replace("\"stableIds\":[1,2,3]", "\"stableIds\":[1,2,3,4]"));
         JsonNode mismatchedCounters = mapper.readTree(
                 VALID_RECOVERY_SUMMARY_JSON.replace("\"recoveredAgentCount\":3", "\"recoveredAgentCount\":5"));
         JsonNode unknownTopLevel = mapper.readTree(VALID_RECOVERY_SUMMARY_JSON.replace(
@@ -301,7 +399,7 @@ class SimulationExecutionServiceTest {
                 .isNull();
         assertThat(SimulationExecutionService.validateRecoverySummary(badReasonCode))
                 .isNull();
-        assertThat(SimulationExecutionService.validateRecoverySummary(shortStableIds))
+        assertThat(SimulationExecutionService.validateRecoverySummary(oversizedStableIds))
                 .isNull();
         assertThat(SimulationExecutionService.validateRecoverySummary(mismatchedCounters))
                 .isNull();
@@ -343,6 +441,7 @@ class SimulationExecutionServiceTest {
                 """
                 {"schemaVersion":1,"scanCount":1,"eligibleGroupCount":1,"skippedEligibleGroupCount":0,
                  "infeasibleScanCount":0,"recoveredGroupCount":0,"recoveredAgentCount":0,
+                 "recoveredMidRouteAgentCount":0,
                  "recoveryTimeSeconds":0.5,"recoveredExitLabels":[],"recoveredExitIds":[],
                  "attemptedGroupSignatures":1,
                  "events":[{"timeSeconds":0.5,"iteration":50,"contextIndex":0,"exitId":501,
@@ -481,6 +580,7 @@ class SimulationExecutionServiceTest {
                         """
                         {"schemaVersion":1,"scanCount":1,"eligibleGroupCount":1,"skippedEligibleGroupCount":0,
                          "infeasibleScanCount":0,"recoveredGroupCount":0,"recoveredAgentCount":0,
+                         "recoveredMidRouteAgentCount":0,
                          "recoveryTimeSeconds":0.5,"recoveredExitLabels":[],"recoveredExitIds":[],
                          "attemptedGroupSignatures":1,
                          "events":[{"timeSeconds":0.5,"iteration":50,"contextIndex":0,"exitId":501,
@@ -918,6 +1018,10 @@ class SimulationExecutionServiceTest {
         return setup(List.of(new PointDto(BigDecimal.ONE, BigDecimal.ONE)), List.of(501L));
     }
 
+    private static SimulationSetupResponse validDraftSetup() {
+        return setup(List.of(new PointDto(BigDecimal.ONE, BigDecimal.ONE)), List.of(501L), "DRAFT");
+    }
+
     private static SimulationSetupResponse twoAgentSetup() {
         return setup(
                 List.of(
@@ -951,6 +1055,7 @@ class SimulationExecutionServiceTest {
             """
             {"schemaVersion":1,"scanCount":2,"eligibleGroupCount":1,"skippedEligibleGroupCount":0,
              "infeasibleScanCount":0,"recoveredGroupCount":1,"recoveredAgentCount":3,
+             "recoveredMidRouteAgentCount":0,
              "recoveryTimeSeconds":5.5,"recoveredExitLabels":[0],"recoveredExitIds":[501],
              "attemptedGroupSignatures":1,
              "events":[{"timeSeconds":5.5,"iteration":550,"contextIndex":0,"exitId":501,"exitLabel":0,
@@ -1006,6 +1111,10 @@ class SimulationExecutionServiceTest {
     }
 
     private static SimulationSetupResponse setup(List<PointDto> agents, List<Long> exits) {
+        return setup(agents, exits, "REQUESTED");
+    }
+
+    private static SimulationSetupResponse setup(List<PointDto> agents, List<Long> exits, String status) {
         DrawingGeometryDto drawing = new DrawingGeometryDto(
                 3L,
                 "test",
@@ -1027,14 +1136,13 @@ class SimulationExecutionServiceTest {
                 11L,
                 null,
                 "test simulation",
-                "REQUESTED",
+                status,
                 LocalDateTime.now(),
                 1,
                 "SFM_DEFAULT_V2",
                 "HAZARD_RADIAL_EXP_V3",
                 agents.size(),
                 BigDecimal.valueOf(1.25),
-                BigDecimal.ZERO,
                 BigDecimal.ZERO,
                 agents,
                 List.of(),

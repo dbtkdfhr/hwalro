@@ -56,7 +56,6 @@ export interface SimulationSetup {
   randomSeed: number;
   totalPeople: number;
   walkingSpeed: number;
-  initialResponseTimeMean: number;
   initialResponseTimeStdDev: number;
   modelProfile: string;
   routingProfile: string;
@@ -89,6 +88,27 @@ export interface SimulationResultSummary {
   metrics: SimulationMetric[];
 }
 
+export type SimulationFailureDetail =
+  | {
+      code: 'AGENT_ROUTE_UNREACHABLE';
+      agentId: number;
+      currentPosition: SimulationPoint;
+      recommendedPosition: SimulationPoint | null;
+    }
+  | {
+      code: 'NO_REACHABLE_SELECTED_EXIT';
+      affectedAgentCount: number;
+      representativeAgentIds: number[];
+      selectedExitIds: number[];
+      reason: 'NO_EXIT_SEED_IN_OCCUPIED_COMPONENT';
+    };
+
+export interface SimulationRoutingValidation {
+  valid: boolean;
+  message: string;
+  failureDetail: SimulationFailureDetail | null;
+}
+
 export interface SimulationExecution {
   simulationId: number;
   status: SimulationExecutionStatus;
@@ -96,21 +116,7 @@ export interface SimulationExecution {
   startedAt: string | null;
   finishedAt: string | null;
   failureMessage: string | null;
-  failureDetail?:
-    | {
-        code: 'AGENT_ROUTE_UNREACHABLE';
-        agentId: number;
-        currentPosition: SimulationPoint;
-        recommendedPosition: SimulationPoint | null;
-      }
-    | {
-        code: 'NO_REACHABLE_SELECTED_EXIT';
-        affectedAgentCount: number;
-        representativeAgentIds: number[];
-        selectedExitIds: number[];
-        reason: 'NO_EXIT_SEED_IN_OCCUPIED_COMPONENT';
-      }
-    | null;
+  failureDetail?: SimulationFailureDetail | null;
   result: SimulationResultSummary | null;
 }
 
@@ -213,7 +219,6 @@ export interface CreateSimulationDraftRequest {
 export interface UpdateSimulationSetupRequest {
   title?: string;
   walkingSpeed: number;
-  initialResponseTimeMean: number;
   initialResponseTimeStdDev: number;
   agentPositions: SimulationPoint[];
   hazardZones: Array<Pick<SimulationHazardZone, 'centerX' | 'centerY' | 'radius'>>;

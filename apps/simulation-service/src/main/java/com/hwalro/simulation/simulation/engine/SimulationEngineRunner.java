@@ -102,6 +102,60 @@ public class SimulationEngineRunner {
         }
     }
 
+    public SimulationFailureDetailResponse validateRouting(Long simulationId, SimulationSetupResponse setup)
+            throws EngineRunException {
+        Path jobDirectory = null;
+        Process process = null;
+        try {
+            Files.createDirectories(workRoot);
+            jobDirectory = Files.createTempDirectory(workRoot, "routing-validation-" + simulationId + "-")
+                    .toAbsolutePath()
+                    .normalize();
+            Path inputPath = jobDirectory.resolve("input.json");
+            Path outputDirectory = jobDirectory.resolve("output");
+            objectMapper.writeValue(inputPath.toFile(), createInput(setup));
+
+            process = new ProcessBuilder(
+                            pythonCommand,
+                            scriptPath.toString(),
+                            "--validate-only",
+                            inputPath.toString(),
+                            outputDirectory.toString())
+                    .redirectErrorStream(true)
+                    .start();
+            ProcessOutputCapture output = new ProcessOutputCapture(process.getInputStream());
+            if (!process.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS)) {
+                stop(process);
+                throw new EngineRunException("ENGINE_TIMEOUT: 경로 검증 시간 제한을 초과했습니다.", true);
+            }
+            String diagnostic = output.await();
+            if (process.exitValue() == 0) {
+                return null;
+            }
+            if (process.exitValue() == ROUTING_ERROR_EXIT_CODE) {
+                SimulationFailureDetailResponse failureDetail = readFailureDetail(outputDirectory, setup);
+                if (failureDetail != null) {
+                    return failureDetail;
+                }
+                log.warn("Simulation {} engine returned an invalid routing validation detail", simulationId);
+            } else {
+                log.warn("Simulation {} engine routing validation failed: {}", simulationId, diagnostic);
+            }
+            throw new EngineRunException("ENGINE_ERROR: 경로 검증에 실패했습니다.", false);
+        } catch (IOException exception) {
+            log.warn("Simulation {} engine routing validation I/O failed", simulationId, exception);
+            throw new EngineRunException("ENGINE_ERROR: 경로 검증 입출력 처리에 실패했습니다.", false, exception);
+        } catch (InterruptedException exception) {
+            if (process != null) {
+                stop(process);
+            }
+            Thread.currentThread().interrupt();
+            throw new EngineRunException("경로 검증이 중단되었습니다.", false, exception);
+        } finally {
+            deleteJobDirectory(jobDirectory);
+        }
+    }
+
     public EngineRun run(Long simulationId, SimulationSetupResponse setup) throws EngineRunException {
         return run(simulationId, setup, maxSimulationTimeSeconds);
     }
@@ -262,7 +316,6 @@ public class SimulationEngineRunner {
         model.put("modelProfile", setup.modelProfile());
         model.put("routingProfile", setup.routingProfile());
         model.put("walkingSpeed", setup.walkingSpeed());
-        model.put("initialResponseTimeMean", setup.initialResponseTimeMean());
         model.put("initialResponseTimeStdDev", setup.initialResponseTimeStdDev());
 
         Map<String, Object> input = new LinkedHashMap<>();

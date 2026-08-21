@@ -15,35 +15,11 @@
   padding: 8px 4px 0;
 }
 
-.regulations-page__heading {
-  margin-bottom: 20px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--color-line);
-}
-
-.regulations-page .regulations-page__eyebrow {
-  margin: 0;
-  color: var(--color-primary);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-}
-
-.regulations-page__heading h1,
 .regulations-detail__intro h2 {
   margin: 0;
   color: var(--color-ink);
 }
 
-.regulations-page__heading h1 {
-  margin-top: 6px;
-  font-size: 30px;
-  font-weight: 900;
-  letter-spacing: -0.025em;
-  line-height: 1.2;
-}
-
-.regulations-page__heading > p:last-child,
 .regulations-detail__intro > p {
   margin: 12px 0 0;
   color: var(--color-text-muted);
@@ -54,6 +30,7 @@
 .regulations-search {
   display: flex;
   gap: 12px;
+  margin-top: 20px;
   margin-bottom: 16px;
   padding: 16px;
   border: 1px solid var(--color-line);

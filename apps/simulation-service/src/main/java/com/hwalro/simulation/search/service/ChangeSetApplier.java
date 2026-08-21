@@ -77,7 +77,6 @@ public final class ChangeSetApplier {
                 baseline.routingProfile(),
                 baseline.totalPeople(),
                 baseline.walkingSpeed(),
-                baseline.initialResponseTimeMean(),
                 baseline.initialResponseTimeStdDev(),
                 relaxedAgents,
                 baseline.hazardZones(),

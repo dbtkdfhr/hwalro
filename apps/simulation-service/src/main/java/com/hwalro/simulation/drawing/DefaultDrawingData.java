@@ -40,7 +40,7 @@ public class DefaultDrawingData {
     private final DefaultDrawing defaultDrawing;
 
     public DefaultDrawingData(ObjectMapper objectMapper) {
-        try (InputStream inputStream = new ClassPathResource("drawings/default-drawing-v7.json").getInputStream()) {
+        try (InputStream inputStream = new ClassPathResource("drawings/default-drawing-v8.json").getInputStream()) {
             this.defaultDrawing = objectMapper.readValue(inputStream, DefaultDrawing.class);
         } catch (IOException e) {
             throw new IllegalStateException("기본 도면 데이터를 불러올 수 없습니다.", e);

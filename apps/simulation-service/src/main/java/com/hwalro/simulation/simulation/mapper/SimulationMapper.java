@@ -75,7 +75,6 @@ public interface SimulationMapper {
             @Param("simulationId") Long simulationId,
             @Param("totalPeople") int totalPeople,
             @Param("walkingSpeed") BigDecimal walkingSpeed,
-            @Param("initialResponseTimeMean") BigDecimal initialResponseTimeMean,
             @Param("initialResponseTimeStdDev") BigDecimal initialResponseTimeStdDev);
 
     int updateSimulationTitle(@Param("simulationId") Long simulationId, @Param("title") String title);

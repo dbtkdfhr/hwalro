@@ -5,6 +5,7 @@ import type {
   SimulationHeatmapChunk,
   SimulationOverview,
   SimulationOverviewPage,
+  SimulationRoutingValidation,
   SimulationSetup,
   SimulationSummary,
   SimulationTimelineChunk,
@@ -47,6 +48,11 @@ export const simulationApi = {
   updateSetup: (simulationId: number, body: UpdateSimulationSetupRequest) =>
     apiClient
       .put<SimulationSetup>(`/api/simulations/${simulationId}/setup`, body)
+      .then((response) => response.data),
+
+  validateRouting: (simulationId: number) =>
+    apiClient
+      .post<SimulationRoutingValidation>(`/api/simulations/${simulationId}/routing-validation`)
       .then((response) => response.data),
 
   execute: (simulationId: number) =>

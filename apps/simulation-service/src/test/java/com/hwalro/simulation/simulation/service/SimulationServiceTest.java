@@ -138,7 +138,6 @@ class SimulationServiceTest {
         sourceOption.setRandomSeed(99);
         sourceOption.setWalkingSpeed(BigDecimal.valueOf(1.4));
         sourceOption.setReactionTime(BigDecimal.valueOf(0.7));
-        sourceOption.setInitialResponseTimeMean(BigDecimal.valueOf(12));
         sourceOption.setInitialResponseTimeStdDev(BigDecimal.valueOf(3));
         when(simulationMapper.findSimulationOption(20L)).thenReturn(sourceOption);
         HazardZone sourceHazard = hazard(20L, 6, 6, 1);
@@ -173,7 +172,6 @@ class SimulationServiceTest {
         assertThat(optionCaptor.getValue().getRoutingProfile()).isEqualTo(sourceOption.getRoutingProfile());
         assertThat(optionCaptor.getValue().getWalkingSpeed()).isEqualByComparingTo("1.4");
         assertThat(optionCaptor.getValue().getReactionTime()).isEqualByComparingTo("0.5");
-        assertThat(optionCaptor.getValue().getInitialResponseTimeMean()).isEqualByComparingTo("12");
         assertThat(optionCaptor.getValue().getInitialResponseTimeStdDev()).isEqualByComparingTo("3");
         verify(simulationMapper).insertInitialState(21L, "[[1,1],[3,3]]");
         ArgumentCaptor<List<HazardZone>> hazardsCaptor = ArgumentCaptor.forClass(List.class);
@@ -325,25 +323,20 @@ class SimulationServiceTest {
         assertThatThrownBy(() -> service.updateSetup(
                         21L,
                         new SetupUpdateRequest(
-                                List.of(),
-                                List.of(),
-                                List.of(),
-                                BigDecimal.valueOf(1.25),
-                                BigDecimal.ZERO,
-                                BigDecimal.ZERO),
+                                List.of(), List.of(), List.of(), BigDecimal.valueOf(1.25), BigDecimal.ZERO),
                         user))
                 .isInstanceOf(SimulationConflictException.class);
         verifyNoInteractions(drawingMapper);
     }
 
     @Test
-    void rejectsInitialResponseStdDevWhenMeanIsZero() {
+    void rejectsInitialResponseStdDevAboveMaximum() {
         SetupUpdateRequest request = new SetupUpdateRequest(
-                List.of(), List.of(), List.of(), BigDecimal.valueOf(1.25), BigDecimal.ZERO, BigDecimal.ONE);
+                List.of(), List.of(), List.of(), BigDecimal.valueOf(1.25), BigDecimal.valueOf(601));
 
         assertThatThrownBy(() -> service.updateSetup(21L, request, user))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("평균 초기 반응시간");
+                .hasMessageContaining("출발시간 표준편차");
         verifyNoInteractions(simulationMapper, drawingMapper);
     }
 
@@ -488,7 +481,6 @@ class SimulationServiceTest {
         option.setTotalPeople(2);
         option.setWalkingSpeed(BigDecimal.valueOf(1.25));
         option.setReactionTime(BigDecimal.valueOf(0.5));
-        option.setInitialResponseTimeMean(BigDecimal.ZERO);
         option.setInitialResponseTimeStdDev(BigDecimal.ZERO);
         return option;
     }

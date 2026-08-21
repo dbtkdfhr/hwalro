@@ -43,6 +43,8 @@ interface PlacementSnapshot {
 
 type LoadState = 'loading' | 'ready' | 'error';
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
+type ExecutionPhase = 'idle' | 'saving' | 'validating' | 'requesting';
+type PageAlert = { tone: 'error' | 'success'; text: string } | null;
 type AgentDeletionToast = { state: 'confirm' | 'success'; count: number } | null;
 
 interface InfoTooltipProps {
@@ -85,6 +87,10 @@ function sameSnapshot(a: PlacementSnapshot, b: PlacementSnapshot): boolean {
   return a.agents === b.agents && a.hazards === b.hazards;
 }
 
+function errorAlert(text: string): PageAlert {
+  return { tone: 'error', text };
+}
+
 function SimulationSetupPage() {
   const { simulationId = '' } = useParams();
   const navigate = useNavigate();
@@ -103,7 +109,7 @@ function SimulationSetupPage() {
   }
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [saveState, setSaveState] = useState<SaveState>('idle');
-  const [executing, setExecuting] = useState(false);
+  const [executionPhase, setExecutionPhase] = useState<ExecutionPhase>('idle');
   const [setup, setSetup] = useState<SimulationSetup | null>(null);
   const [title, setTitle] = useState('');
   const [agents, setAgents] = useState<SimulationPoint[]>([]);
@@ -112,14 +118,13 @@ function SimulationSetupPage() {
   const [highlightedExitId, setHighlightedExitId] = useState<number | null>(null);
   const [highlightedAgentId, setHighlightedAgentId] = useState<number | null>(null);
   const [walkingSpeed, setWalkingSpeed] = useState(1.25);
-  const [initialResponseTimeMean, setInitialResponseTimeMean] = useState(0);
   const [initialResponseTimeStdDev, setInitialResponseTimeStdDev] = useState(0);
   const [tool, setTool] = useState<SimulationTool>('select');
   const [sprayRadius, setSprayRadius] = useState(1);
   const [eraserRadius, setEraserRadius] = useState(1);
   const [uniformCount, setUniformCount] = useState(100);
   const [selectedHazardId, setSelectedHazardId] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<PageAlert>(null);
   const [agentDeletionToast, setAgentDeletionToast] = useState<AgentDeletionToast>(null);
   const [, setHistoryRevision] = useState(0);
   const placementRef = useRef<PlacementSnapshot>({ agents: [], hazards: [] });
@@ -130,6 +135,7 @@ function SimulationSetupPage() {
   const collapseButtonRef = useRef<HTMLButtonElement>(null);
   const restoreButtonRef = useRef<HTMLButtonElement>(null);
   const panelToggleFocusPendingRef = useRef(false);
+  const executing = executionPhase !== 'idle';
 
   useLayoutEffect(() => {
     if (!panelToggleFocusPendingRef.current) return;
@@ -173,7 +179,6 @@ function SimulationSetupPage() {
       setSelectedExitIds(data.selectedExitIds);
       setHighlightedExitId(null);
       setWalkingSpeed(data.walkingSpeed);
-      setInitialResponseTimeMean(data.initialResponseTimeMean);
       setInitialResponseTimeStdDev(data.initialResponseTimeStdDev);
       if (resetTool) setTool('select');
       setSelectedHazardId(null);
@@ -191,7 +196,7 @@ function SimulationSetupPage() {
   useEffect(() => {
     const id = Number(simulationId);
     if (!Number.isInteger(id) || id <= 0) {
-      setMessage('잘못된 시뮬레이션 번호입니다.');
+      setMessage(errorAlert('잘못된 시뮬레이션 번호입니다.'));
       setLoadState('error');
       return;
     }
@@ -207,7 +212,7 @@ function SimulationSetupPage() {
       })
       .catch((error: unknown) => {
         if (!cancelled) {
-          setMessage(getSimulationErrorMessage(error));
+          setMessage(errorAlert(getSimulationErrorMessage(error)));
           setLoadState('error');
         }
       });
@@ -275,7 +280,7 @@ function SimulationSetupPage() {
   if (loadState === 'error' || setup === null) {
     return (
       <CanvasWorkspaceState
-        message={message ?? '시뮬레이션 설정을 불러오지 못했습니다.'}
+        message={message?.text ?? '시뮬레이션 설정을 불러오지 못했습니다.'}
         actions={
           <Button type="button" className="cursor-pointer" onClick={() => navigate('/drawings')}>
             도면 목록으로 이동
@@ -313,7 +318,7 @@ function SimulationSetupPage() {
     const nextAgents = addSprayedAgents(point, sprayRadius, setup.drawing, current.agents);
     if (nextAgents !== current.agents) replacePlacement({ ...current, agents: nextAgents });
     if (nextAgents.length >= MAX_AGENTS)
-      setMessage(`최대 ${MAX_AGENTS.toLocaleString()}명까지 배치할 수 있습니다.`);
+      setMessage(errorAlert(`최대 ${MAX_AGENTS.toLocaleString()}명까지 배치할 수 있습니다.`));
   };
 
   const applyErase = (point: SimulationPoint) => {
@@ -388,13 +393,17 @@ function SimulationSetupPage() {
     if (!editable) return;
     setMessage(null);
     if (!Number.isInteger(uniformCount) || uniformCount < 0 || uniformCount > MAX_AGENTS) {
-      setMessage(`균등 배치 인원은 0명부터 ${MAX_AGENTS.toLocaleString()}명까지 입력해 주세요.`);
+      setMessage(
+        errorAlert(`균등 배치 인원은 0명부터 ${MAX_AGENTS.toLocaleString()}명까지 입력해 주세요.`),
+      );
       return;
     }
     const result = createUniformPlacement(uniformCount, setup.drawing, setup.randomSeed);
     if (result.capacity < uniformCount) {
       setMessage(
-        `현재 공간에는 최대 ${result.capacity.toLocaleString()}명까지 균등 배치할 수 있습니다.`,
+        errorAlert(
+          `현재 공간에는 최대 ${result.capacity.toLocaleString()}명까지 균등 배치할 수 있습니다.`,
+        ),
       );
       return;
     }
@@ -417,16 +426,8 @@ function SimulationSetupPage() {
   };
 
   const validateOptions = (): string | null => {
-    if (
-      initialResponseTimeMean < 0 ||
-      initialResponseTimeMean > 600 ||
-      initialResponseTimeStdDev < 0 ||
-      initialResponseTimeStdDev > 600
-    ) {
-      return '초기 반응시간 평균과 표준편차는 0초 이상 600초 이하로 입력해 주세요.';
-    }
-    if (initialResponseTimeMean === 0 && initialResponseTimeStdDev > 0) {
-      return '평균 초기 반응시간이 0초이면 표준편차도 0초로 입력해 주세요.';
+    if (initialResponseTimeStdDev < 0 || initialResponseTimeStdDev > 600) {
+      return '출발시간 표준편차는 0초 이상 600초 이하로 입력해 주세요.';
     }
     if (walkingSpeed <= 0 || walkingSpeed > 3) {
       return '희망 이동속도는 0보다 크고 3.0m/s 이하로 입력해 주세요.';
@@ -437,7 +438,7 @@ function SimulationSetupPage() {
   const saveCurrentSetup = async (): Promise<SimulationSetup | null> => {
     const validationMessage = validateOptions();
     if (validationMessage) {
-      setMessage(validationMessage);
+      setMessage(errorAlert(validationMessage));
       return null;
     }
 
@@ -446,7 +447,6 @@ function SimulationSetupPage() {
       const saved = await simulationApi.updateSetup(setup.simulationId, {
         title: title.trim(),
         walkingSpeed,
-        initialResponseTimeMean,
         initialResponseTimeStdDev,
         agentPositions: agents,
         hazardZones: hazards.map(({ centerX, centerY, radius }) => ({ centerX, centerY, radius })),
@@ -456,7 +456,7 @@ function SimulationSetupPage() {
       recordLastActivity('SIMULATION_SETUP', saved.simulationId);
       return saved;
     } catch (error) {
-      setMessage(getSimulationErrorMessage(error));
+      setMessage(errorAlert(getSimulationErrorMessage(error)));
       return null;
     }
   };
@@ -476,15 +476,15 @@ function SimulationSetupPage() {
   const handleExecute = async () => {
     if (!editable || executing || saveState === 'saving') return;
     if (agents.length === 0) {
-      setMessage('시뮬레이션을 실행하려면 에이전트를 1명 이상 배치해 주세요.');
+      setMessage(errorAlert('시뮬레이션을 실행하려면 에이전트를 1명 이상 배치해 주세요.'));
       return;
     }
     if (selectedExitIds.length === 0) {
-      setMessage('시뮬레이션을 실행하려면 출입구를 1개 이상 선택해 주세요.');
+      setMessage(errorAlert('시뮬레이션을 실행하려면 출입구를 1개 이상 선택해 주세요.'));
       return;
     }
 
-    setExecuting(true);
+    setExecutionPhase('saving');
     setSaveState('saving');
     try {
       const saved = await saveCurrentSetup();
@@ -492,13 +492,28 @@ function SimulationSetupPage() {
         setSaveState('error');
         return;
       }
+      setSaveState('saved');
+      setExecutionPhase('validating');
+      const validation = await simulationApi.validateRouting(saved.simulationId);
+      if (!validation.valid) {
+        setMessage(errorAlert(validation.message));
+        return;
+      }
+
+      const successShownAt = Date.now();
+      setMessage({ tone: 'success', text: validation.message });
+      setExecutionPhase('requesting');
       await simulationApi.execute(saved.simulationId);
+      const remainingSuccessDisplayMs = Math.max(0, 1000 - (Date.now() - successShownAt));
+      if (remainingSuccessDisplayMs > 0) {
+        await new Promise((resolve) => window.setTimeout(resolve, remainingSuccessDisplayMs));
+      }
       navigate('/simulations');
     } catch (error) {
-      setSaveState('error');
-      setMessage(getSimulationErrorMessage(error));
+      setSaveState('saved');
+      setMessage(errorAlert(getSimulationErrorMessage(error)));
     } finally {
-      setExecuting(false);
+      setExecutionPhase('idle');
     }
   };
 
@@ -566,8 +581,12 @@ function SimulationSetupPage() {
           />
         )}
         {message && (
-          <div role="alert" className="simulation-setup-alert">
-            <span>{message}</span>
+          <div
+            role={message.tone === 'error' ? 'alert' : 'status'}
+            aria-live={message.tone === 'success' ? 'polite' : undefined}
+            className={`simulation-setup-alert is-${message.tone}`}
+          >
+            <span>{message.text}</span>
             <button
               type="button"
               onClick={() => setMessage(null)}
@@ -651,7 +670,13 @@ function SimulationSetupPage() {
                       : undefined
                 }
               >
-                {executing ? '실행 요청 중' : '시뮬레이션 실행'}
+                {executionPhase === 'saving'
+                  ? '설정 저장 중'
+                  : executionPhase === 'validating'
+                    ? '경로 검증 중'
+                    : executionPhase === 'requesting'
+                      ? '실행 요청 중'
+                      : '시뮬레이션 실행'}
               </button>
             </div>
           </div>
@@ -808,37 +833,21 @@ function SimulationSetupPage() {
                 </div>
                 <div className="simulation-setup-condition-field text-xs font-bold text-text-muted">
                   <div className="simulation-setup-condition-label flex gap-1">
-                    <label htmlFor="initial-response-time-mean">평균 초기 반응시간 (초)</label>
+                    <label htmlFor="initial-response-time-std-dev">출발시간 표준편차 (초)</label>
                     <InfoTooltip
-                      id="initial-response-time-mean-help"
-                      label="초기 반응시간 안내"
+                      id="initial-response-time-std-dev-help"
+                      label="출발시간 표준편차 안내"
                       align="right"
                     >
-                      시뮬레이션 시작 후 각 에이전트가 자발적인 보행을 시작하기 전까지의 평균
-                      대기시간입니다. 대기 중에도 다른 사람이나 장애물의 물리력으로 밀릴 수
-                      있습니다. 입력한 평균과 표준편차를 갖는 음이 아닌 감마분포에서 난수 시드에
-                      따라 결정적으로 생성됩니다. 표준편차가 0이면 모든 에이전트가 같은 시간에
-                      출발합니다.
+                      에이전트별 출발시간의 차이를 나타냅니다. 난수 시드에 따라 정규분포에서
+                      결정적으로 생성한 뒤 가장 빠른 에이전트가 시뮬레이션 시작과 동시에 출발하도록
+                      모든 시간을 조정합니다. 출발시간은 0초 이상이며 표준편차가 0이면 모든
+                      에이전트가 즉시 출발합니다.
                     </InfoTooltip>
                   </div>
                   <NumberStepperInput
-                    id="initial-response-time-mean"
-                    label="평균 초기 반응시간"
-                    min={0}
-                    max={600}
-                    step={0.1}
-                    value={initialResponseTimeMean}
-                    onValueChange={setInitialResponseTimeMean}
-                    disabled={!editable}
-                  />
-                </div>
-                <div className="simulation-setup-condition-field text-xs font-bold text-text-muted">
-                  <div className="simulation-setup-condition-label flex gap-1">
-                    <label htmlFor="initial-response-time-std-dev">반응시간 표준편차 (초)</label>
-                  </div>
-                  <NumberStepperInput
                     id="initial-response-time-std-dev"
-                    label="반응시간 표준편차"
+                    label="출발시간 표준편차"
                     min={0}
                     max={600}
                     step={0.1}

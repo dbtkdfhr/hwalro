@@ -98,6 +98,28 @@ class SimulationEngineRunnerTest {
     }
 
     @Test
+    void cleansRoutingValidationFilesWhenTheProcessCannotStart(@TempDir Path temporaryDirectory) throws Exception {
+        Path workRoot = temporaryDirectory.resolve("work");
+        SimulationEngineRunner runner = new SimulationEngineRunner(
+                new ObjectMapper(),
+                temporaryDirectory.resolve("missing-python.exe").toString(),
+                temporaryDirectory.resolve("runner.py").toString(),
+                workRoot.toString(),
+                Duration.ofSeconds(1),
+                1,
+                1,
+                false);
+
+        assertThatThrownBy(() -> runner.validateRouting(21L, setup()))
+                .isInstanceOf(EngineRunException.class)
+                .hasMessageContaining("입출력");
+
+        try (var entries = Files.list(workRoot)) {
+            assertThat(entries).isEmpty();
+        }
+    }
+
+    @Test
     void readsStrictRoutingFailureAndReconstructsCurrentPosition(@TempDir Path temporaryDirectory) throws Exception {
         Path output = temporaryDirectory.resolve("output");
         Files.createDirectories(output);
@@ -249,8 +271,8 @@ class SimulationEngineRunnerTest {
         assertThat(input).containsEntry("randomSeed", 1);
         assertThat(input.get("model"))
                 .asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.MAP)
-                .containsEntry("initialResponseTimeMean", BigDecimal.ZERO)
                 .containsEntry("initialResponseTimeStdDev", BigDecimal.ZERO)
+                .doesNotContainKey("initialResponseTimeMean")
                 .doesNotContainKey("reactionTime");
     }
 
@@ -343,7 +365,6 @@ class SimulationEngineRunnerTest {
                 "HAZARD_RADIAL_EXP_V3",
                 2,
                 BigDecimal.valueOf(1.25),
-                BigDecimal.ZERO,
                 BigDecimal.ZERO,
                 List.of(
                         new PointDto(BigDecimal.ONE, BigDecimal.ONE),

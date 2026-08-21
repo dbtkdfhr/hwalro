@@ -256,7 +256,6 @@ public class SimulationService {
         option.setTotalPeople(agents.size());
         option.setWalkingSpeed(DEFAULT_WALKING_SPEED);
         option.setReactionTime(DEFAULT_REACTION_TIME);
-        option.setInitialResponseTimeMean(DEFAULT_INITIAL_RESPONSE_TIME);
         option.setInitialResponseTimeStdDev(DEFAULT_INITIAL_RESPONSE_TIME);
         simulationMapper.insertSimulationOption(option);
         simulationMapper.insertInitialState(simulation.getId(), writeAgentPositions(agents));
@@ -338,7 +337,6 @@ public class SimulationService {
         copiedOption.setTotalPeople(sourceOption.getTotalPeople());
         copiedOption.setWalkingSpeed(sourceOption.getWalkingSpeed());
         copiedOption.setReactionTime(DEFAULT_REACTION_TIME);
-        copiedOption.setInitialResponseTimeMean(sourceOption.getInitialResponseTimeMean());
         copiedOption.setInitialResponseTimeStdDev(sourceOption.getInitialResponseTimeStdDev());
         simulationMapper.insertSimulationOption(copiedOption);
         simulationMapper.insertInitialState(draft.getId(), writeAgentPositions(agents));
@@ -485,11 +483,10 @@ public class SimulationService {
                 || request.hazardZones() == null
                 || request.selectedExitIds() == null
                 || request.walkingSpeed() == null
-                || request.initialResponseTimeMean() == null
                 || request.initialResponseTimeStdDev() == null) {
             throw new IllegalArgumentException("에이전트, 위험구역, 출입구와 시뮬레이션 옵션이 모두 필요합니다.");
         }
-        validateOptions(request.walkingSpeed(), request.initialResponseTimeMean(), request.initialResponseTimeStdDev());
+        validateOptions(request.walkingSpeed(), request.initialResponseTimeStdDev());
 
         Simulation simulation = findSimulationForUpdate(id);
         requireAccessible(simulation.getCreatedBy(), user);
@@ -518,11 +515,7 @@ public class SimulationService {
         }
 
         simulationMapper.updateSimulationOption(
-                id,
-                request.agentPositions().size(),
-                request.walkingSpeed(),
-                request.initialResponseTimeMean(),
-                request.initialResponseTimeStdDev());
+                id, request.agentPositions().size(), request.walkingSpeed(), request.initialResponseTimeStdDev());
         simulationMapper.updateInitialState(id, writeAgentPositions(request.agentPositions()));
         simulationMapper.deleteHazardZones(id);
         simulationMapper.deleteSimulationExits(id);
@@ -579,7 +572,6 @@ public class SimulationService {
                 option.getRoutingProfile(),
                 option.getTotalPeople(),
                 option.getWalkingSpeed(),
-                option.getInitialResponseTimeMean(),
                 option.getInitialResponseTimeStdDev(),
                 readAgentPositions(id),
                 simulationMapper.findHazardZones(id).stream()
@@ -615,19 +607,13 @@ public class SimulationService {
         }
     }
 
-    private void validateOptions(
-            BigDecimal walkingSpeed, BigDecimal initialResponseTimeMean, BigDecimal initialResponseTimeStdDev) {
+    private void validateOptions(BigDecimal walkingSpeed, BigDecimal initialResponseTimeStdDev) {
         if (walkingSpeed.signum() <= 0 || walkingSpeed.compareTo(MAX_WALKING_SPEED) > 0) {
             throw new IllegalArgumentException("보행 속도는 0보다 크고 3m/s 이하여야 합니다.");
         }
-        if (initialResponseTimeMean.signum() < 0
-                || initialResponseTimeStdDev.signum() < 0
-                || initialResponseTimeMean.compareTo(MAX_INITIAL_RESPONSE_TIME) > 0
+        if (initialResponseTimeStdDev.signum() < 0
                 || initialResponseTimeStdDev.compareTo(MAX_INITIAL_RESPONSE_TIME) > 0) {
-            throw new IllegalArgumentException("초기 반응시간 평균과 표준편차는 0초 이상 600초 이하여야 합니다.");
-        }
-        if (initialResponseTimeMean.signum() == 0 && initialResponseTimeStdDev.signum() > 0) {
-            throw new IllegalArgumentException("평균 초기 반응시간이 0초이면 표준편차도 0초여야 합니다.");
+            throw new IllegalArgumentException("출발시간 표준편차는 0초 이상 600초 이하여야 합니다.");
         }
     }
 

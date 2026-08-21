@@ -4,11 +4,6 @@
   color: var(--color-ink);
 }
 
-.system-management-page {
-  --role-reviewer: #7655c9;
-  --role-reviewer-soft: #f0ecfa;
-}
-
 .system-management-content {
   width: 100%;
   max-width: 1360px;
@@ -21,75 +16,6 @@
   border: 0;
   font: inherit;
   -webkit-tap-highlight-color: transparent;
-}
-
-.system-management-page .page-header {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 20px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--color-line);
-}
-
-.system-management-page .page-eyebrow {
-  margin: 0;
-  color: var(--color-primary);
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.system-management-page .page-header h1 {
-  margin: 8px 0 0;
-  color: var(--color-ink);
-  font-size: 30px;
-  font-weight: 900;
-  letter-spacing: -0.025em;
-  line-height: 1.2;
-}
-
-.system-management-page .page-header p {
-  margin: 12px 0 0;
-  color: var(--color-text-muted);
-  font-size: 14px;
-  line-height: 24px;
-}
-
-.system-management-page .account-control {
-  margin: 0;
-}
-
-.system-management-page .account-control button {
-  min-width: 112px;
-  height: 44px;
-  padding: 0 20px;
-  border-radius: 8px;
-  color: var(--color-white);
-  background: var(--color-primary);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: default;
-  transition: background-color 150ms ease;
-}
-
-.system-management-page .account-control button:hover:not(:disabled) {
-  background: var(--color-primary-hover);
-}
-
-.system-management-page .account-control button:active:not(:disabled) {
-  background: var(--color-primary-active);
-}
-
-.system-management-page .account-control button:focus-visible {
-  outline: 2px solid var(--color-focus-ring);
-  outline-offset: 2px;
-}
-
-.system-management-page .account-control button:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
 }
 
 .system-management-page .management-card {
@@ -267,19 +193,46 @@
   margin-top: 0;
   padding: 24px 20px 28px;
   border-top: 1px solid var(--color-line);
+  background: color-mix(in srgb, var(--color-surface) 48%, var(--color-white));
 }
 
-.system-management-page .role-section h3 {
-  margin: 0 0 16px;
+.system-management-page .role-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 18px;
+}
+
+.system-management-page .role-section-heading h3 {
+  margin: 0;
   color: var(--color-ink);
   font-size: 16px;
   font-weight: 900;
 }
 
+.system-management-page .role-section-heading p {
+  margin: 6px 0 0;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.system-management-page .role-section-heading > span {
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  color: var(--color-text-muted);
+  background: var(--color-white);
+  font-size: 11px;
+  font-weight: 700;
+}
+
 .system-management-page .role-list {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
 }
 
 .system-management-page .role-empty-state {
@@ -294,47 +247,86 @@
 }
 
 .system-management-page .role-card {
+  --role-accent: var(--color-text-strong);
+
   position: relative;
-  min-height: 100px;
-  padding: 16px;
+  min-height: 132px;
+  padding: 18px;
   overflow: hidden;
   border: 1px solid var(--color-line);
   border-radius: 12px;
+  color: var(--role-accent);
+  background: var(--color-white);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--color-ink) 5%, transparent);
 }
 
 .system-management-page .role-card::before {
   position: absolute;
-  inset: 0 auto 0 0;
-  width: 3px;
-  background: currentcolor;
+  inset: 0 0 auto;
+  height: 3px;
+  background: var(--role-accent);
   content: '';
 }
 
+.system-management-page .role-card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.system-management-page .role-card-heading > div {
+  min-width: 0;
+}
+
 .system-management-page .role-card h4 {
-  margin: 0 0 7px;
+  margin: 0;
   color: var(--color-ink);
   font-size: 14px;
+  font-weight: 800;
+}
+
+.system-management-page .role-code {
+  display: block;
+  margin-top: 5px;
+  overflow: hidden;
+  color: var(--color-text-faint);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.system-management-page .role-user-count {
+  flex: 0 0 auto;
+  min-width: 42px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  color: var(--role-accent);
+  background: color-mix(in srgb, var(--role-accent) 9%, var(--color-white));
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
 }
 
 .system-management-page .role-card p {
-  margin: 0;
+  margin: 18px 0 0;
   color: var(--color-text-muted);
   font-size: 12px;
+  line-height: 1.65;
 }
 
 .system-management-page .role-card.operator {
-  color: var(--color-info);
-  background: var(--color-info-soft);
+  --role-accent: var(--color-info);
 }
 
 .system-management-page .role-card.reviewer {
-  color: var(--role-reviewer);
-  background: var(--role-reviewer-soft);
+  --role-accent: var(--color-text-strong);
 }
 
 .system-management-page .role-card.admin {
-  color: var(--color-primary);
-  background: var(--color-primary-soft);
+  --role-accent: var(--color-primary);
 }
 
 .system-management-page .sr-only {
@@ -573,16 +565,6 @@
   .system-management-content {
     padding: 8px 16px 0;
   }
-
-  .system-management-page .page-header {
-    flex-direction: row;
-    align-items: flex-end;
-  }
-
-  .system-management-page .page-header h1 {
-    font-size: 36px;
-    line-height: 1.11;
-  }
 }
 
 @media (min-width: 1024px) {
@@ -592,11 +574,12 @@
 }
 
 @media (max-width: 520px) {
-  .system-management-page .page-header {
-    gap: 32px;
-  }
-
   .system-management-page .role-list {
     grid-template-columns: 1fr;
+  }
+
+  .system-management-page .role-section-heading {
+    flex-direction: column;
+    gap: 12px;
   }
 }

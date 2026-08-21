@@ -92,29 +92,6 @@ class JuPedSimSmokeTest(unittest.TestCase):
             )
             self.assertGreater(phase_profile["counters"]["agentSteps"], 0)
 
-            baseline_duration = result["simulationDurationSeconds"]
-            payload["randomSeed"] = 123
-            payload["model"]["reactionTime"] = 2.0
-            payload["model"]["initialResponseTimeMean"] = 2.0
-            payload["model"]["initialResponseTimeStdDev"] = 0.0
-            delayed_output = root / "delayed-output"
-            input_path.write_text(json.dumps(payload), encoding="utf-8")
-            delayed = run(input_path, delayed_output)
-            delayed_timeline = json.loads(
-                (delayed_output / "timeline" / "000000.json").read_text("utf-8")
-            )
-            self.assertEqual(delayed["terminationReason"], "ALL_EVACUATED")
-            self.assertAlmostEqual(
-                delayed["simulationDurationSeconds"] - baseline_duration, 2.0, delta=0.01
-            )
-            waiting_position = delayed_timeline["frames"][1]["agents"][0]
-            self.assertEqual(waiting_position["agentId"], 1)
-            self.assertLess(
-                ((waiting_position["x"] - 1.0) ** 2 + (waiting_position["y"] - 2.0) ** 2)
-                ** 0.5,
-                0.01,
-            )
-
             payload["maxSimulationTimeSeconds"] = 0.05
             input_path.write_text(json.dumps(payload), encoding="utf-8")
             limited_output = root / "limited-output"

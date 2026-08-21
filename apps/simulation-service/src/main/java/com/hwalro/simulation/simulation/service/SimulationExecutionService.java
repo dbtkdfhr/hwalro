@@ -19,6 +19,7 @@ import com.hwalro.simulation.simulation.dto.SimulationDtos.SimulationExecutionRe
 import com.hwalro.simulation.simulation.dto.SimulationDtos.SimulationFailureDetailResponse;
 import com.hwalro.simulation.simulation.dto.SimulationDtos.SimulationMetricResponse;
 import com.hwalro.simulation.simulation.dto.SimulationDtos.SimulationResultResponse;
+import com.hwalro.simulation.simulation.dto.SimulationDtos.SimulationRoutingValidationResponse;
 import com.hwalro.simulation.simulation.dto.SimulationDtos.SimulationSetupResponse;
 import com.hwalro.simulation.simulation.dto.SimulationDtos.TimelineAgentResponse;
 import com.hwalro.simulation.simulation.dto.SimulationDtos.TimelineChunkResponse;
@@ -61,6 +62,8 @@ public class SimulationExecutionService {
     private static final String STATUS_COMPLETED = "COMPLETED";
     private static final String MODEL_PROFILE = "SFM_DEFAULT_V2";
     private static final String ROUTING_PROFILE = "HAZARD_RADIAL_EXP_V3";
+    private static final String ROUTING_VALIDATION_SUCCESS_MESSAGE = "경로 검증에 성공했습니다. 시뮬레이션 실행을 요청합니다.";
+    private static final String NO_REACHABLE_EXIT_MESSAGE = "선택한 출입구에 도달할 수 없는 구역이 있습니다. 도면과 출입구를 확인해 주세요.";
     private static final int MAX_FAILURE_MESSAGE_LENGTH = 1000;
     private static final int RECOVERY_GROUP_SIZE = 3;
     private static final Set<String> RECOVERY_SUMMARY_FIELDS = Set.of(
@@ -71,6 +74,7 @@ public class SimulationExecutionService {
             "infeasibleScanCount",
             "recoveredGroupCount",
             "recoveredAgentCount",
+            "recoveredMidRouteAgentCount",
             "recoveryTimeSeconds",
             "recoveredExitLabels",
             "recoveredExitIds",
@@ -83,6 +87,7 @@ public class SimulationExecutionService {
             "infeasibleScanCount",
             "recoveredGroupCount",
             "recoveredAgentCount",
+            "recoveredMidRouteAgentCount",
             "attemptedGroupSignatures");
     private static final Set<String> RECOVERY_EVENT_FIELDS = Set.of(
             "timeSeconds",
@@ -110,6 +115,8 @@ public class SimulationExecutionService {
             "CONNECT_FAILED",
             "REACH_FAILED",
             "EXIT_ID_CHANGED",
+            "REROUTE_UNREACHABLE",
+            "REROUTE_UNCHANGED",
             "MUTATION_APPLY_FAILED");
     private static final Set<String> RECOVERY_EVENT_POINT_LIST_FIELDS =
             Set.of("oldTargets", "newTargets", "newApproaches");
@@ -221,6 +228,32 @@ public class SimulationExecutionService {
             }
         }
         return getExecution(simulationId, user);
+    }
+
+    public SimulationRoutingValidationResponse validateRouting(Long simulationId, JwtUser user) {
+        Simulation current = simulationService.getAccessibleSimulation(simulationId, user);
+        if (!"DRAFT".equals(current.getStatus())) {
+            throw new SimulationConflictException("DRAFT 상태에서만 경로를 검증할 수 있습니다.");
+        }
+        ensureEngineReady();
+        if (!executionCapacity.tryAcquire()) {
+            throw new SimulationEngineUnavailableException("시뮬레이션 대기열이 가득 찼습니다. 잠시 후 다시 시도해 주세요.");
+        }
+        try {
+            SimulationSetupResponse setup = simulationService.getSetup(simulationId, user);
+            validateRoutingSetup(setup);
+            SimulationFailureDetailResponse failureDetail = engineRunner.validateRouting(simulationId, setup);
+            if (failureDetail == null) {
+                return new SimulationRoutingValidationResponse(true, ROUTING_VALIDATION_SUCCESS_MESSAGE, null);
+            }
+            return new SimulationRoutingValidationResponse(false, routingFailureMessage(failureDetail), failureDetail);
+        } catch (EngineRunException exception) {
+            String message =
+                    exception.isTimeout() ? "경로 검증 시간이 초과되었습니다. 잠시 후 다시 시도해 주세요." : "시뮬레이션 엔진에서 경로를 검증할 수 없습니다.";
+            throw new SimulationEngineUnavailableException(message, exception);
+        } finally {
+            executionCapacity.release();
+        }
     }
 
     private boolean ensureEngineReady() {
@@ -401,9 +434,7 @@ public class SimulationExecutionService {
                             ? "ENGINE_TIMEOUT: 실제 실행시간 제한을 초과했습니다."
                             : failureDetail == null
                                     ? "ENGINE_ERROR: 시뮬레이션 엔진 실행에 실패했습니다."
-                                    : SimulationEngineRunner.ROUTING_ERROR_CODE.equals(failureDetail.code())
-                                            ? "Agent #%d의 시작 위치를 대피 경로에 연결할 수 없습니다.".formatted(failureDetail.agentId())
-                                            : "선택한 출입구에 도달할 수 없는 구역이 있습니다. 도면과 출입구를 확인해 주세요.",
+                                    : routingFailureMessage(failureDetail),
                     failureDetail);
         } catch (RuntimeException exception) {
             outcome = "SERVICE_ERROR";
@@ -710,10 +741,12 @@ public class SimulationExecutionService {
         }
         long recoveredGroups = recoverySummary.path("recoveredGroupCount").asLong();
         long recoveredAgents = recoverySummary.path("recoveredAgentCount").asLong();
+        long recoveredMidRouteAgents =
+                recoverySummary.path("recoveredMidRouteAgentCount").asLong();
         if (recoveredAgents != RECOVERY_GROUP_SIZE * recoveredGroups) {
             return invalidRecoverySummary();
         }
-        if ((recoveredGroups == 0) != (exitLabels.size() == 0 && exitIds.size() == 0)) {
+        if ((recoveredGroups + recoveredMidRouteAgents == 0) != (exitLabels.size() == 0 && exitIds.size() == 0)) {
             return invalidRecoverySummary();
         }
         JsonNode events = recoverySummary.path("events");
@@ -728,16 +761,22 @@ public class SimulationExecutionService {
         for (JsonNode exitId : exitIds) {
             recoveredIdKeys.add(exitId.asText());
         }
-        long recoveredEventCount = 0;
+        long recoveredGroupEventCount = 0;
+        long recoveredMidRouteEventCount = 0;
         for (JsonNode event : events) {
             if (!isValidRecoveryEvent(event, recoveredLabelKeys, recoveredIdKeys)) {
                 return invalidRecoverySummary();
             }
             if ("RECOVERED".equals(event.path("status").asText())) {
-                recoveredEventCount += 1;
+                int recoveredEventAgentCount = event.path("stableIds").size();
+                if (recoveredEventAgentCount == 1) {
+                    recoveredMidRouteEventCount += 1;
+                } else {
+                    recoveredGroupEventCount += 1;
+                }
             }
         }
-        if (recoveredEventCount != recoveredGroups) {
+        if (recoveredGroupEventCount != recoveredGroups || recoveredMidRouteEventCount != recoveredMidRouteAgents) {
             return invalidRecoverySummary();
         }
         return recoverySummary;
@@ -794,9 +833,10 @@ public class SimulationExecutionService {
             return false;
         }
         JsonNode stableIds = event.path("stableIds");
-        if (!stableIds.isArray() || stableIds.size() != RECOVERY_GROUP_SIZE) {
+        if (!stableIds.isArray() || !(stableIds.size() == 1 || stableIds.size() == RECOVERY_GROUP_SIZE)) {
             return false;
         }
+        int eventAgentCount = stableIds.size();
         Set<Long> distinctStableIds = new HashSet<>();
         for (JsonNode stableId : stableIds) {
             if (!stableId.isIntegralNumber()
@@ -808,7 +848,7 @@ public class SimulationExecutionService {
         }
         for (String listField : RECOVERY_EVENT_POINT_LIST_FIELDS) {
             JsonNode list = event.path(listField);
-            if (!list.isArray() || !(list.size() == 0 || list.size() == RECOVERY_GROUP_SIZE)) {
+            if (!list.isArray() || !(list.size() == 0 || list.size() == eventAgentCount)) {
                 return false;
             }
             for (JsonNode item : list) {
@@ -821,7 +861,7 @@ public class SimulationExecutionService {
             }
         }
         JsonNode seedNodeIds = event.path("seedNodeIds");
-        if (!seedNodeIds.isArray() || !(seedNodeIds.size() == 0 || seedNodeIds.size() == RECOVERY_GROUP_SIZE)) {
+        if (!seedNodeIds.isArray() || !(seedNodeIds.size() == 0 || seedNodeIds.size() == eventAgentCount)) {
             return false;
         }
         for (JsonNode nodeId : seedNodeIds) {
@@ -869,9 +909,10 @@ public class SimulationExecutionService {
 
     private static void logRecoverySummary(Long simulationId, JsonNode recoverySummary) {
         log.info(
-                "simulation_recovery_phase simulationId={} recoveredAgentCount={} recoveryTimeSeconds={} recoveredExitLabels={} recoveredExitIds={}",
+                "simulation_recovery_phase simulationId={} recoveredAgentCount={} recoveredMidRouteAgentCount={} recoveryTimeSeconds={} recoveredExitLabels={} recoveredExitIds={}",
                 simulationId,
                 recoverySummary.path("recoveredAgentCount").asLong(),
+                recoverySummary.path("recoveredMidRouteAgentCount").asLong(),
                 recoverySummary.path("recoveryTimeSeconds").decimalValue(),
                 recoverySummary.path("recoveredExitLabels").toString(),
                 recoverySummary.path("recoveredExitIds").toString());
@@ -895,6 +936,17 @@ public class SimulationExecutionService {
         if (!"REQUESTED".equals(setup.status())) {
             throw new SimulationConflictException("실행 요청 상태를 만들지 못했습니다.");
         }
+        validateRoutingInputs(setup);
+    }
+
+    private static void validateRoutingSetup(SimulationSetupResponse setup) {
+        if (!"DRAFT".equals(setup.status())) {
+            throw new SimulationConflictException("DRAFT 상태에서만 경로를 검증할 수 있습니다.");
+        }
+        validateRoutingInputs(setup);
+    }
+
+    private static void validateRoutingInputs(SimulationSetupResponse setup) {
         if (setup.agentPositions().isEmpty()) {
             throw new InvalidSimulationGeometryException("에이전트를 한 명 이상 배치해야 합니다.");
         }
@@ -904,6 +956,13 @@ public class SimulationExecutionService {
         if (setup.drawing().outsideBoundary().size() < 3) {
             throw new InvalidSimulationGeometryException("유효한 외곽 영역이 필요합니다.");
         }
+    }
+
+    private static String routingFailureMessage(SimulationFailureDetailResponse failureDetail) {
+        if (SimulationEngineRunner.ROUTING_ERROR_CODE.equals(failureDetail.code())) {
+            return "Agent #%d의 시작 위치를 대피 경로에 연결할 수 없습니다.".formatted(failureDetail.agentId());
+        }
+        return NO_REACHABLE_EXIT_MESSAGE;
     }
 
     private TimelineChunkResponse normalizeLegacyTimeline(JsonNode root, int chunkSequence, Long simulationId) {

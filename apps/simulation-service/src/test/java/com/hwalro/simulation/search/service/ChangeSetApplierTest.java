@@ -145,7 +145,6 @@ class ChangeSetApplierTest {
                 agents.size(),
                 BigDecimal.valueOf(1.25),
                 BigDecimal.ZERO,
-                BigDecimal.ZERO,
                 agents,
                 List.of(),
                 List.of(2L),

@@ -108,6 +108,109 @@ class PlanCostTest(unittest.TestCase):
 
 
 class GeometryTest(unittest.TestCase):
+    def test_exit_parser_repairs_only_small_outside_rounding_error(self):
+        drawing = {
+            "outsideBoundary": [
+                {"x": 47.4, "y": 56.5},
+                {"x": 83.2, "y": 23.1},
+                {"x": 125.7, "y": 52.6},
+                {"x": 128.2, "y": 75.1},
+                {"x": 71.8, "y": 76.5},
+            ],
+            "walls": [],
+            "pillars": [],
+            "fabrics": [
+                {
+                    "startX": 67.2,
+                    "startY": 43.6,
+                    "endX": 102.8,
+                    "endY": 61.0,
+                    "rotation": 0,
+                }
+            ],
+            "exits": [
+                {
+                    "id": 17,
+                    "startX": 71.8,
+                    "startY": 76.5,
+                    "endX": 92.3,
+                    "endY": 76.0,
+                }
+            ],
+        }
+
+        exit_ = route_planner.parse_exits(drawing, [17])[0]
+        boundary = LineString(((71.8, 76.5), (128.2, 75.1)))
+
+        self.assertEqual(exit_.start, (71.8, 76.5))
+        self.assertNotEqual(exit_.end, (92.3, 76.0))
+        self.assertLess(Point(exit_.end).distance(boundary), 1e-9)
+        self.assertEqual(route_planner.parse_exit_segments(drawing), ((exit_.start, exit_.end),))
+
+        physical = build_walkable_geometry(drawing)
+        routing = build_routing_geometry(drawing, 0.3)
+        component, _agents = split_agent_components(routing, [(64.1704, 59.7878)])[0]
+        router = GridRouter(
+            component,
+            [],
+            [exit_],
+            physical_walkable=route_planner.containing_component(physical, component),
+        )
+
+        self.assertEqual(router.plan((64.1704, 59.7878)).exit_id, 17)
+
+    def test_exit_parser_preserves_floating_exit(self):
+        drawing = {
+            "outsideBoundary": [
+                {"x": 0, "y": 0},
+                {"x": 6, "y": 0},
+                {"x": 6, "y": 6},
+                {"x": 0, "y": 6},
+            ],
+            "walls": [],
+            "pillars": [],
+            "fabrics": [],
+            "exits": [{"id": 1, "startX": 2, "startY": 2, "endX": 4, "endY": 2}],
+        }
+
+        exit_ = route_planner.parse_exits(drawing, [1])[0]
+
+        self.assertEqual(exit_, Exit(1, (2.0, 2.0), (4.0, 2.0)))
+        router = GridRouter(
+            build_routing_geometry(drawing, 0.3),
+            [],
+            [exit_],
+            physical_walkable=build_walkable_geometry(drawing),
+        )
+        self.assertEqual(router.plan((1.0, 1.0)).exit_id, 1)
+
+    def test_exit_parser_does_not_repair_large_outside_error(self):
+        drawing = {
+            "outsideBoundary": [
+                {"x": 0, "y": 0},
+                {"x": 6, "y": 0},
+                {"x": 6, "y": 6},
+                {"x": 0, "y": 6},
+            ],
+            "walls": [],
+            "pillars": [],
+            "fabrics": [],
+            "exits": [
+                {"id": 1, "startX": -0.11, "startY": 1, "endX": -0.11, "endY": 3}
+            ],
+        }
+
+        exit_ = route_planner.parse_exits(drawing, [1])[0]
+
+        self.assertEqual(exit_, Exit(1, (-0.11, 1.0), (-0.11, 3.0)))
+        with self.assertRaisesRegex(ValueError, "reachable from this walkable component"):
+            GridRouter(
+                build_routing_geometry(drawing, 0.3),
+                [],
+                [exit_],
+                physical_walkable=build_walkable_geometry(drawing),
+            )
+
     def test_routing_geometry_reserves_agent_radius_without_changing_physical_geometry(self):
         drawing = {
             "outsideBoundary": [

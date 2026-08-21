@@ -96,19 +96,20 @@ class TimelineWriterTest(unittest.TestCase):
 
 
 class InitialResponseTimeTest(unittest.TestCase):
-    def test_gamma_sampling_is_nonnegative_and_seed_deterministic(self):
-        first = _sample_initial_response_times(np, 10_000, 5.0, 2.0, -17)
-        repeated = _sample_initial_response_times(np, 10_000, 5.0, 2.0, -17)
-        other_seed = _sample_initial_response_times(np, 10_000, 5.0, 2.0, -18)
+    def test_sampling_is_nonnegative_seed_deterministic_and_starts_at_zero(self):
+        first = _sample_initial_response_times(np, 10_000, 2.0, -17)
+        repeated = _sample_initial_response_times(np, 10_000, 2.0, -17)
+        other_seed = _sample_initial_response_times(np, 10_000, 2.0, -18)
 
         np.testing.assert_array_equal(first, repeated)
         self.assertTrue(np.all(first >= 0.0))
+        self.assertEqual(float(np.min(first)), 0.0)
         self.assertFalse(np.array_equal(first, other_seed))
-        self.assertAlmostEqual(float(np.mean(first)), 5.0, delta=0.1)
         self.assertAlmostEqual(float(np.std(first)), 2.0, delta=0.1)
 
-    def test_zero_std_dev_uses_one_fixed_start_time(self):
-        self.assertEqual(_sample_initial_response_times(np, 3, 2.0, 0.0, 7), [2.0] * 3)
+    def test_zero_std_dev_starts_every_agent_immediately(self):
+        self.assertEqual(_sample_initial_response_times(np, 3, 0.0, 7), [0.0] * 3)
+        np.testing.assert_array_equal(_sample_initial_response_times(np, 1, 2.0, 7), [0.0])
         self.assertEqual(_start_iteration(0.0), 1)
         self.assertEqual(_start_iteration(2.0), 201)
         self.assertEqual(_start_iteration(float("inf")), 60_001)
@@ -406,6 +407,131 @@ class NoReachableSelectedExitContractTest(unittest.TestCase):
             self.assertEqual(exit_code, 2)
             self.assertIn("drawing is too large", stderr.getvalue())
             self.assertFalse((output_dir / "error.json").exists())
+
+
+class RoutingValidationModeTest(unittest.TestCase):
+    def test_validation_accepts_slanted_boundary_exit_rounding_error(self):
+        payload = AgentRouteErrorContractTest._payload()
+        payload["drawing"] = {
+            "outsideBoundary": [
+                {"x": 47.4, "y": 56.5},
+                {"x": 83.2, "y": 23.1},
+                {"x": 125.7, "y": 52.6},
+                {"x": 128.2, "y": 75.1},
+                {"x": 71.8, "y": 76.5},
+            ],
+            "walls": [],
+            "pillars": [],
+            "fabrics": [
+                {
+                    "startX": 67.2,
+                    "startY": 43.6,
+                    "endX": 102.8,
+                    "endY": 61.0,
+                    "rotation": 0,
+                }
+            ],
+            "exits": [
+                {
+                    "id": 17,
+                    "startX": 71.8,
+                    "startY": 76.5,
+                    "endX": 92.3,
+                    "endY": 76.0,
+                }
+            ],
+        }
+        payload["agents"] = [{"x": 64.1704, "y": 59.7878}]
+        payload["selectedExitIds"] = [17]
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            input_path = root / "input.json"
+            output_dir = root / "output"
+            input_path.write_text(json.dumps(payload), encoding="utf-8")
+            with (
+                patch("runner._load_dependencies", return_value=(None, None, None, "test")),
+                patch("runner._create_context") as create_context,
+            ):
+                exit_code = main(["--validate-only", str(input_path), str(output_dir)])
+
+            self.assertEqual(exit_code, 0)
+            create_context.assert_not_called()
+            self.assertFalse((output_dir / "error.json").exists())
+
+    def test_success_stops_after_initial_route_planning(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            input_path = root / "input.json"
+            output_dir = root / "output"
+            input_path.write_text(
+                json.dumps(AgentRouteErrorContractTest._payload()), encoding="utf-8"
+            )
+            with (
+                patch("runner._load_dependencies", return_value=(None, None, None, "test")),
+                patch("route_planner.GridRouter.plan", return_value=object()) as plan,
+                patch("runner._create_context") as create_context,
+            ):
+                exit_code = main(["--validate-only", str(input_path), str(output_dir)])
+
+            self.assertEqual(exit_code, 0)
+            self.assertEqual(plan.call_count, 2)
+            create_context.assert_not_called()
+            self.assertFalse((output_dir / "result.json").exists())
+            self.assertFalse((output_dir / "timeline").exists())
+            self.assertFalse((output_dir / "heatmap").exists())
+
+    def test_route_failure_keeps_existing_typed_contract(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            input_path = root / "input.json"
+            output_dir = root / "output"
+            input_path.write_text(
+                json.dumps(AgentRouteErrorContractTest._payload()), encoding="utf-8"
+            )
+            with (
+                patch("runner._load_dependencies", return_value=(None, None, None, "test")),
+                patch(
+                    "route_planner.GridRouter.plan",
+                    side_effect=AgentRouteUnreachableError("hidden position"),
+                ),
+                patch("route_planner.GridRouter.recommended_position", return_value=None),
+                redirect_stderr(io.StringIO()),
+            ):
+                exit_code = main(["--validate-only", str(input_path), str(output_dir)])
+
+            self.assertEqual(exit_code, 3)
+            self.assertEqual(
+                json.loads((output_dir / "error.json").read_text("utf-8"))["code"],
+                "AGENT_ROUTE_UNREACHABLE",
+            )
+
+    def test_component_failure_keeps_existing_typed_contract(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            input_path = root / "input.json"
+            output_dir = root / "output"
+            input_path.write_text(
+                json.dumps(NoReachableSelectedExitContractTest._payload()),
+                encoding="utf-8",
+            )
+            with (
+                patch("runner._load_dependencies", return_value=(None, None, None, "test")),
+                patch(
+                    "route_planner.GridRouter",
+                    side_effect=ValueError(
+                        "no selected exit is reachable from this walkable component"
+                    ),
+                ),
+                redirect_stderr(io.StringIO()),
+            ):
+                exit_code = main(["--validate-only", str(input_path), str(output_dir)])
+
+            self.assertEqual(exit_code, 3)
+            self.assertEqual(
+                json.loads((output_dir / "error.json").read_text("utf-8"))["code"],
+                "NO_REACHABLE_SELECTED_EXIT",
+            )
 
 
 class TerminationDetailTest(unittest.TestCase):
@@ -2102,13 +2228,26 @@ class MidRouteRecoveryScanTest(unittest.TestCase):
         self.assertEqual(event["status"], "RECOVERED")
         self.assertEqual(event["exitLabel"], 0)
 
-    def test_ignores_final_stage_agent(self):
+    def test_recovers_stuck_agent_following_final_waypoint(self):
         states = {
             1: self._state(1, ((9.7, 4.0),)),
         }
         context, _agents = self._context(
             states, {1: (9.5, 4.0)}, lambda _pos: self._new_route()
         )
+
+        self.assertTrue(mid_route_recovery_scan(context, 550))
+        self.assertTrue(context.recovered[0])
+        self.assertEqual(context.recovery_counters.get("recovered_mid_route"), 1)
+
+    def test_ignores_exit_ready_final_stage_agent(self):
+        states = {
+            1: self._state(1, ((9.7, 4.0),)),
+        }
+        context, _agents = self._context(
+            states, {1: (9.5, 4.0)}, lambda _pos: self._new_route()
+        )
+        context.readiness_any[0] = True
 
         self.assertFalse(mid_route_recovery_scan(context, 550))
         self.assertEqual(context.recovery_counters.get("recovered_mid_route", 0), 0)

@@ -25,7 +25,7 @@ from typing import Any, Sequence
 DT_SECONDS = 0.01
 DEFAULT_RUNS = 7
 DEFAULT_CANDIDATE_MEDIAN_THRESHOLD_SECONDS = 600.0
-STARTUP_SCENARIO = "startup-default-v4-100x1"
+STARTUP_SCENARIO = "startup-default-v8-100x1"
 PRODUCTION_SCENARIO = "production-external-5000x60000"
 LONG_RUNTIME_COUNTS = (1000, 2500, 5000)
 PHASE_PROFILE_ENVIRONMENT_VARIABLE = "HWALRO_PHASE_PROFILE_PATH"
@@ -399,31 +399,31 @@ def _point_from_wall(wall: dict[str, Any], prefix: str) -> tuple[float, float]:
     try:
         return float(wall[f"{prefix}X"]), float(wall[f"{prefix}Y"])
     except (KeyError, TypeError, ValueError) as exc:
-        raise BenchmarkError(f"default-v4 outside wall has invalid {prefix} coordinates") from exc
+        raise BenchmarkError(f"default-v8 outside wall has invalid {prefix} coordinates") from exc
 
 
 def _assemble_boundary(outside_walls: Any) -> list[dict[str, float]]:
     if not isinstance(outside_walls, list) or len(outside_walls) < 3:
-        raise BenchmarkError("default-v4 drawing has fewer than three outside walls")
+        raise BenchmarkError("default-v8 drawing has fewer than three outside walls")
 
     graph: dict[tuple[float, float], list[tuple[float, float]]] = {}
     edges: set[frozenset[tuple[float, float]]] = set()
     for wall in outside_walls:
         if not isinstance(wall, dict):
-            raise BenchmarkError("default-v4 outside wall must be an object")
+            raise BenchmarkError("default-v8 outside wall must be an object")
         start = _point_from_wall(wall, "start")
         end = _point_from_wall(wall, "end")
         if start == end:
-            raise BenchmarkError("default-v4 outside wall has zero length")
+            raise BenchmarkError("default-v8 outside wall has zero length")
         edge = frozenset((start, end))
         if edge in edges:
-            raise BenchmarkError("default-v4 outside walls contain a duplicate edge")
+            raise BenchmarkError("default-v8 outside walls contain a duplicate edge")
         edges.add(edge)
         graph.setdefault(start, []).append(end)
         graph.setdefault(end, []).append(start)
 
     if len(graph) < 3 or any(len(neighbors) != 2 for neighbors in graph.values()):
-        raise BenchmarkError("default-v4 outside walls do not form one degree-two boundary graph")
+        raise BenchmarkError("default-v8 outside walls do not form one degree-two boundary graph")
     for neighbors in graph.values():
         neighbors.sort()
 
@@ -440,11 +440,11 @@ def _assemble_boundary(outside_walls: Any) -> list[dict[str, float]]:
         if following == start:
             break
         if following in visited or len(ordered) >= len(edges):
-            raise BenchmarkError("default-v4 outside walls do not form one simple cycle")
+            raise BenchmarkError("default-v8 outside walls do not form one simple cycle")
         previous, current = current, following
 
     if len(ordered) != len(edges) or len(visited) != len(graph):
-        raise BenchmarkError("default-v4 outside walls contain disconnected cycles")
+        raise BenchmarkError("default-v8 outside walls contain disconnected cycles")
     return [{"x": x, "y": y} for x, y in ordered]
 
 
@@ -478,7 +478,7 @@ while y <= max_y:
         x += 1.0
     y += 1.0
 if len(valid) < 100:
-    raise RuntimeError(f"default-v4 has only {len(valid)} deterministic lattice positions")
+    raise RuntimeError(f"default-v8 has only {len(valid)} deterministic lattice positions")
 indexes = [round(index * (len(valid) - 1) / 99) for index in range(100)]
 print(json.dumps([{"x": valid[index][0], "y": valid[index][1]} for index in indexes]))
 """
@@ -494,27 +494,27 @@ print(json.dumps([{"x": valid[index][0], "y": valid[index][1]} for index in inde
     )
     if completed.returncode != 0:
         raise BenchmarkError(
-            f"could not generate default-v4 agents: {completed.stderr[-4000:]}"
+            f"could not generate default-v8 agents: {completed.stderr[-4000:]}"
         )
     try:
         agents = json.loads(completed.stdout)
     except json.JSONDecodeError as exc:
-        raise BenchmarkError("default-v4 agent generator returned invalid JSON") from exc
+        raise BenchmarkError("default-v8 agent generator returned invalid JSON") from exc
     if not isinstance(agents, list) or len(agents) != 100:
-        raise BenchmarkError("default-v4 agent generator did not return exactly 100 agents")
+        raise BenchmarkError("default-v8 agent generator did not return exactly 100 agents")
     return agents
 
 
 def _startup_scenario_for_root(engine_root: Path, python: str) -> Scenario:
     service_root = engine_root.parent
-    drawing_path = service_root / "src" / "main" / "resources" / "drawings" / "default-drawing-v4.json"
+    drawing_path = service_root / "src" / "main" / "resources" / "drawings" / "default-drawing-v8.json"
     if not drawing_path.is_file():
-        raise BenchmarkError("default-v4 drawing is unavailable")
+        raise BenchmarkError("default-v8 drawing is unavailable")
 
     source_drawing = json.loads(drawing_path.read_text(encoding="utf-8"))
     exits = source_drawing.get("exits")
     if not isinstance(exits, list) or not exits:
-        raise BenchmarkError("default-v4 drawing has no exits")
+        raise BenchmarkError("default-v8 drawing has no exits")
     numbered_exits = [{**item, "id": index} for index, item in enumerate(exits, start=1)]
     drawing = {
         "outsideBoundary": _assemble_boundary(source_drawing.get("outsideWalls")),
@@ -532,7 +532,7 @@ def _startup_scenario_for_root(engine_root: Path, python: str) -> Scenario:
         iterations=1,
         payload=_base_payload(drawing, agents, selected_exit_ids, 1),
         source={
-            "kind": "default-v4-fixture",
+            "kind": "default-v8-fixture",
             "drawingPath": str(drawing_path),
             "drawingSha256": _sha256_file(drawing_path),
             "agentGenerator": "one-meter lattice sampled evenly across routing geometry",
@@ -562,7 +562,7 @@ def _startup_scenario(
     ).encode("utf-8")
     if baseline_payload != candidate_payload:
         raise BenchmarkError(
-            "baseline and candidate produced different default-v4 startup fixtures"
+            "baseline and candidate produced different default-v8 startup fixtures"
         )
     return Scenario(
         name=baseline.name,
@@ -571,7 +571,7 @@ def _startup_scenario(
         iterations=baseline.iterations,
         payload=baseline.payload,
         source={
-            "kind": "default-v4-fixture",
+            "kind": "default-v8-fixture",
             "fixtureAgreement": True,
             "payloadSha256": hashlib.sha256(baseline_payload).hexdigest(),
             "baseline": baseline.source,

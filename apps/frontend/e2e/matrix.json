@@ -7,7 +7,7 @@
     "TS 시더는 matrix_cells.py --emit이 뽑아준 도면 JSON을 그대로 POST하므로 해석 로직이 중복되지 않는다."
   ],
 
-  "base": "apps/simulation-service/src/main/resources/drawings/default-drawing-v7.json",
+  "base": "apps/simulation-service/src/main/resources/drawings/default-drawing-v8.json",
 
   "axes": {
     "A": {

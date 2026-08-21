@@ -824,6 +824,7 @@ class GridRouter:
         )
         derived.seeded_exit_ids = frozenset(seeded_exit_ids)
         derived._propagate_cost_field(heap)
+        derived._build_exit_proximity_index()
         return derived
 
     def _entry(self, start: Point) -> tuple[Point, float, int, int]:
@@ -1086,6 +1087,87 @@ class GridRouter:
             raise ValueError("no selected exit is reachable from this walkable component")
 
         self._propagate_cost_field(heap)
+        self._build_exit_proximity_index()
+
+    def _build_exit_proximity_index(self) -> None:
+        labels = [
+            label
+            for label, exit_ in enumerate(self.exits)
+            if _id_key(exit_.id) in self.seeded_exit_ids
+        ]
+        segments = np.asarray(
+            [usable_exit_segment(self.exits[label], self.exit_clearance) for label in labels],
+            dtype=float,
+        ).reshape(-1, 2, 2)
+        self._exit_proximity_labels = np.asarray(labels, dtype=np.int32)
+        self._exit_proximity_starts = segments[:, 0]
+        self._exit_proximity_vectors = segments[:, 1] - segments[:, 0]
+        self._exit_proximity_lengths_squared = np.sum(
+            self._exit_proximity_vectors * self._exit_proximity_vectors, axis=1
+        )
+        self._exit_proximity_tree = STRtree(linestrings(segments))
+
+        min_x, min_y, max_x, max_y = self.physical_walkable.bounds
+        self._exit_proximity_origin_x = min_x - self.exit_clearance
+        self._exit_proximity_origin_y = min_y - self.exit_clearance
+        self._exit_proximity_cell_width = (
+            int(math.ceil((max_x - min_x + 2.0 * self.exit_clearance) / self.step)) + 1
+        )
+        self._exit_proximity_cell_height = (
+            int(math.ceil((max_y - min_y + 2.0 * self.exit_clearance) / self.step)) + 1
+        )
+        cell_groups = []
+        for segment in segments:
+            lower = np.floor(
+                (
+                    np.min(segment, axis=0)
+                    - self.exit_clearance
+                    - _EPSILON
+                    - (self._exit_proximity_origin_x, self._exit_proximity_origin_y)
+                )
+                / self.step
+            ).astype(np.int64)
+            upper = np.floor(
+                (
+                    np.max(segment, axis=0)
+                    + self.exit_clearance
+                    + _EPSILON
+                    - (self._exit_proximity_origin_x, self._exit_proximity_origin_y)
+                )
+                / self.step
+            ).astype(np.int64)
+            lower = np.maximum(lower, 0)
+            upper = np.minimum(
+                upper,
+                (self._exit_proximity_cell_width - 1, self._exit_proximity_cell_height - 1),
+            )
+            if np.any(lower > upper):
+                continue
+            columns = np.arange(lower[0], upper[0] + 1, dtype=np.int64)
+            rows = np.arange(lower[1], upper[1] + 1, dtype=np.int64)
+            cell_groups.append(
+                (rows[:, None] * self._exit_proximity_cell_width + columns).ravel()
+            )
+        self._exit_proximity_cells = np.zeros(
+            self._exit_proximity_cell_width * self._exit_proximity_cell_height,
+            dtype=bool,
+        )
+        if cell_groups:
+            self._exit_proximity_cells[np.concatenate(cell_groups)] = True
+
+        numeric_ids = [self.exits[label].id for label in labels]
+        if all(
+            not isinstance(exit_id, bool)
+            and isinstance(exit_id, (int, float))
+            and math.isfinite(float(exit_id))
+            for exit_id in numeric_ids
+        ):
+            order = sorted(range(len(labels)), key=lambda index: (numeric_ids[index], labels[index]))
+        else:
+            order = list(range(len(labels)))
+        ranks = np.empty(len(labels), dtype=np.int32)
+        ranks[order] = np.arange(len(labels), dtype=np.int32)
+        self._exit_proximity_tie_ranks = ranks
 
     def _propagate_cost_field(self, heap: list[tuple[float, int, int]]) -> None:
         neighbor_nodes = self._neighbor_nodes
@@ -1413,6 +1495,87 @@ class GridRouter:
             <= self.exit_clearance + _EPSILON,
             dtype=bool,
         )
+
+    def reached_selected_exit_labels(self, positions: Sequence[Point]) -> np.ndarray:
+        count = len(positions)
+        result = np.full(count, -1, dtype=np.int32)
+        if count == 0:
+            return result
+
+        position_values = _point_array(positions, count, "exit positions")
+        columns = np.floor(
+            (position_values[:, 0] - self._exit_proximity_origin_x) / self.step
+        ).astype(np.int64)
+        rows = np.floor(
+            (position_values[:, 1] - self._exit_proximity_origin_y) / self.step
+        ).astype(np.int64)
+        in_grid = (
+            (columns >= 0)
+            & (columns < self._exit_proximity_cell_width)
+            & (rows >= 0)
+            & (rows < self._exit_proximity_cell_height)
+        )
+        coarse_candidates = np.zeros(count, dtype=bool)
+        coarse_candidates[in_grid] = self._exit_proximity_cells[
+            rows[in_grid] * self._exit_proximity_cell_width + columns[in_grid]
+        ]
+        candidate_indices = np.flatnonzero(coarse_candidates)
+        if not candidate_indices.size:
+            return result
+
+        point_geometries = points(
+            position_values[candidate_indices, 0], position_values[candidate_indices, 1]
+        )
+        local_indices, tree_indices = self._exit_proximity_tree.query(
+            point_geometries,
+            predicate="dwithin",
+            distance=self.exit_clearance + _EPSILON,
+        )
+        if not local_indices.size:
+            return result
+
+        position_indices = candidate_indices[local_indices]
+
+        candidate_positions = position_values[position_indices]
+        starts = self._exit_proximity_starts[tree_indices]
+        vectors = self._exit_proximity_vectors[tree_indices]
+        projection = np.clip(
+            np.sum((candidate_positions - starts) * vectors, axis=1)
+            / self._exit_proximity_lengths_squared[tree_indices],
+            0.0,
+            1.0,
+        )
+        nearest = starts + projection[:, None] * vectors
+        distance_squared = np.sum((candidate_positions - nearest) ** 2, axis=1)
+        physically_reachable = np.asarray(
+            covers(
+                self.physical_walkable,
+                linestrings(np.stack((candidate_positions, nearest), axis=1)),
+            ),
+            dtype=bool,
+        )
+        accepted = physically_reachable & (
+            distance_squared <= (self.exit_clearance + _EPSILON) ** 2
+        )
+        if not accepted.any():
+            return result
+
+        position_indices = position_indices[accepted]
+        tree_indices = tree_indices[accepted]
+        distance_squared = distance_squared[accepted]
+        order = np.lexsort(
+            (
+                self._exit_proximity_tie_ranks[tree_indices],
+                distance_squared,
+                position_indices,
+            )
+        )
+        first_by_position = np.concatenate(
+            ((True,), position_indices[order][1:] != position_indices[order][:-1])
+        )
+        selected = order[first_by_position]
+        result[position_indices[selected]] = self._exit_proximity_labels[tree_indices[selected]]
+        return result
 
     def clamp_to_walkable(self, point: Point) -> Point:
         target = ShapelyPoint(point)

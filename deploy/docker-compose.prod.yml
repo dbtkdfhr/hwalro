@@ -54,6 +54,8 @@ services:
       JWT_ISSUER: ${JWT_ISSUER:-hwalro-auth-service}
       REGULATION_SERVICE_URL: http://regulation-service:8082
       DB_INIT_MODE: ${DB_INIT_MODE:-never}
+      SIMULATION_ENGINE_SHARED_TARGET_RECOVERY_ENABLED: ${SIMULATION_ENGINE_SHARED_TARGET_RECOVERY_ENABLED:-false}
+      HWALRO_SFM_FRICTION: ${HWALRO_SFM_FRICTION:-240000}
     networks:
       - hwalro-network
 

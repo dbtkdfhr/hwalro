@@ -536,6 +536,66 @@ class GridRoutingTest(unittest.TestCase):
             ],
         )
 
+    def test_selected_exit_proximity_uses_trimmed_gate_and_clearance(self):
+        router = GridRouter(box(0, 0, 4, 4), [], [Exit(1, (4, 1), (4, 3))])
+
+        np.testing.assert_array_equal(
+            router.reached_selected_exit_labels(
+                [(3.7, 2.0), (3.699, 2.0), (3.8, 0.95)]
+            ),
+            [0, -1, -1],
+        )
+
+    def test_selected_exit_proximity_uses_nearest_then_numeric_exit_id(self):
+        exits = [
+            Exit(10, (4.0, 1.0), (4.0, 3.0)),
+            Exit(2, (3.9, 1.0), (3.9, 3.0)),
+        ]
+        router = GridRouter(box(0, 0, 4, 4), [], exits)
+
+        np.testing.assert_array_equal(
+            router.reached_selected_exit_labels([(3.7, 2.0)]),
+            [1],
+        )
+
+        tied = GridRouter(
+            box(0, 0, 4, 4),
+            [],
+            [Exit(10, (4, 1), (4, 3)), Exit(2, (4, 1), (4, 3))],
+        )
+        np.testing.assert_array_equal(
+            tied.reached_selected_exit_labels([(3.8, 2.0)]),
+            [1],
+        )
+
+    def test_selected_exit_proximity_rejects_wall_separated_connector(self):
+        physical = box(0, 0, 4, 4).difference(box(1.95, 0, 2.05, 4))
+        router = GridRouter(
+            physical,
+            [],
+            [Exit(1, (2.1, 1), (2.1, 3))],
+            physical_walkable=physical,
+        )
+
+        np.testing.assert_array_equal(
+            router.reached_selected_exit_labels([(1.9, 2.0)]),
+            [-1],
+        )
+
+    def test_selected_exit_proximity_excludes_unseeded_exit(self):
+        router = GridRouter(
+            box(0, 0, 4, 4),
+            [],
+            [Exit(1, (4, 1), (4, 3)), Exit(2, (5, 1), (5, 3))],
+            physical_walkable=box(0, 0, 5, 4),
+        )
+
+        self.assertEqual(router.seeded_exit_ids, frozenset({"1"}))
+        np.testing.assert_array_equal(
+            router.reached_selected_exit_labels([(4.8, 2.0)]),
+            [-1],
+        )
+
     def test_batch_geometry_predicates_validate_counts_and_accept_empty_inputs(self):
         router = GridRouter(box(0, 0, 4, 4), [], [Exit(1, (4, 1), (4, 3))])
 
@@ -547,6 +607,10 @@ class GridRoutingTest(unittest.TestCase):
         ):
             self.assertEqual(result.shape, (0,))
             self.assertEqual(result.dtype, np.dtype(bool))
+
+        proximity = router.reached_selected_exit_labels([])
+        self.assertEqual(proximity.shape, (0,))
+        self.assertEqual(proximity.dtype, np.dtype(np.int32))
 
         with self.assertRaisesRegex(ValueError, "counts must match"):
             router.can_connect_many([(0, 0)], [])

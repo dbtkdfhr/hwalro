@@ -1208,11 +1208,35 @@ def _update_targets(context: SimulationContext, agents, positions, crossed=None)
     context.removal_ready[final_slots] = ready
     context.readiness_any[final_slots] = final_near | ready
 
+    eligible = context.active & ~context.waiting
+    if not eligible.any():
+        proximity_slots = np.empty(0, dtype=np.int64)
+        proximity_labels = np.empty(0, dtype=np.int32)
+    else:
+        proximity_slots = None if eligible.all() else np.flatnonzero(eligible)
+        proximity_positions = positions if proximity_slots is None else positions[proximity_slots]
+        proximity_labels = context.router.reached_selected_exit_labels(proximity_positions)
+    proximity_matches = np.flatnonzero(proximity_labels >= 0)
+    reached_exit_by_slot = {}
+    if proximity_matches.size:
+        matched_slots = (
+            proximity_matches if proximity_slots is None else proximity_slots[proximity_matches]
+        )
+        context.removal_ready[matched_slots] = True
+        context.readiness_any[matched_slots] = True
+        reached_exit_by_slot = {
+            int(slot): context.router.exits[int(proximity_labels[index])].id
+            for slot, index in zip(matched_slots, proximity_matches)
+        }
+
     evacuated = []
-    ready_slots = final_slots[ready]
+    ready_slots = np.flatnonzero(context.removal_ready)
     for slot in ready_slots:
         agent_id = int(context.agent_ids[slot])
         if context.simulation.mark_agent_for_removal(agent_id):
+            reached_exit_id = reached_exit_by_slot.get(int(slot))
+            if reached_exit_id is not None:
+                context.states[agent_id].exit_id = reached_exit_id
             context.active[slot] = False
             context.active_count -= 1
             evacuated.append(agent_id)

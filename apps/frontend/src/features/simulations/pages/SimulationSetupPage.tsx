@@ -94,8 +94,18 @@ function errorAlert(text: string): PageAlert {
 function SimulationSetupPage() {
   const { simulationId = '' } = useParams();
   const navigate = useNavigate();
-  const recordLastActivity = useRecordLastActivity();
   const [searchParams, setSearchParams] = useSearchParams();
+  const recordLastActivity = useRecordLastActivity();
+  const requestedDefaultAllExitsRef = useRef({
+    simulationId,
+    value: searchParams.get('defaultAllExits') === 'true',
+  });
+  if (requestedDefaultAllExitsRef.current.simulationId !== simulationId) {
+    requestedDefaultAllExitsRef.current = {
+      simulationId,
+      value: searchParams.get('defaultAllExits') === 'true',
+    };
+  }
   const settingsPanel = useCollapsibleWorkspacePanel();
   const requestedHighlightRef = useRef({
     simulationId,
@@ -169,14 +179,21 @@ function SimulationSetupPage() {
   );
 
   const loadSetup = useCallback(
-    (data: SimulationSetup, highlightAgent: string | null = null, resetTool = false) => {
+    (
+      data: SimulationSetup,
+      highlightAgent: string | null = null,
+      resetTool = false,
+      selectAllExits = false,
+    ) => {
       const loadedHazards = data.hazardZones.map((hazard, index) => ({
         ...hazard,
         clientId: `hazard-${hazard.id ?? index}-${hazardSequenceRef.current++}`,
       }));
       setSetup(data);
       setTitle(data.title || data.drawing.title);
-      setSelectedExitIds(data.selectedExitIds);
+      setSelectedExitIds(
+        selectAllExits ? data.drawing.exits.map((exit) => exit.id) : data.selectedExitIds,
+      );
       setHighlightedExitId(null);
       setWalkingSpeed(data.walkingSpeed);
       setInitialResponseTimeStdDev(data.initialResponseTimeStdDev);
@@ -206,7 +223,18 @@ function SimulationSetupPage() {
       .getSetup(id)
       .then((data) => {
         if (!cancelled) {
-          loadSetup(data, requestedHighlightRef.current.value, true);
+          const defaultAllExits = requestedDefaultAllExitsRef.current.value;
+          loadSetup(data, requestedHighlightRef.current.value, true, defaultAllExits);
+          if (defaultAllExits) {
+            setSearchParams(
+              (current) => {
+                const next = new URLSearchParams(current);
+                next.delete('defaultAllExits');
+                return next;
+              },
+              { replace: true },
+            );
+          }
           setLoadState('ready');
         }
       })
@@ -219,7 +247,7 @@ function SimulationSetupPage() {
     return () => {
       cancelled = true;
     };
-  }, [loadSetup, simulationId]);
+  }, [loadSetup, navigate, setSearchParams, simulationId]);
 
   useEffect(() => {
     if (loadState !== 'ready' || !searchParams.has('highlightAgent')) return;

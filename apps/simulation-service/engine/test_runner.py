@@ -132,8 +132,10 @@ class InitialResponseTimeTest(unittest.TestCase):
         context.waiting[:] = True
         context.waiting_count = 1
         context.walking_speed = 1.25
+        context.router.proximity_labels = [0]
 
         self.assertEqual(_initialize_targets(context), [])
+        self.assertEqual(context.simulation.pending_removals, set())
         _activate_due_agents(context, 2)
         self.assertEqual(agent.model.desired_speed, 0.0)
         self.assertTrue(context.waiting[0])
@@ -991,6 +993,10 @@ class BulkAgentAccessTest(unittest.TestCase):
             return True
 
     class Router:
+        def __init__(self):
+            self.exits = [SimpleNamespace(id=501), SimpleNamespace(id=502)]
+            self.proximity_labels = None
+
         def valid_moves(self, starts, _ends):
             return [True] * len(starts)
 
@@ -1032,6 +1038,11 @@ class BulkAgentAccessTest(unittest.TestCase):
                     positions, exit_starts, exit_ends, strict=True
                 )
             ]
+
+        def reached_selected_exit_labels(self, positions):
+            if self.proximity_labels is None:
+                return np.full(len(positions), -1, dtype=np.int32)
+            return np.asarray(self.proximity_labels, dtype=np.int32)
 
         def clamp_to_walkable(self, point):
             return point
@@ -1186,6 +1197,28 @@ class BulkAgentAccessTest(unittest.TestCase):
         self.assertEqual(context.active_count, 0)
         self.assertEqual(simulation.pending_removals, {1})
 
+    def test_removes_mid_route_agent_and_records_actual_reached_exit(self):
+        agent = self.BackingAgent(1, (5.0, 0.0))
+        simulation = self.Simulation([agent])
+        router = self.Router()
+        router.proximity_labels = [1]
+        state = AgentRouteState(
+            stable_id=1,
+            exit_id=501,
+            waypoints=((0.0, 0.0), (10.0, 0.0)),
+            terminal_point=(10.0, 0.0),
+            exit_start=(20.0, 0.0),
+            exit_end=(20.0, 1.0),
+        )
+        context = SimulationContext(simulation, router, {1: state}, numpy=np)
+
+        self.assertEqual(_initialize_targets(context), [1])
+
+        self.assertEqual(state.cursor, 0)
+        self.assertEqual(state.exit_id, 502)
+        self.assertEqual(context.active.tolist(), [False])
+        self.assertEqual(simulation.pending_removals, {1})
+
     def test_removal_refusal_preserves_position_without_rewriting_target(self):
         class RefusingSimulation(self.Simulation):
             def mark_agent_for_removal(self, _agent_id):
@@ -1193,10 +1226,13 @@ class BulkAgentAccessTest(unittest.TestCase):
 
         agent = self.BackingAgent(1, (0.0, 0.0))
         simulation = RefusingSimulation([agent])
+        router = self.Router()
+        router.proximity_labels = [1]
+        state = self._state(1, (0.0, 0.0))
         context = SimulationContext(
             simulation,
-            self.Router(),
-            {1: self._state(1, (0.0, 0.0))},
+            router,
+            {1: state},
             numpy=np,
         )
 
@@ -1204,6 +1240,7 @@ class BulkAgentAccessTest(unittest.TestCase):
 
         np.testing.assert_array_equal(context.positions, [[0.0, 0.0]])
         self.assertEqual(context.active.tolist(), [True])
+        self.assertEqual(state.exit_id, 501)
         self.assertEqual(agent.target_writes, 0)
 
     def test_exit_crossing_is_detected_before_invalid_move_rollback(self):
@@ -1432,6 +1469,9 @@ class RecoveryScanTest(unittest.TestCase):
                     positions, exit_starts, exit_ends, strict=True
                 )
             ]
+
+        def reached_selected_exit_labels(self, positions):
+            return np.full(len(positions), -1, dtype=np.int32)
 
         def valid_moves(self, starts, _ends):
             return [True] * len(starts)

@@ -51,7 +51,10 @@ function setup(): SimulationSetup {
       pillars: [],
       fabrics: [],
       layoutTexts: [],
-      exits: [{ id: 501, name: '출구 1', startX: 10, startY: 4, endX: 10, endY: 6 }],
+      exits: [
+        { id: 501, name: '출구 1', startX: 10, startY: 4, endX: 10, endY: 6 },
+        { id: 502, name: '출구 2', startX: 0, startY: 4, endX: 0, endY: 6 },
+      ],
     },
   };
 }
@@ -85,10 +88,14 @@ afterEach(async () => {
   vi.useRealTimers();
 });
 
-async function renderPage() {
+async function renderPage(defaultAllExits = false) {
   await act(async () => {
     root.render(
-      <MemoryRouter initialEntries={['/simulations/42/setup']}>
+      <MemoryRouter
+        initialEntries={[
+          defaultAllExits ? '/simulations/42/setup?defaultAllExits=true' : '/simulations/42/setup',
+        ]}
+      >
         <Routes>
           <Route path="/simulations/:simulationId/setup" element={<SimulationSetupPage />} />
           <Route path="/simulations" element={<div data-testid="simulation-list">목록</div>} />
@@ -110,6 +117,54 @@ function executeButton(): HTMLButtonElement {
   return match;
 }
 
+describe('출입구 기본 선택', () => {
+  it('저장된 출입구 선택을 유지한다', async () => {
+    vi.spyOn(simulationApi, 'getSetup').mockResolvedValue(setup());
+
+    await renderPage();
+
+    const exitCheckboxes = [
+      ...container.querySelectorAll<HTMLInputElement>(
+        '.simulation-setup-exit-list input[type="checkbox"]',
+      ),
+    ];
+    expect(exitCheckboxes).toHaveLength(2);
+    expect(exitCheckboxes.map((checkbox) => checkbox.checked)).toEqual([true, false]);
+  });
+
+  it('새 초안 설정 페이지를 열면 모든 출입구를 선택한다', async () => {
+    const current = setup();
+    current.selectedExitIds = [];
+    vi.spyOn(simulationApi, 'getSetup').mockResolvedValue(current);
+
+    await renderPage(true);
+
+    const exitCheckboxes = [
+      ...container.querySelectorAll<HTMLInputElement>(
+        '.simulation-setup-exit-list input[type="checkbox"]',
+      ),
+    ];
+    expect(exitCheckboxes).toHaveLength(2);
+    expect(exitCheckboxes.every((checkbox) => checkbox.checked)).toBe(true);
+  });
+
+  it('저장된 빈 출입구 선택을 유지한다', async () => {
+    const current = setup();
+    current.selectedExitIds = [];
+    vi.spyOn(simulationApi, 'getSetup').mockResolvedValue(current);
+
+    await renderPage();
+
+    const exitCheckboxes = [
+      ...container.querySelectorAll<HTMLInputElement>(
+        '.simulation-setup-exit-list input[type="checkbox"]',
+      ),
+    ];
+    expect(exitCheckboxes).toHaveLength(2);
+    expect(exitCheckboxes.every((checkbox) => !checkbox.checked)).toBe(true);
+  });
+});
+
 describe('실행 전 라우팅 검증', () => {
   it('저장과 검증에 성공하면 페이지에서 성공을 알리고 실행한 뒤 이동한다', async () => {
     const current = setup();
@@ -126,11 +181,8 @@ describe('실행 전 라우팅 검증', () => {
     vi.useFakeTimers();
     await act(async () => {
       executeButton().click();
-      await Promise.resolve();
-      await Promise.resolve();
-      await Promise.resolve();
+      await vi.waitFor(() => expect(execute).toHaveBeenCalledWith(42));
     });
-
     expect(update).toHaveBeenCalledTimes(1);
     expect(update.mock.calls[0]?.[1]).not.toHaveProperty('initialResponseTimeMean');
     expect(validate).toHaveBeenCalledWith(42);
@@ -167,6 +219,7 @@ describe('실행 전 라우팅 검증', () => {
       await Promise.resolve();
       await Promise.resolve();
       await Promise.resolve();
+      await Promise.resolve();
     });
 
     expect(container.querySelector('[role="alert"]')?.textContent).toContain(
@@ -194,9 +247,7 @@ describe('실행 전 라우팅 검증', () => {
     const button = executeButton();
     await act(async () => {
       button.click();
-      await Promise.resolve();
-      await Promise.resolve();
-      await Promise.resolve();
+      await vi.waitFor(() => expect(button.disabled).toBe(true));
     });
 
     expect(button.disabled).toBe(true);

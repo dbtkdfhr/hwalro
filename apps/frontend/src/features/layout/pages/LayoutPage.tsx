@@ -214,7 +214,7 @@ function LayoutPage() {
           layoutVersionId: session.layoutVersionId,
           ...(parentSimulationId === undefined ? {} : { parentSimulationId }),
         });
-        navigate(`/simulations/${draft.simulationId}/setup`);
+        navigate(`/simulations/${draft.simulationId}/setup?defaultAllExits=true`);
       } catch (error) {
         setDraftDialogOpen(false);
         dispatch({

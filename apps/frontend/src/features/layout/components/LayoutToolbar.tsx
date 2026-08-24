@@ -21,10 +21,7 @@ export function LayoutToolbar({
   return (
     <div className="layout-panel-actions">
       <div className="layout-panel-actions__header">
-        <div>
-          <small>LAYOUT EDITOR</small>
-          <h2>도면 설정</h2>
-        </div>
+        <h2>도면 설정</h2>
         <button
           ref={collapseButtonRef}
           type="button"
@@ -42,11 +39,7 @@ export function LayoutToolbar({
           type="button"
           onClick={onSave}
           disabled={readOnly}
-          className={`h-9 rounded-lg text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-45 ${
-            saveStatus === 'error'
-              ? 'bg-panel-danger text-white'
-              : 'bg-panel-accent text-ink hover:opacity-85'
-          }`}
+          className={`layout-panel-actions__save ${saveStatus === 'error' ? 'is-error' : ''}`}
         >
           {saveStatus === 'saving'
             ? '저장 중'
@@ -64,7 +57,7 @@ export function LayoutToolbar({
         <button
           type="button"
           onClick={onStartSimulation}
-          className="h-9 rounded-lg border border-panel-accent text-sm font-bold text-panel-accent transition-colors hover:bg-panel-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          className="layout-panel-actions__simulation"
         >
           시뮬레이션 배치
         </button>

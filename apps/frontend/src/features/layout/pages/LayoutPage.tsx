@@ -414,7 +414,7 @@ function LayoutPage() {
       {state.error && (
         <div
           role="alert"
-          className="absolute bottom-4 right-4 z-20 flex max-w-[320px] items-center gap-2 rounded-md border border-danger bg-white px-3 py-2 text-sm text-danger shadow-raised"
+          className="layout-workspace-alert flex max-w-[320px] items-center gap-2 rounded-md border border-danger bg-surface-overlay px-3 py-2 text-sm text-danger shadow-neu-floating"
         >
           <span className="min-w-0">{state.error}</span>
           <button

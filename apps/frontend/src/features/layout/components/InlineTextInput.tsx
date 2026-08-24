@@ -79,7 +79,7 @@ export function InlineTextInput({
     <textarea
       ref={textareaRef}
       aria-label="텍스트 입력"
-      className="absolute z-10 rounded-sm border-2 border-primary bg-white font-sans text-ink shadow-[0_2px_8px_rgba(0,0,0,0.15)] outline-none"
+      className="absolute z-10 rounded-sm border-2 border-primary bg-surface-overlay font-sans text-ink shadow-neu-floating outline-none"
       defaultValue={initialText}
       style={{
         left: (point.x - panX) * zoom * PX_PER_METER,

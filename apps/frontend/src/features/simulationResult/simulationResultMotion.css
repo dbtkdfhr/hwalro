@@ -2,15 +2,15 @@
   transform-origin: calc(100% - 17px) 17px;
   will-change: transform, opacity;
   backface-visibility: hidden;
-  animation: summary-panel-arrive 280ms cubic-bezier(0.2, 0.78, 0.22, 1) both;
+  animation: summary-panel-arrive 220ms cubic-bezier(0.2, 0.78, 0.22, 1) both;
 }
 
 .result-summary.is-collapsing {
-  animation: summary-panel-suck 300ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  animation: summary-panel-suck 180ms cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 
 .summary-restore {
-  animation: summary-restore-arrive 240ms 120ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: summary-restore-arrive 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .playback-controls .playback-result {
@@ -42,18 +42,18 @@
 
 .evacuation-chart.is-collapsing {
   transform-origin: left bottom;
-  animation: evacuation-chart-suck 280ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  animation: evacuation-chart-suck 180ms cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 
 .improvement-action.is-collapsing {
   transform-origin: right bottom;
-  animation: improvement-panel-suck 280ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  animation: improvement-panel-suck 180ms cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 
 .evacuation-chart.is-expanding,
 .improvement-action.is-expanding {
-  will-change: transform, opacity, filter;
-  animation: support-panel-rise 340ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+  animation: support-panel-rise 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .evacuation-chart.is-expanding {
@@ -84,7 +84,7 @@
 
   to {
     opacity: 0;
-    transform: translate3d(6px, 5px, 0) scale3d(0.78, 0.78, 1);
+    transform: translate3d(4px, 3px, 0) scale3d(0.96, 0.96, 1);
   }
 }
 
@@ -96,26 +96,18 @@
 
   to {
     opacity: 0;
-    transform: translate3d(-6px, 5px, 0) scale3d(0.78, 0.78, 1);
+    transform: translate3d(-4px, 3px, 0) scale3d(0.96, 0.96, 1);
   }
 }
 
 @keyframes support-panel-rise {
-  0% {
+  from {
     opacity: 0;
-    filter: blur(5px);
-    transform: translateY(14px) scale(0.78, 0.7);
+    transform: translateY(8px) scale(0.97);
   }
 
-  62% {
-    opacity: 0.92;
-    filter: blur(0.5px);
-    transform: translateY(-2px) scale(1.015, 1.01);
-  }
-
-  100% {
+  to {
     opacity: 1;
-    filter: blur(0);
     transform: translateY(0) scale(1);
   }
 }
@@ -128,20 +120,18 @@
 
   to {
     opacity: 0;
-    transform: translate3d(10px, -8px, 0) scale3d(0.78, 0.78, 1);
+    transform: translate3d(6px, -4px, 0) scale3d(0.96, 0.96, 1);
   }
 }
 
 @keyframes summary-panel-arrive {
   from {
     opacity: 0;
-    filter: blur(6px);
-    transform: translate(14px, -12px) scale(0.08);
+    transform: translate(8px, -6px) scale(0.97);
   }
 
   to {
     opacity: 1;
-    filter: blur(0);
     transform: translate(0, 0) scale(1);
   }
 }
@@ -149,7 +139,7 @@
 @keyframes summary-restore-arrive {
   from {
     opacity: 0;
-    transform: scale(0.7);
+    transform: scale(0.96);
   }
 
   to {
@@ -170,5 +160,10 @@
   .improvement-action-restore {
     animation-duration: 1ms;
     animation-delay: 0ms;
+  }
+
+  .playback-controls .playback-result,
+  .risk-zone-button {
+    transition-duration: 1ms;
   }
 }

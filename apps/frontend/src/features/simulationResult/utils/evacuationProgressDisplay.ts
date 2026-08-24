@@ -6,7 +6,7 @@ export function getEvacuationProgressDisplay(
   if (isPlaybackDataStale) {
     return {
       countLabel: '불러오는 중',
-      rateLabel: '—',
+      rateLabel: '-',
     };
   }
   return {

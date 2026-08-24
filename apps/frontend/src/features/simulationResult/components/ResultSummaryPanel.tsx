@@ -1,4 +1,4 @@
-import { CircleCheck } from 'lucide-react';
+import { CircleCheck, Minus } from 'lucide-react';
 import {
   CanvasWorkspacePanel,
   CanvasWorkspacePanelRestore,
@@ -70,12 +70,9 @@ export function ResultSummaryPanel({
       }}
     >
       <div className="summary-header">
-        <div>
-          <small>SIMULATION RESULT</small>
-          <h1 style={{ fontWeight: 900, lineHeight: 1.08, letterSpacing: '-0.04em' }}>결과 요약</h1>
-        </div>
+        <h1 style={{ fontWeight: 900, lineHeight: 1.08, letterSpacing: '-0.04em' }}>결과 요약</h1>
         <button type="button" aria-label="결과 요약 최소화" onClick={panel.collapse}>
-          −
+          <Minus aria-hidden="true" />
         </button>
       </div>
       <div className="result-summary-scroll-content">
@@ -94,7 +91,7 @@ export function ResultSummaryPanel({
           </div>
         </div>
         <div className="evacuation-complete" aria-busy={isPlaybackDataStale} aria-live="polite">
-          <span>대피 진행 · {evacuationProgress.countLabel}</span>
+          <span>대피 진행 / {evacuationProgress.countLabel}</span>
           <strong>{evacuationProgress.rateLabel}</strong>
         </div>
         <h2>병목 분석</h2>
@@ -138,13 +135,13 @@ export function ResultSummaryPanel({
                 aria-controls="bottleneck-list"
                 onClick={onShowMoreBottlenecks}
               >
-                병목 {nextBottleneckCount}개 더 보기 · {displayedBottleneckCount}/
+                병목 {nextBottleneckCount}개 더 보기 / {displayedBottleneckCount}/
                 {totalBottleneckCount}
               </button>
             )}
             {selectedBottleneck && (
               <p className="analysis-note">
-                기준 {selectedBottleneck.thresholdValue}명/㎡ · 최고{' '}
+                기준 {selectedBottleneck.thresholdValue}명/㎡ / 최고{' '}
                 {selectedBottleneck.peakDensity}
                 명/㎡
               </p>

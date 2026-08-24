@@ -42,7 +42,7 @@ export function AgentDeletionConfirmDialog({
       }}
       className="m-0 h-dvh max-h-none w-screen max-w-none border-0 bg-transparent p-4 open:flex open:items-start open:justify-end backdrop:bg-ink/15"
     >
-      <article className="w-80 overflow-hidden rounded-2xl border border-danger/25 bg-white shadow-floating">
+      <article className="w-80 overflow-hidden rounded-2xl border border-danger/25 bg-surface-overlay shadow-neu-floating">
         <div className="flex gap-3 p-4">
           <div
             className="flex size-9 shrink-0 items-center justify-center rounded-full bg-danger-soft text-danger"
@@ -76,7 +76,7 @@ export function AgentDeletionConfirmDialog({
             type="button"
             onClick={onCancel}
             aria-label="에이전트 전체 삭제 취소"
-            className="flex size-7 shrink-0 items-center justify-center rounded-full text-text-muted outline-none transition hover:bg-surface hover:text-ink focus-visible:ring-2 focus-visible:ring-focus-ring"
+            className="flex size-7 shrink-0 items-center justify-center rounded-full border border-transparent text-text-muted outline-none transition-[background-color,border-color,color,box-shadow] hover:border-line hover:bg-surface-raised hover:text-ink hover:shadow-neu-raised active:bg-surface-sunken active:shadow-neu-pressed focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             <X aria-hidden="true" className="h-4 w-4" />
           </button>
@@ -96,7 +96,7 @@ export function AgentDeletionSuccessToast({
     <article
       role="status"
       aria-live="polite"
-      className={`absolute right-4 top-4 z-20 w-80 overflow-hidden rounded-2xl border border-success/25 bg-white shadow-floating ${className ?? ''}`}
+      className={`absolute right-4 top-4 z-20 w-80 overflow-hidden rounded-2xl border border-success/25 bg-surface-overlay shadow-neu-floating ${className ?? ''}`}
     >
       <div className="flex gap-3 p-4">
         <div
@@ -117,7 +117,7 @@ export function AgentDeletionSuccessToast({
           type="button"
           onClick={onClose}
           aria-label="에이전트 삭제 알림 닫기"
-          className="flex size-7 shrink-0 items-center justify-center rounded-full text-text-muted outline-none transition hover:bg-surface hover:text-ink focus-visible:ring-2 focus-visible:ring-focus-ring"
+          className="flex size-7 shrink-0 items-center justify-center rounded-full border border-transparent text-text-muted outline-none transition-[background-color,border-color,color,box-shadow] hover:border-line hover:bg-surface-raised hover:text-ink hover:shadow-neu-raised active:bg-surface-sunken active:shadow-neu-pressed focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
           <X aria-hidden="true" className="h-4 w-4" />
         </button>

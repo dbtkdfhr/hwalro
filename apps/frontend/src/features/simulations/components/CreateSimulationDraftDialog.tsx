@@ -75,7 +75,7 @@ export function CreateSimulationDraftDialog({
         </>
       }
     >
-      <label className="flex items-start gap-3 rounded-xl border border-line p-4 transition has-checked:border-primary has-checked:bg-primary-soft/40">
+      <label className="flex items-start gap-3 rounded-xl border border-line bg-surface-raised p-4 shadow-neu-raised transition-[border-color,background-color,box-shadow] has-checked:border-primary has-checked:bg-surface-sunken has-checked:shadow-neu-pressed">
         <input
           type="radio"
           name="draft-source"
@@ -105,14 +105,14 @@ export function CreateSimulationDraftDialog({
             {error}
           </p>
         ) : summaries.length === 0 ? (
-          <p className="rounded-xl bg-surface px-4 py-4 text-center text-sm text-text-muted">
+          <p className="rounded-xl border border-line bg-surface-sunken px-4 py-4 text-center text-sm text-text-muted shadow-neu-pressed">
             복사할 수 있는 이전 시뮬레이션이 없습니다.
           </p>
         ) : (
           summaries.map((summary) => (
             <label
               key={summary.id}
-              className="flex items-start gap-3 rounded-xl border border-line p-4 transition has-checked:border-primary has-checked:bg-primary-soft/40"
+              className="flex items-start gap-3 rounded-xl border border-line bg-surface-raised p-4 shadow-neu-raised transition-[border-color,background-color,box-shadow] has-checked:border-primary has-checked:bg-surface-sunken has-checked:shadow-neu-pressed"
             >
               <input
                 type="radio"

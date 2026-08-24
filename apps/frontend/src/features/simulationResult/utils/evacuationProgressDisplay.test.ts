@@ -5,7 +5,7 @@ describe('getEvacuationProgressDisplay', () => {
   it('hides time-sensitive metrics while playback data is stale', () => {
     expect(getEvacuationProgressDisplay(980, 98, true)).toEqual({
       countLabel: '불러오는 중',
-      rateLabel: '—',
+      rateLabel: '-',
     });
   });
 

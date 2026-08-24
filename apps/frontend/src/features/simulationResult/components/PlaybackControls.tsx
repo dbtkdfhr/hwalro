@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { Pause, Play } from 'lucide-react';
 import { formatDuration } from '../utils/playback';
 
 interface Props {
@@ -67,7 +68,7 @@ export function PlaybackControls({
         title={isPlaying ? '일시정지' : '재생'}
         onClick={onToggle}
       >
-        <span aria-hidden="true">{isPlaying ? 'Ⅱ' : '▶'}</span>
+        {isPlaying ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}
       </button>
       <strong>{formatDuration(currentTimeSeconds)}</strong>
       <input

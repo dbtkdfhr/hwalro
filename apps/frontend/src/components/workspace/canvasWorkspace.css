@@ -1,14 +1,14 @@
 .canvas-workspace {
-  --canvas-workspace-gutter: 22px;
-  --canvas-workspace-top: 20px;
-  --canvas-workspace-panel-right: 26px;
-  --canvas-workspace-panel-top: 78px;
-  --canvas-workspace-panel-width: 346px;
-  --canvas-workspace-panel-radius: 27px;
+  --canvas-workspace-gutter: 18px;
+  --canvas-workspace-top: 16px;
+  --canvas-workspace-panel-right: 0px;
+  --canvas-workspace-panel-top: 0px;
+  --canvas-workspace-panel-width: 360px;
+  --canvas-workspace-panel-radius: 0px;
   position: relative;
   height: 100dvh;
   overflow: hidden;
-  background: var(--color-background);
+  background: var(--color-surface-base, var(--color-background));
   color: var(--color-text-strong);
   isolation: isolate;
 }
@@ -16,39 +16,43 @@
 .canvas-workspace-back {
   position: absolute;
   left: var(--canvas-workspace-gutter);
-  top: calc(var(--canvas-workspace-top) + 2px);
+  top: var(--canvas-workspace-top);
   z-index: 30;
   cursor: pointer;
-  border-color: color-mix(in srgb, var(--color-line-strong) 72%, transparent);
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: var(--shadow-raised);
-  backdrop-filter: blur(14px);
+  border-color: var(--color-line);
+  background: var(--color-surface-raised, var(--color-surface));
+  box-shadow: 0 1px 2px rgb(13 29 25 / 0.06);
+}
+
+.canvas-workspace-back:not(:disabled):active {
+  box-shadow: var(--shadow-neu-pressed, inset 2px 2px 5px rgb(22 55 49 / 0.12));
 }
 
 .canvas-workspace-header {
   position: absolute;
-  left: 50%;
+  left: 112px;
+  right: calc(var(--canvas-workspace-panel-width) + 18px);
   top: var(--canvas-workspace-top);
   z-index: 20;
   display: flex;
-  min-width: 350px;
-  max-width: min(520px, calc(100vw - 460px));
+  min-width: 0;
+  max-width: none;
   align-items: center;
   gap: 12px;
-  border: 1px solid rgba(151, 177, 170, 0.4);
-  border-radius: 17px;
-  background: rgba(255, 255, 255, 0.9);
-  padding: 10px 16px;
-  box-shadow: var(--shadow-floating);
-  transform: translateX(-50%);
-  backdrop-filter: blur(14px) saturate(110%);
+  border: 1px solid var(--color-line);
+  border-radius: 10px;
+  background: var(--color-surface-raised, var(--color-surface));
+  padding: 9px 12px;
+  box-shadow:
+    0 1px 2px rgb(13 29 25 / 0.06),
+    0 8px 20px rgb(13 29 25 / 0.06);
 }
 
 .canvas-workspace-header__marker {
-  width: 17px;
-  height: 17px;
-  flex: 0 0 17px;
-  border-radius: 50%;
+  width: 4px;
+  height: 32px;
+  flex: 0 0 4px;
+  border-radius: 2px;
   background: var(--color-line-strong);
 }
 
@@ -87,8 +91,9 @@
 
 .canvas-workspace-header__status {
   flex: 0 0 auto;
-  border-radius: 999px;
-  background: var(--color-soft-gray);
+  border-radius: 8px;
+  border: 1px solid var(--color-line-subtle);
+  background: var(--color-surface-sunken, var(--color-soft-gray));
   padding: 6px 12px;
   color: var(--color-text-muted);
   font-size: 12px;
@@ -114,19 +119,31 @@
   z-index: 20;
   display: flex;
   width: var(--canvas-workspace-panel-width);
-  max-height: calc(100dvh - 102px);
+  height: 100dvh;
+  max-height: none;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid rgba(151, 177, 170, 0.16);
+  border: 0;
+  border-left: 1px solid var(--color-line-strong);
   border-radius: var(--canvas-workspace-panel-radius);
-  background: rgba(15, 48, 42, 0.92);
-  color: var(--color-white);
-  box-shadow: 0 24px 70px rgba(7, 32, 28, 0.25);
-  backdrop-filter: blur(16px) saturate(115%);
+  background: var(--color-surface-overlay);
+  color: var(--color-ink);
+  box-shadow: -12px 0 34px rgb(13 29 25 / 0.1);
+  color-scheme: light;
+  --color-panel: var(--color-surface-overlay);
+  --color-panel-soft: var(--color-surface-sunken);
+  --color-panel-border: var(--color-line-strong);
+  --color-panel-text: var(--color-ink);
+  --color-panel-muted: var(--color-text-muted);
+  --color-panel-faint: var(--color-text-faint);
+  --color-panel-divider: var(--color-line);
+  --color-panel-accent: var(--color-primary);
+  --color-panel-raised: var(--color-surface-raised);
+  --color-panel-sunken: var(--color-surface-sunken);
 }
 
 .canvas-workspace-panel--animated {
-  transform-origin: calc(100% - 17px) 17px;
+  transform-origin: right center;
   animation: canvas-workspace-panel-enter 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
@@ -140,20 +157,26 @@
   right: var(--canvas-workspace-panel-right);
   top: var(--canvas-workspace-panel-top);
   z-index: 20;
-  border: 1px solid rgba(151, 177, 170, 0.24);
-  border-radius: 999px;
-  background: rgba(15, 48, 42, 0.94);
+  border: 1px solid var(--color-line-strong);
+  border-radius: 10px;
+  background: var(--color-surface-overlay);
   padding: 11px 16px;
-  color: var(--color-white);
+  color: var(--color-primary);
   font-size: 12px;
-  font-weight: 800;
-  box-shadow: 0 16px 38px rgba(7, 32, 28, 0.2);
-  backdrop-filter: blur(14px) saturate(115%);
+  font-weight: 700;
+  box-shadow:
+    0 1px 2px rgb(13 29 25 / 0.06),
+    0 8px 20px rgb(13 29 25 / 0.08);
 }
 
 .canvas-workspace-panel-restore:not(:disabled):hover {
-  background: rgba(28, 69, 62, 0.96);
+  background: var(--color-primary-faint);
   transform: translateY(-1px);
+}
+
+.canvas-workspace-panel-restore:not(:disabled):active {
+  box-shadow: var(--shadow-neu-pressed);
+  transform: translateY(0);
 }
 
 .canvas-workspace-panel-restore:focus-visible {
@@ -168,7 +191,7 @@
   justify-content: center;
   flex-direction: column;
   gap: 12px;
-  background: var(--color-background);
+  background: var(--color-surface-base, var(--color-background));
   color: var(--color-text-strong);
   padding: 24px;
   text-align: center;
@@ -190,33 +213,32 @@
 @keyframes canvas-workspace-panel-enter {
   from {
     opacity: 0;
-    transform: translate(10px, -8px) scale(0.92);
+    transform: translateX(28px);
   }
   to {
     opacity: 1;
-    transform: translate(0, 0) scale(1);
+    transform: translateX(0);
   }
 }
 
 @keyframes canvas-workspace-panel-collapse {
   from {
     opacity: 1;
-    transform: translate(0, 0) scale(1);
+    transform: translateX(0);
   }
   to {
     opacity: 0;
-    transform: translate(10px, -8px) scale(0.78);
+    transform: translateX(28px);
   }
 }
 
 @media (max-width: 1100px) {
   .canvas-workspace {
-    --canvas-workspace-panel-right: 14px;
-    --canvas-workspace-panel-width: 300px;
+    --canvas-workspace-panel-width: 320px;
   }
 
   .canvas-workspace-header {
-    max-width: calc(100vw - 430px);
+    right: calc(var(--canvas-workspace-panel-width) + 14px);
   }
 }
 
@@ -227,6 +249,7 @@
     --canvas-workspace-panel-right: 12px;
     --canvas-workspace-panel-top: 72px;
     --canvas-workspace-panel-width: min(320px, calc(100vw - 24px));
+    --canvas-workspace-panel-radius: 16px;
   }
 
   .canvas-workspace-header {
@@ -235,6 +258,13 @@
     min-width: 0;
     max-width: calc(100vw - 92px);
     transform: none;
+  }
+
+  .canvas-workspace-panel {
+    height: auto;
+    max-height: calc(100dvh - 84px);
+    border: 1px solid var(--color-line-strong);
+    box-shadow: 0 14px 36px rgb(13 29 25 / 0.14);
   }
 
   .canvas-workspace-header__subtitle,
@@ -250,19 +280,40 @@
   .canvas-workspace-panel-restore {
     animation-duration: 1ms;
     transition-duration: 1ms;
+    scroll-behavior: auto;
   }
 }
 
 @media (prefers-reduced-transparency: reduce) {
   .canvas-workspace-back,
   .canvas-workspace-header {
-    background: var(--color-white);
+    background: var(--color-surface-raised, var(--color-white));
     backdrop-filter: none;
   }
 
-  .canvas-workspace-panel,
-  .canvas-workspace-panel-restore {
+  .canvas-workspace-panel {
     background: var(--color-panel);
     backdrop-filter: none;
+  }
+
+  .canvas-workspace-panel-restore {
+    background: var(--color-surface-overlay);
+    color: var(--color-primary);
+    backdrop-filter: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .canvas-workspace-back,
+  .canvas-workspace-header,
+  .canvas-workspace-panel,
+  .canvas-workspace-panel-restore {
+    border: 1px solid CanvasText;
+    box-shadow: none;
+    forced-color-adjust: auto;
+  }
+
+  .canvas-workspace-header__marker {
+    border: 1px solid CanvasText;
   }
 }

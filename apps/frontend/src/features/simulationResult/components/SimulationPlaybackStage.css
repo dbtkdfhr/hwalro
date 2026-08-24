@@ -8,14 +8,13 @@
   align-items: center;
   flex-direction: column;
   gap: 8px;
-  border: 1px solid rgba(151, 177, 170, 0.45);
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid var(--color-line);
+  border-radius: 16px;
+  background: var(--color-surface-overlay);
   padding: 22px 26px;
   color: var(--color-text-strong);
   text-align: center;
-  box-shadow: 0 18px 50px rgba(22, 55, 49, 0.15);
-  backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-neu-floating);
 }
 
 .simulation-canvas-error span {
@@ -30,11 +29,37 @@
   background: var(--color-primary);
   padding: 9px 14px;
   color: var(--color-white);
-  font-weight: 800;
-  cursor: default;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-neu-raised);
   transition: background-color 160ms ease;
 }
 
 .simulation-canvas-error button:hover {
   background-color: var(--color-primary-hover);
+}
+
+.simulation-canvas-error button:active {
+  background-color: var(--color-primary-active);
+  box-shadow: var(--shadow-neu-pressed);
+}
+
+.simulation-canvas-error button:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .simulation-canvas-error button {
+    transition-duration: 1ms;
+  }
+}
+
+@media (forced-colors: active) {
+  .simulation-canvas-error,
+  .simulation-canvas-error button {
+    border: 1px solid CanvasText;
+    box-shadow: none;
+    forced-color-adjust: auto;
+  }
 }

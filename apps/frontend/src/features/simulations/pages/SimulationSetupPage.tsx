@@ -75,7 +75,7 @@ function InfoTooltip({ id, label, align = 'left', children }: InfoTooltipProps) 
       <span
         id={id}
         role="tooltip"
-        className={`simulation-setup-info-tooltip pointer-events-none absolute top-full z-30 mt-2 hidden w-48 rounded-lg px-3 py-2 text-[11px] font-medium leading-5 shadow-raised group-hover:block group-focus-within:block ${align === 'right' ? 'right-0' : 'left-0'}`}
+        className={`simulation-setup-info-tooltip pointer-events-none absolute top-full z-30 mt-2 hidden w-48 rounded-lg px-3 py-2 text-[11px] font-normal leading-5 shadow-neu-inverse group-hover:block group-focus-within:block ${align === 'right' ? 'right-0' : 'left-0'}`}
       >
         {children}
       </span>
@@ -563,7 +563,7 @@ function SimulationSetupPage() {
             )}
           </div>
         }
-        subtitle={`도면: ${setup.drawing.title} · 버전 #${setup.layoutVersionId} · ${setup.modelProfile}`}
+        subtitle={`도면: ${setup.drawing.title} / 버전 #${setup.layoutVersionId} / ${setup.modelProfile}`}
         status={editable ? '설정 중' : setup.status}
         statusTone={editable ? 'editing' : 'locked'}
       />
@@ -660,10 +660,7 @@ function SimulationSetupPage() {
         >
           <div className="simulation-setup-panel__top">
             <div className="simulation-setup-panel__heading">
-              <div>
-                <small>SIMULATION SETUP</small>
-                <h2>배치 설정</h2>
-              </div>
+              <h2>배치 설정</h2>
               <button
                 ref={collapseButtonRef}
                 type="button"
@@ -766,10 +763,10 @@ function SimulationSetupPage() {
                   <span
                     className={`simulation-setup-tool-state__icon flex size-7 items-center justify-center rounded-full transition-all duration-300 ${
                       tool === 'erase'
-                        ? 'scale-110 bg-white text-danger'
+                        ? 'scale-110 bg-panel-raised text-danger'
                         : tool === 'spray'
-                          ? 'bg-white text-primary'
-                          : 'bg-white text-text-muted'
+                          ? 'bg-panel-raised text-primary'
+                          : 'bg-panel-raised text-text-muted'
                     }`}
                     aria-hidden="true"
                   >
@@ -785,7 +782,7 @@ function SimulationSetupPage() {
                     {tool === 'erase' ? '에이전트 지우기' : '에이전트 배치'}
                   </h2>
                 </div>
-                <span className="simulation-setup-tool-state__badge rounded-full bg-white px-2.5 py-1 text-[11px] font-black">
+                <span className="simulation-setup-tool-state__badge rounded-full bg-panel-raised px-2.5 py-1 text-[11px] font-black">
                   {tool === 'erase' ? '지우개 모드' : tool === 'spray' ? '배치 모드' : '도구 대기'}
                 </span>
               </div>
@@ -827,7 +824,7 @@ function SimulationSetupPage() {
                   type="button"
                   onClick={handleUniformPlacement}
                   disabled={!editable}
-                  className="mt-6 h-10 rounded-lg bg-primary-soft px-3 text-xs font-bold text-primary outline-none transition hover:bg-primary/15 focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-40"
+                  className="mt-6 h-10 rounded-lg border border-primary/30 bg-surface px-3 text-xs font-bold text-primary shadow-neu-inverse outline-none transition-[background-color,border-color,box-shadow] hover:bg-primary/15 active:shadow-neu-inverse-inset focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-40"
                 >
                   균등분포 배치
                 </button>
@@ -836,7 +833,7 @@ function SimulationSetupPage() {
                 type="button"
                 onClick={handleClearAgents}
                 disabled={!editable || saveState === 'saving' || agents.length === 0}
-                className="mt-3 h-10 w-full rounded-lg border border-danger/25 bg-white text-xs font-bold text-danger-strong outline-none transition hover:bg-danger-soft focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-40"
+                className="mt-3 h-10 w-full rounded-lg border border-panel-danger/35 bg-panel-raised text-xs font-bold text-panel-danger shadow-neu-inverse outline-none transition-[background-color,border-color,box-shadow] hover:bg-panel-sunken active:shadow-neu-inverse-inset focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-40"
               >
                 에이전트 전체 삭제
               </button>
@@ -907,7 +904,7 @@ function SimulationSetupPage() {
                       allExitsSelected ? [] : setup.drawing.exits.map((exit) => exit.id),
                     )
                   }
-                  className="simulation-setup-panel__bulk-action rounded-lg border border-primary/40 bg-white px-2.5 py-1 text-xs font-bold text-primary outline-none transition hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-40"
+                  className="simulation-setup-panel__bulk-action rounded-lg border border-primary/40 bg-transparent px-2.5 py-1 text-xs font-bold text-primary outline-none transition hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {allExitsSelected ? '전체 해제' : '전체 선택'}
                 </button>
@@ -917,7 +914,7 @@ function SimulationSetupPage() {
               </p>
               <div className="simulation-setup-exit-list">
                 {setup.drawing.exits.length === 0 ? (
-                  <p className="rounded-lg bg-surface px-3 py-3 text-xs text-text-muted">
+                  <p className="rounded-lg border border-panel-border bg-panel-sunken px-3 py-3 text-xs text-text-muted shadow-neu-inverse-inset">
                     등록된 출입구가 없습니다.
                   </p>
                 ) : (
@@ -991,7 +988,7 @@ function SimulationSetupPage() {
                       type="button"
                       disabled={!editable}
                       onClick={() => deleteHazard(selectedHazard.clientId)}
-                      className="rounded-md border border-danger/35 bg-white px-2.5 py-1 text-[11px] font-bold text-danger-strong outline-none transition hover:bg-danger-soft focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-40"
+                      className="rounded-md border border-danger/35 bg-surface-overlay px-2.5 py-1 text-[11px] font-bold text-danger-strong shadow-neu-raised outline-none transition-[background-color,box-shadow] hover:bg-danger-soft active:shadow-neu-pressed focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-40"
                     >
                       삭제
                     </button>
@@ -1013,7 +1010,7 @@ function SimulationSetupPage() {
                   </div>
                 </div>
               ) : (
-                <p className="mt-3 rounded-lg bg-surface px-3 py-3 text-xs leading-5 text-text-muted">
+                <p className="mt-3 rounded-lg border border-panel-border bg-panel-sunken px-3 py-3 text-xs leading-5 text-text-muted shadow-neu-inverse-inset">
                   위험구역을 선택하면 오른쪽 조절점을 드래그해 크기를 변경할 수 있습니다.
                 </p>
               )}

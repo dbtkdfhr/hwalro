@@ -76,6 +76,46 @@
   --font-sans:
     'Happiness Sans Print', -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic',
     sans-serif;
+
+  /* 홈 검토 스텝퍼 - 진행 단계 위를 주기적으로 왕복하는 로켓 */
+  --animate-rocket-flight: rocket-flight 5.5s ease-in-out infinite;
+  --animate-rocket-bob: rocket-bob 2.4s ease-in-out infinite;
+  --animate-rocket-flame: rocket-flame 0.45s ease-in-out infinite;
+
+  /* 출발(-from)과 도착(-to) 위치는 컴포넌트가 CSS 변수로 넣어준다 */
+  @keyframes rocket-flight {
+    0% {
+      left: var(--rocket-from);
+      animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    32%,
+    78% {
+      left: var(--rocket-to);
+    }
+    100% {
+      left: var(--rocket-from);
+    }
+  }
+
+  @keyframes rocket-bob {
+    0%,
+    100% {
+      translate: 0 0;
+    }
+    50% {
+      translate: 0 -4px;
+    }
+  }
+
+  @keyframes rocket-flame {
+    0%,
+    100% {
+      scale: 1 1;
+    }
+    50% {
+      scale: 0.7 0.85;
+    }
+  }
 }
 
 @layer base {

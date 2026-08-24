@@ -22,10 +22,7 @@ interface ActiveReviewCardProps {
 
 function CardShell({ children }: { children: React.ReactNode }) {
   return (
-    <section
-      aria-label="진행 중인 안전 검토"
-      className="flex min-h-64 flex-col rounded-2xl border border-line bg-white p-6 shadow-sm shadow-ink/5"
-    >
+    <section aria-label="진행 중인 안전 검토" className="home-active-review">
       {children}
     </section>
   );
@@ -41,7 +38,7 @@ export function ActiveReviewCard({
   if (isPending) {
     return (
       <CardShell>
-        <div className="flex flex-1 items-center justify-center text-sm text-text-muted">
+        <div className="home-dashboard__state">
           진행 중인 검토를 불러오는 중입니다.
         </div>
       </CardShell>
@@ -51,7 +48,7 @@ export function ActiveReviewCard({
   if (isError) {
     return (
       <CardShell>
-        <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
+        <div className="home-dashboard__state home-dashboard__state--stacked">
           <p
             role="alert"
             className="rounded-xl border border-danger/25 bg-danger-soft px-5 py-3 text-sm text-danger-strong"
@@ -61,7 +58,7 @@ export function ActiveReviewCard({
           <button
             type="button"
             onClick={onRetry}
-            className="rounded-lg border border-line bg-white px-4 py-2 text-sm font-bold text-text-strong hover:bg-surface"
+            className="home-dashboard__retry"
           >
             다시 시도
           </button>
@@ -73,12 +70,14 @@ export function ActiveReviewCard({
   if (!review) {
     return (
       <CardShell>
-        <p className="text-xs font-bold tracking-wide text-primary">진행 중인 안전 검토</p>
-        <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
+        <p className="home-active-review__kicker">
+          <span aria-hidden="true" /> 진행 중인 안전 검토
+        </p>
+        <div className="home-active-review__empty">
           <p className="text-sm text-text-muted">아직 진행 중인 검토가 없습니다.</p>
           <Link
             to="/drawings"
-            className="inline-flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-bold text-white hover:opacity-90"
+            className="home-active-review__primary-link"
           >
             도면 목록으로 이동
           </Link>
@@ -89,28 +88,28 @@ export function ActiveReviewCard({
 
   return (
     <CardShell>
-      <p className="text-xs font-bold tracking-wide text-primary">진행 중인 안전 검토</p>
-      <h2 className="mt-2 truncate text-2xl font-black tracking-tight text-ink">{review.title}</h2>
-      <p className="mt-2 text-sm text-text-muted">
+      <p className="home-active-review__kicker">
+        <span aria-hidden="true" /> 진행 중인 안전 검토
+      </p>
+      <h2 className="home-active-review__title">{review.title}</h2>
+      <p className="home-active-review__meta">
         {review.subtitle} · 최근 작업 {formatDateTime(review.occurredAt)}
       </p>
 
-      <div className="mt-5 border-t border-line pt-6" />
-
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-        <div className="min-w-0 flex-1">
+      <div className="home-active-review__body">
+        <div className="home-active-review__flow">
           <ReviewProgressStepper steps={review.steps} />
           <Link
             to={review.resumePath}
-            className="mt-6 inline-flex h-11 items-center rounded-lg bg-primary px-5 text-sm font-bold text-white hover:opacity-90"
+            className="home-active-review__primary-link"
           >
             검토 이어가기
           </Link>
         </div>
 
-        <div className="shrink-0 rounded-xl bg-surface p-4 lg:w-56">
-          <p className="text-xs font-bold text-text-muted">현재 단계</p>
-          <p className="mt-2 text-lg font-black text-ink">{review.currentStageLabel}</p>
+        <div className="home-active-review__stage">
+          <p>현재 단계</p>
+          <strong>{review.currentStageLabel}</strong>
         </div>
       </div>
     </CardShell>

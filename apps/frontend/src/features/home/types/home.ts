@@ -1,5 +1,3 @@
-import type { SimulationExecutionStatus } from '../../simulations/types';
-
 export type LastActivityType = 'LAYOUT_EDIT' | 'SIMULATION_SETUP' | 'SIMULATION_RESULT';
 
 /** auth-service가 보관하는 마지막 작업 포인터. 표시값은 포함하지 않는다. */
@@ -45,16 +43,4 @@ export interface PriorityRiskItem {
   status: string;
   assigneeId: number | null;
   assigneeName: string | null;
-}
-
-export interface RecentSimulationRow {
-  id: number;
-  title?: string;
-  layoutTitle: string;
-  executedAt: string | null;
-  createdBy: number;
-  assigneeName: string | null;
-  status: SimulationExecutionStatus;
-  path: string | null;
-  isImprovement?: boolean;
 }

@@ -5,17 +5,10 @@ import { useAuth } from '../../auth/context/AuthContext';
 import { drawingApi } from '../../drawings/api/drawingApi';
 import { getDrawingErrorMessage } from '../../drawings/utils/getDrawingErrorMessage';
 import { riskApi } from '../../risks/api/riskApi';
-import { simulationApi } from '../../simulations/api/simulationApi';
-import { getSimulationListAction } from '../../simulations/utils/simulationListAction';
 import { getSimulationErrorMessage } from '../../simulations/utils/getSimulationErrorMessage';
 import { homeApi } from '../api/homeApi';
 import { userNameApi } from '../api/userNameApi';
-import type {
-  ActiveReview,
-  PriorityRiskItem,
-  RecentSimulationRow,
-  SimulationWorkSummary,
-} from '../types/home';
+import type { ActiveReview, PriorityRiskItem, SimulationWorkSummary } from '../types/home';
 import { countPriorityRisks, selectPriorityRisks } from '../utils/priorityRisks';
 import {
   activityHasSimulation,
@@ -24,7 +17,6 @@ import {
   reviewSteps,
 } from '../utils/reviewProgress';
 
-const RECENT_SIMULATION_LIMIT = 5;
 const RISK_SCAN_SIZE = 20;
 
 function resolveIfExists<T>(request: Promise<T>): Promise<T | null> {
@@ -46,11 +38,6 @@ export function useHomeDashboard() {
   const summaryQuery = useQuery({
     queryKey: ['home', 'summary', userId],
     queryFn: homeApi.getWorkSummary,
-  });
-
-  const recentQuery = useQuery({
-    queryKey: ['simulations', 'overview', 1, RECENT_SIMULATION_LIMIT],
-    queryFn: () => simulationApi.listOverview(1, RECENT_SIMULATION_LIMIT),
   });
 
   const risksQuery = useQuery({
@@ -81,15 +68,14 @@ export function useHomeDashboard() {
     [risksQuery.data],
   );
 
-  // 최근 시뮬레이션 담당자와 위험 항목 담당자 이름을 한 번에 조회한다.
+  // 우선 확인할 위험 항목의 담당자 이름을 한 번에 조회한다.
   const assigneeIds = useMemo(() => {
     const ids = new Set<number>();
-    (recentQuery.data?.items ?? []).forEach((item) => ids.add(item.createdBy));
     priorityRisks.forEach((risk) => {
       if (risk.assigneeId != null) ids.add(risk.assigneeId);
     });
     return [...ids].sort((a, b) => a - b);
-  }, [recentQuery.data, priorityRisks]);
+  }, [priorityRisks]);
 
   const namesQuery = useQuery({
     queryKey: ['home', 'user-names', assigneeIds],
@@ -133,30 +119,6 @@ export function useHomeDashboard() {
       steps: reviewSteps(progress),
     };
   }, [activity, drawingPointerId, pointedDrawingQuery.data, pointedSimulationQuery.data]);
-
-  const recentSimulations = useMemo<RecentSimulationRow[]>(
-    () =>
-      (recentQuery.data?.items ?? []).map((item) => {
-        const action = getSimulationListAction(item);
-        return {
-          id: item.id,
-          title: item.title,
-          layoutTitle: item.layoutTitle,
-          executedAt: item.startedAt ?? item.requestedAt ?? item.createdAt,
-          createdBy: item.createdBy,
-          assigneeName: nameById?.get(item.createdBy) ?? null,
-          status: item.status,
-          path:
-            action.type === 'navigate'
-              ? action.to
-              : action.type === 'disabled'
-                ? null
-                : '/simulations',
-          isImprovement: item.isImprovement,
-        };
-      }),
-    [recentQuery.data, nameById],
-  );
 
   const priorityRiskItems = useMemo<PriorityRiskItem[]>(
     () =>
@@ -213,13 +175,6 @@ export function useHomeDashboard() {
       isError: summaryQuery.isError,
       error: summaryQuery.error,
       refetch: () => void summaryQuery.refetch(),
-    },
-    recentSimulations: {
-      data: recentSimulations,
-      isPending: recentQuery.isPending,
-      isError: recentQuery.isError,
-      error: recentQuery.error,
-      refetch: () => void recentQuery.refetch(),
     },
     priorityRisks: {
       data: priorityRiskItems,

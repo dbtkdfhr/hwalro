@@ -182,7 +182,7 @@ function ReportListPage() {
           />
         </div>
 
-        <Card className="mt-5" aria-label="보고서 검색">
+        <Card className="mt-5 bg-surface-sunken shadow-neu-pressed" aria-label="보고서 검색">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
             <label htmlFor="report-search" className="sr-only">
               보고서 제목 검색
@@ -214,7 +214,11 @@ function ReportListPage() {
           </div>
         </Card>
 
-        <Card className="mt-5 overflow-hidden" padded={false} aria-label="보고서 목록">
+        <Card
+          className="mt-5 overflow-hidden bg-surface-raised shadow-neu-raised"
+          padded={false}
+          aria-label="보고서 목록"
+        >
           {isLoading ? (
             <div className="px-5 py-5 sm:px-7">
               <div className="space-y-5">
@@ -245,7 +249,7 @@ function ReportListPage() {
                     <col className="w-[13%]" />
                     <col className="w-[10%]" />
                   </colgroup>
-                  <thead className="bg-surface text-xs font-bold tracking-wide text-text-muted">
+                  <thead className="bg-surface-sunken text-xs font-bold tracking-wide text-text-muted">
                     <tr>
                       <th className="px-6 py-4">보고서 제목</th>
                       {canViewAllReports && <th className="px-4 py-4">작성자</th>}
@@ -287,7 +291,7 @@ function ReportListPage() {
                           )}
                         </td>
                         {canViewAllReports && (
-                          <td className="px-4 py-4 text-sm font-medium text-text-strong">
+                          <td className="px-4 py-4 text-sm font-bold text-text-strong">
                             {report.authorName ?? '-'}
                           </td>
                         )}
@@ -316,7 +320,7 @@ function ReportListPage() {
                               onClick={() => openDeleteModal(report)}
                               disabled={deletingId !== null}
                               aria-label={`${report.title} 삭제`}
-                              className="h-8 min-w-[52px] whitespace-nowrap rounded-lg border border-line bg-white px-2.5 text-xs font-bold text-text-muted transition hover:border-danger/40 hover:bg-danger-soft hover:text-danger-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-50"
+                              className="h-8 min-w-[52px] whitespace-nowrap rounded-lg border border-line bg-surface-raised px-2.5 text-xs font-bold text-text-muted shadow-neu-raised transition-[border-color,background-color,color,box-shadow] hover:border-danger/40 hover:bg-danger-soft hover:text-danger-strong active:shadow-neu-pressed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               삭제
                             </button>

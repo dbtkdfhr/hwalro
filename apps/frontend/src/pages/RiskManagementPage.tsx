@@ -96,7 +96,10 @@ function RiskManagementPage() {
           />
         </div>
 
-        <Card className="mt-5" aria-label="위험 예상 항목 검색">
+        <Card
+          className="mt-5 bg-surface-sunken shadow-neu-pressed"
+          aria-label="위험 예상 항목 검색"
+        >
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
             <label htmlFor="risk-search" className="sr-only">
               위험 항목 검색
@@ -118,7 +121,10 @@ function RiskManagementPage() {
         </Card>
 
         <div className="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
-          <Card padded={false} className="flex min-h-[500px] flex-col overflow-hidden">
+          <Card
+            padded={false}
+            className="flex min-h-[500px] flex-col overflow-hidden bg-surface-raised shadow-neu-raised"
+          >
             <div className="border-b border-line px-5 py-4 sm:px-7">
               <h2 className="text-xl font-black text-ink">위험 예상 목록</h2>
             </div>
@@ -175,7 +181,10 @@ function RiskManagementPage() {
             </div>
           </Card>
 
-          <Card padded={false} className="flex min-h-[500px] flex-col p-6">
+          <Card
+            padded={false}
+            className="flex min-h-[500px] flex-col bg-surface-raised p-6 shadow-neu-raised"
+          >
             <h2 className="text-xl font-black text-ink">위험 상세</h2>
             <div className="mt-5">
               {isLinkedRiskPending ? (

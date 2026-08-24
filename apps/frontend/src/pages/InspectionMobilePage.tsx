@@ -15,7 +15,7 @@ import { Badge, Button, EmptyState, ErrorState, Skeleton } from '../components/u
 const RESULT_ORDER: InspectionResult[] = ['PENDING', 'PASS', 'REVIEW_REQUIRED', 'FAIL'];
 
 const RESULT_CHIP_STYLES: Record<InspectionResult, string> = {
-  PENDING: 'border-line bg-surface text-text-muted',
+  PENDING: 'border-line bg-surface-sunken text-text-muted',
   PASS: 'border-success-strong/30 bg-success-soft text-success-strong',
   REVIEW_REQUIRED: 'border-warning-strong/30 bg-warning-soft text-warning-strong',
   FAIL: 'border-danger-strong/30 bg-danger-soft text-danger-strong',
@@ -211,7 +211,7 @@ function InspectionMobilePage() {
 
   return (
     <div className="mx-auto min-h-dvh w-full max-w-xl bg-background pb-32">
-      <header className="sticky top-0 z-10 border-b border-line bg-background/95 px-4 py-3 backdrop-blur">
+      <header className="sticky top-0 z-10 border-b border-line bg-surface-raised/95 px-4 py-3 shadow-neu-raised backdrop-blur">
         <div className="flex items-center gap-3">
           <div className="min-w-0">
             <p className="truncate text-base font-black text-ink">{areaName}</p>
@@ -226,7 +226,7 @@ function InspectionMobilePage() {
           aria-valuemin={0}
           aria-valuemax={items.length}
           aria-valuenow={counts.completed}
-          className="mt-3 h-2 overflow-hidden rounded-full bg-surface"
+          className="mt-3 h-2 overflow-hidden rounded-full bg-surface-sunken shadow-neu-pressed"
         >
           <div
             aria-hidden="true"
@@ -241,7 +241,7 @@ function InspectionMobilePage() {
       {(notice || saveError) && (
         <div
           role={saveError ? 'alert' : 'status'}
-          className={`mx-4 mt-3 rounded-lg border border-line px-4 py-3 text-sm font-medium ${saveError ? 'bg-danger-soft text-danger-strong' : 'bg-success-soft text-success-strong'}`}
+          className={`mx-4 mt-3 rounded-lg border border-line px-4 py-3 text-sm font-bold shadow-neu-pressed ${saveError ? 'bg-danger-soft text-danger-strong' : 'bg-success-soft text-success-strong'}`}
         >
           {saveError ?? notice}
         </div>
@@ -268,7 +268,7 @@ function InspectionMobilePage() {
           {items.map((item) => (
             <li
               key={item.id}
-              className={`rounded-2xl border border-line p-4 ${item.result === 'FAIL' ? 'bg-danger-soft/40' : 'bg-white'}`}
+              className={`rounded-2xl border border-line p-4 shadow-neu-raised ${item.result === 'FAIL' ? 'bg-danger-soft/40' : 'bg-surface-raised'}`}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -302,7 +302,7 @@ function InspectionMobilePage() {
                 readOnly={!canEdit || isSaving}
                 aria-label={`${item.title} 확인 내용`}
                 placeholder="확인 내용 또는 필요한 조치"
-                className="mt-3 w-full rounded-lg border border-line bg-surface/60 px-3 py-2 text-xs text-text-strong outline-none placeholder:text-text-muted focus:border-primary focus:ring-1 focus:ring-primary read-only:bg-surface/40"
+                className="mt-3 w-full rounded-lg border border-line bg-surface-sunken px-3 py-2 text-xs text-text-strong shadow-neu-pressed outline-none placeholder:text-text-muted focus:border-primary focus:ring-1 focus:ring-primary read-only:bg-surface-sunken/70"
               />
             </li>
           ))}
@@ -317,7 +317,7 @@ function InspectionMobilePage() {
       </main>
 
       {canEdit && (
-        <div className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-background/95 px-4 py-3 backdrop-blur">
+        <div className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-surface-raised/95 px-4 py-3 shadow-neu-floating backdrop-blur">
           <div className="mx-auto flex max-w-xl gap-3">
             <Button
               type="button"

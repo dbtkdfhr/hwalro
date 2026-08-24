@@ -32,7 +32,9 @@ export function ReportSimulationCard({
   const size = VARIANT_SIZE[variant];
   const cardPadding = variant === 'settings' ? 'p-3' : 'p-4';
   const toneClass =
-    tone === 'primary' ? 'border-primary/20 bg-primary-soft' : 'border-line bg-surface';
+    tone === 'primary'
+      ? 'border-primary/20 bg-primary-soft shadow-neu-pressed'
+      : 'border-line bg-surface-sunken shadow-neu-pressed';
   const topBottlenecks = context ? selectTopBottlenecks(context.bottlenecks) : [];
 
   return (
@@ -44,12 +46,12 @@ export function ReportSimulationCard({
           <p className="font-black text-ink">결과 #{resultId}</p>
           <p className="mt-1 text-xs text-text-muted">{context?.layoutTitle ?? label}</p>
         </div>
-        <span className="shrink-0 rounded-full bg-white/80 px-2 py-1 text-[11px] font-bold text-text-muted">
+        <span className="shrink-0 rounded-full bg-surface-overlay/80 px-2 py-1 text-[11px] font-bold text-text-muted shadow-neu-raised">
           {label}
         </span>
       </div>
 
-      <div className="mt-3 overflow-hidden rounded-lg border border-line bg-white">
+      <div className="mt-3 overflow-hidden rounded-lg border border-line bg-surface-sunken shadow-neu-pressed">
         {isLoading ? (
           <div className="flex aspect-[8/5] items-center justify-center px-3 text-xs text-text-muted">
             미니맵을 불러오는 중입니다.

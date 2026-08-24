@@ -121,7 +121,7 @@ function LawArticlePickerModal({
       }
     >
       <div className="grid gap-6 md:grid-cols-2">
-        <div className="flex min-h-0 flex-col">
+        <div className="flex min-h-0 flex-col rounded-xl border border-line bg-surface-sunken p-4 shadow-neu-pressed">
           <form onSubmit={handleSearch} className="flex gap-2">
             <Input
               aria-label="법령 검색어"
@@ -139,7 +139,7 @@ function LawArticlePickerModal({
               {searchQuery.data?.totalCount ?? 0}건
             </span>
           </div>
-          <div className="mt-1.5 max-h-96 min-h-0 flex-1 divide-y divide-line-subtle overflow-y-auto">
+          <div className="mt-1.5 max-h-96 min-h-0 flex-1 divide-y divide-line-subtle overflow-y-auto rounded-lg border border-line bg-surface-raised">
             {items.map((item) => {
               const isSelected = selectedLaw?.serialNumber === item.serialNumber;
               return (
@@ -150,7 +150,7 @@ function LawArticlePickerModal({
                   className={`flex w-full flex-col gap-0.5 border-l-2 px-3.5 py-2.5 text-left transition-colors ${
                     isSelected
                       ? 'border-l-primary bg-primary-soft'
-                      : 'border-l-transparent hover:bg-surface'
+                      : 'border-l-transparent hover:bg-surface-sunken'
                   }`}
                 >
                   <span className="truncate text-sm font-bold text-text-strong">{item.name}</span>
@@ -206,9 +206,9 @@ function LawArticlePickerModal({
           )}
         </div>
 
-        <div className="flex min-h-0 flex-col">
+        <div className="flex min-h-0 flex-col rounded-xl border border-line bg-surface-sunken p-4 shadow-neu-pressed">
           <span className="text-xs font-bold tracking-wide text-text-muted">조문 선택</span>
-          <div className="mt-1.5 max-h-96 min-h-0 flex-1 overflow-y-auto">
+          <div className="mt-1.5 max-h-96 min-h-0 flex-1 overflow-y-auto rounded-lg border border-line bg-surface-raised">
             {!selectedLaw ? (
               <EmptyState
                 icon={FileText}
@@ -228,7 +228,7 @@ function LawArticlePickerModal({
                     article.section ? (
                       <li
                         key={`${article.number}-${article.title}-${index}`}
-                        className="bg-surface/60 px-3.5 py-2 text-xs font-bold text-text-muted"
+                        className="bg-surface-sunken px-3.5 py-2 text-xs font-bold text-text-muted"
                       >
                         {article.content}
                       </li>
@@ -239,7 +239,7 @@ function LawArticlePickerModal({
                             className={`flex min-w-0 flex-1 cursor-pointer items-start gap-2.5 px-3.5 py-2.5 transition-colors ${
                               isChecked(selectedLaw.serialNumber, article.number)
                                 ? 'bg-primary-soft'
-                                : 'hover:bg-surface'
+                                : 'hover:bg-surface-sunken'
                             }`}
                           >
                             <input

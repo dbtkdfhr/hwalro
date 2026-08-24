@@ -242,7 +242,7 @@ function SimulationListPage() {
           />
         </div>
 
-        <Card className="mt-5" aria-label="시뮬레이션 검색">
+        <Card className="mt-5 bg-surface-sunken shadow-neu-pressed" aria-label="시뮬레이션 검색">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
             <label htmlFor="simulation-search" className="sr-only">
               시뮬레이션 검색
@@ -261,7 +261,11 @@ function SimulationListPage() {
           </div>
         </Card>
 
-        <Card className="mt-5 overflow-hidden" padded={false} aria-label="시뮬레이션 목록">
+        <Card
+          className="mt-5 overflow-hidden bg-surface-raised shadow-neu-raised"
+          padded={false}
+          aria-label="시뮬레이션 목록"
+        >
           {query.isPending ? (
             <div className="flex min-h-64 items-center justify-center px-6 text-center text-sm text-text-muted">
               시뮬레이션을 불러오는 중입니다.
@@ -309,7 +313,7 @@ function SimulationListPage() {
                     <col className="w-[18%]" />
                     <col className="w-[13%]" />
                   </colgroup>
-                  <thead className="bg-surface text-xs font-bold tracking-wide text-text-muted">
+                  <thead className="bg-surface-sunken text-xs font-bold tracking-wide text-text-muted">
                     <tr>
                       <th className="px-6 py-4">시뮬레이션</th>
                       <th className="px-4 py-4">상태</th>
@@ -353,7 +357,7 @@ function SimulationListPage() {
                                   setCancelError(null);
                                 }}
                                 disabled={cancellingId !== null || deletingId !== null}
-                                className="h-8 min-w-[73px] whitespace-nowrap rounded-lg border border-danger/25 bg-white px-3 text-xs font-bold text-danger-strong transition hover:bg-danger-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                className="h-8 min-w-[73px] whitespace-nowrap rounded-lg border border-danger/25 bg-surface-raised px-3 text-xs font-bold text-danger-strong shadow-neu-raised transition-[background-color,box-shadow] hover:bg-danger-soft active:shadow-neu-pressed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-50"
                               >
                                 {cancellingId === simulation.id ? '취소 중…' : '실행 취소'}
                               </button>
@@ -365,7 +369,7 @@ function SimulationListPage() {
                                   setDeleteError(null);
                                 }}
                                 disabled={cancellingId !== null || deletingId !== null}
-                                className="h-8 min-w-[52px] whitespace-nowrap rounded-lg border border-line bg-white px-2.5 text-xs font-bold text-text-muted transition hover:border-danger/40 hover:bg-danger-soft hover:text-danger-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                className="h-8 min-w-[52px] whitespace-nowrap rounded-lg border border-line bg-surface-raised px-2.5 text-xs font-bold text-text-muted shadow-neu-raised transition-[border-color,background-color,color,box-shadow] hover:border-danger/40 hover:bg-danger-soft hover:text-danger-strong active:shadow-neu-pressed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-50"
                               >
                                 {deletingId === simulation.id ? '삭제 중…' : '삭제'}
                               </button>

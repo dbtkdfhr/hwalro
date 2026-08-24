@@ -46,7 +46,7 @@ function DrawingListTable({ items, onDelete, onDuplicate, nameById }: DrawingLis
             <col className="w-[17%]" />
             <col className="w-[16%]" />
           </colgroup>
-          <thead className="bg-surface text-xs font-bold tracking-wide text-text-muted">
+          <thead className="bg-surface-sunken text-xs font-bold tracking-wide text-text-muted">
             <tr>
               <th className="px-6 py-4">도면명</th>
               <th className="px-4 py-4">설명</th>
@@ -76,7 +76,7 @@ function DrawingListTable({ items, onDelete, onDuplicate, nameById }: DrawingLis
                     {drawing.description}
                   </span>
                 </td>
-                <td className="px-4 py-4 text-sm font-medium text-text-strong">
+                <td className="px-4 py-4 text-sm font-bold text-text-strong">
                   {creatorLabel(drawing.createdBy, user?.id ?? null, user?.name ?? '', nameById)}
                 </td>
                 <td className="px-4 py-4 text-sm tabular-nums text-text-strong">
@@ -87,14 +87,14 @@ function DrawingListTable({ items, onDelete, onDuplicate, nameById }: DrawingLis
                     <button
                       type="button"
                       onClick={() => onDuplicate(drawing)}
-                      className="h-8 min-w-[52px] whitespace-nowrap rounded-lg border border-line bg-white px-2.5 text-xs font-bold text-text-strong transition hover:border-primary hover:bg-primary-soft hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                      className="h-8 min-w-[52px] whitespace-nowrap rounded-lg border border-line bg-surface-raised px-2.5 text-xs font-bold text-text-strong shadow-neu-raised transition-[border-color,background-color,color,box-shadow] hover:border-primary hover:bg-primary-soft hover:text-primary active:shadow-neu-pressed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                     >
                       복제
                     </button>
                     <button
                       type="button"
                       onClick={() => onDelete(drawing)}
-                      className="h-8 min-w-[52px] whitespace-nowrap rounded-lg border border-line bg-white px-2.5 text-xs font-bold text-text-muted transition hover:border-danger/40 hover:bg-danger-soft hover:text-danger-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                      className="h-8 min-w-[52px] whitespace-nowrap rounded-lg border border-line bg-surface-raised px-2.5 text-xs font-bold text-text-muted shadow-neu-raised transition-[border-color,background-color,color,box-shadow] hover:border-danger/40 hover:bg-danger-soft hover:text-danger-strong active:shadow-neu-pressed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                     >
                       삭제
                     </button>

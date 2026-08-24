@@ -16,13 +16,13 @@ function buildArticleLabel(
 
 function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
-    <span className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md border border-line-strong bg-surface px-2 py-1 text-xs font-bold text-text-strong">
+    <span className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md border border-line-strong bg-surface-sunken px-2 py-1 text-xs font-bold text-text-strong shadow-neu-pressed">
       <span className="min-w-0 truncate">{label}</span>
       <button
         type="button"
         onClick={onRemove}
         aria-label="첨부 조문 제거"
-        className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-text-muted transition-colors hover:bg-soft-gray hover:text-text-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+        className="flex h-4 w-4 shrink-0 items-center justify-center rounded bg-surface-raised text-text-muted shadow-neu-raised transition-[background-color,color,box-shadow] hover:bg-surface-overlay hover:text-text-strong active:shadow-neu-pressed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
       >
         <X aria-hidden="true" className="h-3 w-3" />
       </button>

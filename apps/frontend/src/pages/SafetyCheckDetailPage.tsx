@@ -17,7 +17,7 @@ import SafetyCheckHeader from './safetyChecks/SafetyCheckHeader';
 const RESULT_OPTIONS = Object.keys(RESULT_LABELS) as InspectionResult[];
 
 const RESULT_SELECT_STYLES: Record<InspectionResult, string> = {
-  PENDING: 'border-line bg-surface text-text-muted',
+  PENDING: 'border-line bg-surface-sunken text-text-muted',
   REVIEW_REQUIRED: 'border-line bg-warning-soft text-warning-strong',
   PASS: 'border-line bg-success-soft text-success-strong',
   FAIL: 'border-line bg-danger-soft text-danger-strong',
@@ -144,7 +144,7 @@ function SafetyCheckDetailPage() {
     return (
       <div className="mx-auto w-full max-w-[1360px] px-1 pt-2 pb-10 sm:px-4 lg:pt-4">
         <div className="grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
-          <div className="rounded-xl border border-line bg-white p-6 shadow-card">
+          <div className="rounded-xl border border-line bg-surface-raised p-6 shadow-neu-raised">
             <Skeleton className="h-5 w-24" />
             <div className="mt-6 space-y-5">
               <Skeleton className="h-12 w-full" />
@@ -212,25 +212,25 @@ function SafetyCheckDetailPage() {
       {(error || notice) && (
         <div
           role={error ? 'alert' : 'status'}
-          className={`mt-5 rounded-lg border border-line px-4 py-3 text-sm font-medium ${error ? 'bg-danger-soft text-danger-strong' : 'bg-success-soft text-success-strong'}`}
+          className={`mt-5 rounded-lg border border-line px-4 py-3 text-sm font-bold ${error ? 'bg-danger-soft text-danger-strong' : 'bg-success-soft text-success-strong'}`}
         >
           {error ?? notice}
         </div>
       )}
 
       <div className="mt-5 grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
-        <Card padded={false} className="p-6">
+        <Card padded={false} className="bg-surface-raised p-6 shadow-neu-raised">
           <h2 className="text-lg font-black text-ink">점검 정보</h2>
           <dl className="mt-6 space-y-5">
             <div>
               <dt className="text-xs font-bold text-text-muted">점검 구역</dt>
-              <dd className="mt-2 rounded-lg border border-line bg-surface px-4 py-3 text-sm font-bold text-text-strong">
+              <dd className="mt-2 rounded-lg border border-line bg-surface-sunken px-4 py-3 text-sm font-bold text-text-strong shadow-neu-pressed">
                 {inspection.areaName}
               </dd>
             </div>
             <div>
               <dt className="text-xs font-bold text-text-muted">점검 담당자</dt>
-              <dd className="mt-2 rounded-lg border border-line bg-surface px-4 py-3 text-sm font-bold tabular-nums text-text-strong">
+              <dd className="mt-2 rounded-lg border border-line bg-surface-sunken px-4 py-3 text-sm font-bold tabular-nums text-text-strong shadow-neu-pressed">
                 {inspectorName}
               </dd>
             </div>
@@ -243,7 +243,7 @@ function SafetyCheckDetailPage() {
                 {counts.completed} / {items.length}
               </span>
             </div>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface">
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface-sunken shadow-neu-pressed">
               <div
                 className="h-full rounded-full bg-primary transition-all"
                 style={{
@@ -273,7 +273,7 @@ function SafetyCheckDetailPage() {
           </div>
         </Card>
 
-        <Card padded={false} className="p-5 sm:p-7">
+        <Card padded={false} className="bg-surface-raised p-5 shadow-neu-raised sm:p-7">
           <div className="flex items-end justify-between gap-4">
             <div>
               <h2 className="text-xl font-black text-ink">점검 항목</h2>
@@ -292,7 +292,7 @@ function SafetyCheckDetailPage() {
             {items.map((item) => (
               <article
                 key={item.id}
-                className={`rounded-xl border border-line p-5 transition-colors ${item.result === 'FAIL' ? 'bg-danger-soft' : 'bg-surface/70'}`}
+                className={`rounded-xl border border-line p-5 shadow-neu-pressed transition-colors ${item.result === 'FAIL' ? 'bg-danger-soft' : 'bg-surface-sunken'}`}
               >
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="flex min-w-0 gap-4">
@@ -334,7 +334,7 @@ function SafetyCheckDetailPage() {
                   readOnly={!canEdit}
                   aria-label={`${item.title} 확인 내용`}
                   placeholder="확인 내용 또는 필요한 조치를 입력하세요."
-                  className="mt-4 text-xs read-only:bg-surface/60"
+                  className="mt-4 text-xs read-only:bg-surface-sunken/70"
                 />
               </article>
             ))}

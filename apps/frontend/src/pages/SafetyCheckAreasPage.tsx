@@ -167,7 +167,7 @@ function SafetyCheckAreasPage() {
           {editor && (
             <form
               onSubmit={(event) => void saveArea(event)}
-              className="mt-5 rounded-xl border border-line bg-primary-soft p-5 shadow-card"
+              className="mt-5 rounded-xl border border-primary/25 bg-surface-raised p-5 shadow-neu-raised"
             >
               <div className="flex items-center justify-between gap-4">
                 <h3 className="text-lg font-black text-ink">
@@ -214,7 +214,10 @@ function SafetyCheckAreasPage() {
           {isLoading ? (
             <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {Array.from({ length: PAGE_SIZE }, (_, index) => (
-                <div key={index} className="rounded-xl border border-line bg-white p-5 shadow-card">
+                <div
+                  key={index}
+                  className="rounded-xl border border-line bg-surface-raised p-5 shadow-neu-raised"
+                >
                   <div className="flex items-start justify-between gap-4">
                     <Skeleton className="h-11 w-11 rounded-xl" />
                     <Skeleton className="h-5 w-16" />
@@ -248,7 +251,12 @@ function SafetyCheckAreasPage() {
             <>
               <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {visibleAreas.map((area) => (
-                  <Card key={area.id} interactive padded={false} className="group overflow-hidden">
+                  <Card
+                    key={area.id}
+                    interactive
+                    padded={false}
+                    className="group overflow-hidden bg-surface-raised shadow-neu-raised"
+                  >
                     <button
                       type="button"
                       onClick={() => navigate(`/safety-checklists/areas/${area.id}`)}
@@ -285,7 +293,7 @@ function SafetyCheckAreasPage() {
                             ? '체크리스트 QR 배포'
                             : '체크리스트 항목을 먼저 등록해야 QR을 배포할 수 있습니다.'
                         }
-                        className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-bold text-text-strong outline-none transition-colors hover:bg-surface focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex items-center gap-1.5 rounded-lg border border-transparent bg-surface-raised px-3 py-2 text-sm font-bold text-text-strong shadow-neu-raised outline-none transition-[background-color,box-shadow] hover:bg-surface-sunken active:shadow-neu-pressed focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <QrCode aria-hidden="true" className="h-4 w-4" />
                         QR 배포
@@ -295,7 +303,7 @@ function SafetyCheckAreasPage() {
                           <button
                             type="button"
                             onClick={() => openEditEditor(area)}
-                            className="rounded-lg px-3 py-2 text-sm font-bold text-text-strong outline-none transition-colors hover:bg-surface focus-visible:ring-2 focus-visible:ring-focus-ring"
+                            className="rounded-lg border border-transparent bg-surface-raised px-3 py-2 text-sm font-bold text-text-strong shadow-neu-raised outline-none transition-[background-color,box-shadow] hover:bg-surface-sunken active:shadow-neu-pressed focus-visible:ring-2 focus-visible:ring-focus-ring"
                           >
                             수정
                           </button>
@@ -303,7 +311,7 @@ function SafetyCheckAreasPage() {
                             type="button"
                             onClick={() => openDeleteConfirm(area)}
                             disabled={deletingId === area.id}
-                            className="rounded-lg px-3 py-2 text-sm font-bold text-danger outline-none transition-colors hover:bg-danger-soft focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50"
+                            className="rounded-lg border border-transparent bg-surface-raised px-3 py-2 text-sm font-bold text-danger shadow-neu-raised outline-none transition-[background-color,box-shadow] hover:bg-danger-soft active:shadow-neu-pressed focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50"
                           >
                             {deletingId === area.id ? '삭제 중...' : '삭제'}
                           </button>

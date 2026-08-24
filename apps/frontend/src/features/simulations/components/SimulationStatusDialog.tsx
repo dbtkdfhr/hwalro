@@ -53,7 +53,9 @@ export function SimulationStatusDialog({
       <div className="flex gap-3">
         <div
           className={`flex size-10 shrink-0 items-center justify-center rounded-full ${
-            failed ? 'bg-danger-soft text-danger-strong' : 'bg-surface text-text-muted'
+            failed
+              ? 'bg-danger-soft text-danger-strong shadow-neu-pressed'
+              : 'bg-surface-sunken text-text-muted shadow-neu-pressed'
           }`}
         >
           {failed ? (
@@ -72,7 +74,7 @@ export function SimulationStatusDialog({
                   {execution?.failureMessage ?? '시뮬레이션 실행에 실패했습니다.'}
                 </p>
                 {failureDetail && failureDetail.code === 'AGENT_ROUTE_UNREACHABLE' && (
-                  <dl className="mt-4 space-y-2 rounded-xl bg-surface p-4 text-xs leading-5 text-text-strong">
+                  <dl className="mt-4 space-y-2 rounded-xl border border-line bg-surface-sunken p-4 text-xs leading-5 text-text-strong shadow-neu-pressed">
                     <div>
                       <dt className="inline font-bold">대상 에이전트: </dt>
                       <dd className="inline">#{failureDetail.agentId}</dd>
@@ -92,7 +94,7 @@ export function SimulationStatusDialog({
                   </dl>
                 )}
                 {failureDetail && failureDetail.code === 'NO_REACHABLE_SELECTED_EXIT' && (
-                  <dl className="mt-4 space-y-2 rounded-xl bg-surface p-4 text-xs leading-5 text-text-strong">
+                  <dl className="mt-4 space-y-2 rounded-xl border border-line bg-surface-sunken p-4 text-xs leading-5 text-text-strong shadow-neu-pressed">
                     <div>
                       <dt className="inline font-bold">연결되지 않은 인원: </dt>
                       <dd className="inline">{failureDetail.affectedAgentCount}명</dd>

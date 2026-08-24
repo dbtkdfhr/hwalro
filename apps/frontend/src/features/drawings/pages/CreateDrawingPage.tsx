@@ -55,14 +55,14 @@ function CreateDrawingPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="mt-5">
-          <Card className="sm:p-6" aria-label="도면 정보 입력">
+          <Card className="bg-surface-raised shadow-neu-raised sm:p-6" aria-label="도면 정보 입력">
             <Field label="시작 방식">
               <div
                 role="radiogroup"
                 aria-label="시작 방식"
                 className="grid grid-cols-1 gap-3 lg:grid-cols-2"
               >
-                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-line p-4 transition has-checked:border-primary has-checked:bg-primary-soft/40">
+                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-line bg-surface-raised p-4 shadow-neu-raised transition-[border-color,background-color,box-shadow] has-checked:border-primary has-checked:bg-surface-sunken has-checked:shadow-neu-pressed">
                   <input
                     type="radio"
                     name="drawing-init"
@@ -78,7 +78,7 @@ function CreateDrawingPage() {
                     </span>
                   </span>
                 </label>
-                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-line p-4 transition has-checked:border-primary has-checked:bg-primary-soft/40">
+                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-line bg-surface-raised p-4 shadow-neu-raised transition-[border-color,background-color,box-shadow] has-checked:border-primary has-checked:bg-surface-sunken has-checked:shadow-neu-pressed">
                   <input
                     type="radio"
                     name="drawing-init"

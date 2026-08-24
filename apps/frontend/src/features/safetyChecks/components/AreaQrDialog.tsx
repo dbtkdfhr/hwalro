@@ -81,10 +81,10 @@ function AreaQrDialog({ area, onClose }: AreaQrDialogProps) {
             <img
               src={dataUrl}
               alt={`${area.name} 체크리스트 QR 코드`}
-              className="h-56 w-56 rounded-xl border border-line bg-white p-2"
+              className="h-56 w-56 rounded-xl border border-line bg-surface-overlay p-2 shadow-neu-raised"
             />
           ) : qrError ? (
-            <div className="flex h-56 w-56 flex-col items-center justify-center gap-3 rounded-xl border border-line bg-surface px-4 text-center">
+            <div className="flex h-56 w-56 flex-col items-center justify-center gap-3 rounded-xl border border-line bg-surface-sunken px-4 text-center shadow-neu-pressed">
               <span className="text-sm text-text-muted">{qrError}</span>
               <Button
                 type="button"
@@ -96,7 +96,7 @@ function AreaQrDialog({ area, onClose }: AreaQrDialogProps) {
               </Button>
             </div>
           ) : (
-            <div className="flex h-56 w-56 items-center justify-center rounded-xl border border-line bg-surface">
+            <div className="flex h-56 w-56 items-center justify-center rounded-xl border border-line bg-surface-sunken shadow-neu-pressed">
               <span className="text-sm text-text-muted">QR 생성 중...</span>
             </div>
           )}

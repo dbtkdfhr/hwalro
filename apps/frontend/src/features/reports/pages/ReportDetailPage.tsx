@@ -181,7 +181,7 @@ function ReportDetailPage() {
   if (error && !title)
     return (
       <div className="mx-auto flex min-h-80 w-full max-w-[1360px] flex-col items-center justify-center gap-4 px-1 text-center sm:px-4">
-        <p role="alert" className="text-sm font-medium text-danger-strong">
+        <p role="alert" className="text-sm font-bold text-danger-strong">
           {error}
         </p>
         <Link to="/reports" className={buttonClassName({ variant: 'secondary' })}>
@@ -226,7 +226,7 @@ function ReportDetailPage() {
       </div>
 
       <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
-        <article className="report-print-area rounded-xl border border-line bg-white px-6 py-8 shadow-card sm:px-10 sm:py-12">
+        <article className="report-print-area rounded-xl border border-line bg-surface-overlay px-6 py-8 shadow-neu-raised sm:px-10 sm:py-12">
           <input
             value={title}
             onChange={(event) => setTitle(event.target.value)}
@@ -244,7 +244,7 @@ function ReportDetailPage() {
               onChange={(event) => setSummary(event.target.value)}
               aria-label="검토 개요"
               rows={3}
-              className="mt-3 w-full resize-none rounded-lg border border-transparent bg-transparent px-0 py-1 text-sm leading-7 text-text-strong outline-none focus:border-line focus:bg-surface focus:px-3"
+              className="mt-3 w-full resize-none rounded-lg border border-transparent bg-transparent px-0 py-1 text-sm leading-7 text-text-strong outline-none focus:border-line focus:bg-surface-sunken focus:px-3 focus:shadow-neu-pressed"
             />
           </section>
 
@@ -255,7 +255,7 @@ function ReportDetailPage() {
               onChange={(event) => setAnalysis(event.target.value)}
               aria-label="핵심 분석 결과"
               rows={3}
-              className="mt-3 w-full resize-none rounded-lg border border-transparent bg-transparent px-0 py-1 text-sm leading-7 text-text-strong outline-none focus:border-line focus:bg-surface focus:px-3"
+              className="mt-3 w-full resize-none rounded-lg border border-transparent bg-transparent px-0 py-1 text-sm leading-7 text-text-strong outline-none focus:border-line focus:bg-surface-sunken focus:px-3 focus:shadow-neu-pressed"
             />
           </section>
 
@@ -273,13 +273,16 @@ function ReportDetailPage() {
               onChange={(event) => setImprovements(event.target.value)}
               aria-label="개선 조치"
               rows={2}
-              className="mt-3 w-full resize-none rounded-lg border border-transparent bg-transparent px-0 py-1 text-sm leading-7 text-text-strong outline-none focus:border-line focus:bg-surface focus:px-3"
+              className="mt-3 w-full resize-none rounded-lg border border-transparent bg-transparent px-0 py-1 text-sm leading-7 text-text-strong outline-none focus:border-line focus:bg-surface-sunken focus:px-3 focus:shadow-neu-pressed"
             />
           </section>
         </article>
 
         <aside className="min-w-0">
-          <Card padded={false} className="flex min-h-[500px] flex-col p-6">
+          <Card
+            padded={false}
+            className="flex min-h-[500px] flex-col bg-surface-raised p-6 shadow-neu-raised"
+          >
             <h2 className="text-xl font-black text-ink">보고서 설정</h2>
             <div className="mt-5">
               <Field label="상태" htmlFor="report-status">

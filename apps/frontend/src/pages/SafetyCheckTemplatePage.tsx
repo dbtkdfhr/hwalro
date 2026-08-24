@@ -163,7 +163,7 @@ function SafetyCheckTemplatePage() {
   if (isLoading) {
     return (
       <div className="mx-auto w-full max-w-[1360px] px-1 pt-2 pb-10 sm:px-4 lg:pt-4">
-        <div className="rounded-xl border border-line bg-white p-5 shadow-card sm:p-7">
+        <div className="rounded-xl border border-line bg-surface-raised p-5 shadow-neu-raised sm:p-7">
           <div className="flex items-end justify-between gap-4 border-b border-line pb-5">
             <div className="space-y-2">
               <Skeleton className="h-6 w-40" />
@@ -209,25 +209,25 @@ function SafetyCheckTemplatePage() {
       {notice && (
         <div
           role="status"
-          className="mt-5 rounded-lg border border-line bg-success-soft px-4 py-3 text-sm font-medium text-success-strong"
+          className="mt-5 rounded-lg border border-line bg-success-soft px-4 py-3 text-sm font-bold text-success-strong"
         >
           {notice}
         </div>
       )}
 
       {!hasManagePermission && (
-        <div className="mt-5 rounded-lg border border-line bg-warning-soft px-4 py-3 text-sm font-medium text-warning-strong">
+        <div className="mt-5 rounded-lg border border-line bg-warning-soft px-4 py-3 text-sm font-bold text-warning-strong">
           점검 항목을 수정할 권한이 없습니다.
         </div>
       )}
 
       {hasManagePermission && area && !area.active && (
-        <div className="mt-5 rounded-lg border border-line bg-warning-soft px-4 py-3 text-sm font-medium text-warning-strong">
+        <div className="mt-5 rounded-lg border border-line bg-warning-soft px-4 py-3 text-sm font-bold text-warning-strong">
           삭제된 점검 구역의 항목은 수정할 수 없습니다.
         </div>
       )}
 
-      <Card padded={false} className="mt-5 overflow-hidden">
+      <Card padded={false} className="mt-5 overflow-hidden bg-surface-raised shadow-neu-raised">
         <div className="flex items-end justify-between gap-4 border-b border-line px-5 py-4 sm:px-7">
           <div>
             <h2 className="text-xl font-black text-ink">항목 구성</h2>
@@ -259,7 +259,10 @@ function SafetyCheckTemplatePage() {
           {items.map((item, index) => {
             const knownCategory = CATEGORY_OPTIONS.some((option) => option.value === item.category);
             return (
-              <article key={item.key} className="rounded-xl border border-line bg-surface/70 p-5">
+              <article
+                key={item.key}
+                className="rounded-xl border border-line bg-surface-sunken p-5 shadow-neu-pressed"
+              >
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-soft text-sm font-black tabular-nums text-primary">
@@ -274,7 +277,7 @@ function SafetyCheckTemplatePage() {
                         onClick={() => moveItem(index, -1)}
                         disabled={index === 0}
                         aria-label={`${index + 1}번 항목 위로 이동`}
-                        className="flex h-8 w-8 items-center justify-center rounded-md text-text-muted transition hover:bg-white disabled:opacity-30"
+                        className="flex h-8 w-8 items-center justify-center rounded-md bg-surface-raised text-text-muted shadow-neu-raised transition-[background-color,box-shadow] hover:bg-surface-overlay active:shadow-neu-pressed disabled:opacity-30"
                       >
                         <ArrowUp aria-hidden="true" className="h-4 w-4" />
                       </button>
@@ -283,7 +286,7 @@ function SafetyCheckTemplatePage() {
                         onClick={() => moveItem(index, 1)}
                         disabled={index === items.length - 1}
                         aria-label={`${index + 1}번 항목 아래로 이동`}
-                        className="flex h-8 w-8 items-center justify-center rounded-md text-text-muted transition hover:bg-white disabled:opacity-30"
+                        className="flex h-8 w-8 items-center justify-center rounded-md bg-surface-raised text-text-muted shadow-neu-raised transition-[background-color,box-shadow] hover:bg-surface-overlay active:shadow-neu-pressed disabled:opacity-30"
                       >
                         <ArrowDown aria-hidden="true" className="h-4 w-4" />
                       </button>

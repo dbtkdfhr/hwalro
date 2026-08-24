@@ -37,7 +37,9 @@ function RiskItemTable({
 
   return (
     <div>
-      <div className={`grid ${TABLE_COLUMNS} items-center gap-x-6 bg-surface px-5 py-4 sm:px-7`}>
+      <div
+        className={`grid ${TABLE_COLUMNS} items-center gap-x-6 bg-surface-sunken px-5 py-4 sm:px-7`}
+      >
         {TABLE_HEADERS.map((header) => (
           <span key={header} className="text-xs font-bold tracking-wide text-text-muted">
             {header}
@@ -55,7 +57,9 @@ function RiskItemTable({
                 onClick={() => onSelect(item.id)}
                 aria-pressed={isSelected}
                 className={`grid w-full ${TABLE_COLUMNS} items-center gap-x-6 px-5 py-4 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus-ring sm:px-7 ${
-                  isSelected ? 'bg-primary-soft' : 'bg-white hover:bg-primary-soft/35'
+                  isSelected
+                    ? 'bg-surface-sunken shadow-neu-pressed'
+                    : 'bg-transparent hover:bg-primary-soft/35'
                 }`}
               >
                 <div className="flex min-w-0 items-center gap-2">

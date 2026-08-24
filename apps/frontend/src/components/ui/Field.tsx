@@ -7,7 +7,7 @@ import type {
 } from 'react';
 
 export const inputBaseClassName =
-  'h-10 w-full rounded-lg border border-line bg-white px-3.5 text-sm text-ink placeholder:text-text-faint outline-none transition focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:bg-surface disabled:text-text-muted';
+  'h-10 w-full rounded-lg border border-line bg-surface-sunken px-3.5 text-sm text-ink shadow-neu-pressed placeholder:text-text-faint outline-none transition-[background-color,border-color,box-shadow] duration-150 hover:border-line-strong focus-visible:border-primary focus-visible:bg-surface-overlay focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:border-line-subtle disabled:bg-surface-sunken disabled:text-text-faint disabled:shadow-none';
 
 export interface FieldProps {
   label: string;
@@ -32,7 +32,7 @@ function Field({ label, htmlFor, required = false, hint, error, children }: Fiel
       <div className="mt-1.5">{children}</div>
       {hint ? <p className="mt-1.5 text-xs text-text-muted">{hint}</p> : null}
       {error ? (
-        <p role="alert" className="mt-1.5 text-xs font-medium text-danger-strong">
+        <p role="alert" className="mt-1.5 text-xs font-bold text-danger-strong">
           {error}
         </p>
       ) : null}

@@ -10,8 +10,10 @@ function ProtectedRoute() {
 
   if (isInitializing) {
     return (
-      <div className="flex min-h-[100dvh] items-center justify-center text-sm text-ink/50">
-        불러오는 중...
+      <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4">
+        <p className="rounded-xl border border-line bg-surface-raised px-5 py-3 text-sm font-bold text-text-muted shadow-neu-raised">
+          불러오는 중...
+        </p>
       </div>
     );
   }

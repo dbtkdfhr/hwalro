@@ -12,11 +12,14 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: 'bg-primary text-white hover:bg-primary-hover active:bg-primary-active',
+  primary:
+    'border border-primary-active/20 bg-primary text-white shadow-neu-raised hover:bg-primary-hover active:bg-primary-active active:shadow-neu-pressed',
   secondary:
-    'border border-line-strong bg-white text-text-strong hover:bg-surface active:bg-soft-gray',
-  ghost: 'text-text-strong hover:bg-surface active:bg-soft-gray',
-  danger: 'bg-danger text-white hover:bg-danger-strong',
+    'border border-line bg-surface-raised text-text-strong shadow-neu-raised hover:border-line-strong hover:bg-surface-overlay active:bg-surface-sunken active:shadow-neu-pressed',
+  ghost:
+    'border border-transparent text-text-strong hover:border-line hover:bg-surface-raised hover:shadow-neu-raised active:bg-surface-sunken active:shadow-neu-pressed',
+  danger:
+    'border border-danger-strong/25 bg-danger text-white shadow-neu-raised hover:bg-danger-strong active:shadow-neu-pressed',
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -26,7 +29,7 @@ const sizeClasses: Record<ButtonSize, string> = {
 };
 
 const baseClassName =
-  'inline-flex items-center justify-center rounded-lg font-bold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-1 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50';
+  'inline-flex items-center justify-center whitespace-nowrap rounded-lg font-bold transition-[background-color,border-color,color,box-shadow] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:border-line disabled:bg-surface-sunken disabled:text-text-faint disabled:shadow-none';
 
 export function buttonClassName(
   options: { variant?: ButtonVariant; size?: ButtonSize; className?: string } = {},

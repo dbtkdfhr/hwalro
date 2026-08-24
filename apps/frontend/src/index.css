@@ -2,29 +2,33 @@
 
 @theme {
   /* 브랜드 */
-  --color-ink: #0d1917;
-  --color-ink-deep: #172a26;
-  --color-lime: #c2e84b;
-  --color-background: #f3f6f4;
-  --color-white: #ffffff;
+  --color-ink: #162420;
+  --color-ink-deep: #0d1d19;
+  --color-lime: #c5e84a;
+  --color-background: #f2f4f3;
+  --color-white: #fcfdfc;
 
   /* 브랜드 에메랄드 램프 */
-  --color-primary: #168f80;
-  --color-primary-hover: #14796d;
-  --color-primary-active: #11695f;
-  --color-primary-soft: #e4f3f0;
-  --color-primary-faint: #eef7f5;
+  --color-primary: #173b34;
+  --color-primary-hover: #102f29;
+  --color-primary-active: #0b241f;
+  --color-primary-soft: #dfe9e6;
+  --color-primary-faint: #edf2f0;
 
-  /* 뉴트럴(그린 틴트) */
-  --color-surface: #f7faf9;
-  --color-line-subtle: #e5edeb;
-  --color-line: #d6e2df;
-  --color-line-strong: #b8cbc7;
+  /* 뉴트럴과 뉴모피즘 표면 */
+  --color-surface-base: #f2f4f3;
+  --color-surface: #fcfdfc;
+  --color-surface-raised: #fcfdfc;
+  --color-surface-sunken: #e9edeb;
+  --color-surface-overlay: #fcfdfc;
+  --color-line-subtle: #e3e8e6;
+  --color-line: #d7dedb;
+  --color-line-strong: #b7c3bf;
 
   /* 텍스트 */
-  --color-text-strong: #2f514c;
-  --color-text-muted: #718884;
-  --color-text-faint: #96aaa5;
+  --color-text-strong: #162420;
+  --color-text-muted: #53645f;
+  --color-text-faint: #64746f;
 
   /* 시맨틱 상태 */
   --color-success: #188e63;
@@ -41,37 +45,53 @@
   --color-danger-soft: #fcecea;
 
   /* 상태 배지 공용 (기존 soft-gray 유지) */
-  --color-soft-gray: #edf2f1;
+  --color-soft-gray: #e9edeb;
 
   /* 포커스 링 */
-  --color-focus-ring: rgb(22 143 128 / 0.3);
+  --color-focus-ring: #173b34;
+  --color-focus-inverse: #c5e84a;
 
   /* 전체 화면 캔버스 워크스페이스 - 딥그린 패널 */
-  --color-panel: #19312d;
-  --color-panel-soft: #243e39;
-  --color-panel-border: #39534d;
-  --color-panel-text: #e7efed;
-  --color-panel-muted: #b9cac6;
-  --color-panel-faint: #8fa6a0;
-  --color-panel-divider: #34504a;
-  --color-panel-accent: #c9f438;
+  --color-panel: #173b34;
+  --color-panel-soft: #20473f;
+  --color-panel-border: #3f5f58;
+  --color-panel-text: #f2f6f4;
+  --color-panel-muted: #c1cfcb;
+  --color-panel-faint: #95aaa4;
+  --color-panel-divider: #3c5b54;
+  --color-panel-accent: #c5e84a;
   --color-panel-danger: #e95a52;
+  --color-panel-raised: #21483f;
+  --color-panel-sunken: #102c26;
 
   /* 도면 배치 편집기 - 줌 컨트롤 */
   --color-zoom-soft: #e9f8f1;
   --color-zoom-border: #32a96b;
   --color-zoom-text: #23945a;
 
-  /* 시뮬레이션 결과 페이지 — 차트 툴팁 */
+  /* 시뮬레이션 결과 페이지 - 차트 툴팁 */
   --color-chart-tooltip-bg: rgba(13, 25, 23, 0.92);
   --color-chart-tooltip-border: rgba(255, 255, 255, 0.08);
   --color-chart-tooltip-shadow: rgba(7, 32, 28, 0.28);
 
-  /* 승강도(그린 틴트 그림자) */
-  --shadow-card: 0 1px 2px rgb(22 55 49 / 0.04), 0 1px 4px rgb(22 55 49 / 0.05);
-  --shadow-raised: 0 4px 10px rgb(22 55 49 / 0.07), 0 1px 3px rgb(22 55 49 / 0.05);
-  --shadow-floating: 0 18px 50px rgb(22 55 49 / 0.12), 0 2px 8px rgb(22 55 49 / 0.06);
-  --shadow-overlay: 0 24px 64px rgb(13 25 23 / 0.24), 0 8px 20px rgb(13 25 23 / 0.12);
+  /* 기존 토큰 이름을 유지하되 큰 이중 그림자는 얕은 표면 구분으로 축소 */
+  --shadow-neu-raised: 0 1px 2px rgb(13 29 25 / 0.06), 0 6px 18px rgb(13 29 25 / 0.05);
+  --shadow-neu-pressed: inset 0 1px 3px rgb(13 29 25 / 0.12);
+  --shadow-neu-floating: 0 2px 5px rgb(13 29 25 / 0.08), 0 14px 32px rgb(13 29 25 / 0.1);
+  --shadow-neu-inverse: 0 10px 28px rgb(3 15 12 / 0.24);
+  --shadow-neu-inverse-inset: inset 0 1px 3px rgb(3 15 12 / 0.3);
+  --shadow-card: var(--shadow-neu-raised);
+  --shadow-raised: var(--shadow-neu-raised);
+  --shadow-floating: var(--shadow-neu-floating);
+  --shadow-overlay: 0 18px 48px rgb(13 29 25 / 0.16), 0 4px 12px rgb(13 29 25 / 0.08);
+
+  /* 형태 체계: 8 / 10 / 16 / 20px */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+  --radius-3xl: 1.25rem;
 
   --font-sans:
     'Happiness Sans Print', -apple-system, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic',
@@ -96,7 +116,7 @@
     cursor: pointer;
   }
 
-  button,
+  button:not(:disabled),
   input[type='button'],
   input[type='reset'],
   input[type='submit'],
@@ -107,12 +127,56 @@
   label:has(input[type='radio']),
   select,
   summary {
-    cursor: default;
+    cursor: pointer;
+  }
+
+  button:disabled,
+  input:disabled,
+  select:disabled,
+  textarea:disabled {
+    cursor: not-allowed;
+  }
+
+  :where(a, button, input, select, textarea, summary):focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
   }
 
   ::selection {
     background-color: rgb(194 232 75 / 0.35);
     color: var(--color-ink);
+  }
+}
+
+@layer components {
+  .neu-surface {
+    border: 1px solid var(--color-line);
+    background: var(--color-surface-raised);
+    box-shadow: var(--shadow-neu-raised);
+  }
+
+  .neu-surface-subtle {
+    border: 1px solid var(--color-line-subtle);
+    background: var(--color-surface-raised);
+    box-shadow: 0 1px 3px rgb(13 29 25 / 0.05);
+  }
+
+  .neu-inset {
+    border: 1px solid var(--color-line);
+    background: var(--color-surface-sunken);
+    box-shadow: var(--shadow-neu-pressed);
+  }
+
+  .neu-panel {
+    border: 1px solid var(--color-panel-border);
+    background: var(--color-panel);
+    box-shadow: var(--shadow-neu-inverse);
+  }
+
+  .neu-panel-inset {
+    border: 1px solid var(--color-panel-divider);
+    background: var(--color-panel-sunken);
+    box-shadow: var(--shadow-neu-inverse-inset);
   }
 }
 
@@ -122,6 +186,32 @@
   font-weight: 400;
   font-style: normal;
   font-display: swap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (forced-colors: active), (prefers-contrast: more) {
+  .neu-surface,
+  .neu-surface-subtle,
+  .neu-inset,
+  .neu-panel,
+  .neu-panel-inset {
+    border-color: currentColor;
+    box-shadow: none;
+  }
 }
 
 @font-face {
@@ -148,6 +238,8 @@
   .report-print-area,
   .report-print-area * {
     visibility: visible;
+    box-shadow: none !important;
+    text-shadow: none !important;
   }
 
   .report-print-area {
@@ -157,11 +249,14 @@
     width: 100%;
     border: 0 !important;
     box-shadow: none !important;
+    background: #ffffff !important;
   }
 
   .checklist-print-area,
   .checklist-print-area * {
     visibility: visible;
+    box-shadow: none !important;
+    text-shadow: none !important;
   }
 
   .checklist-print-area {
@@ -171,5 +266,6 @@
     width: 100%;
     border: 0 !important;
     box-shadow: none !important;
+    background: #ffffff !important;
   }
 }

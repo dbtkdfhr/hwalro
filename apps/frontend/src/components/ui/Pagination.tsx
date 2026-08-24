@@ -9,7 +9,7 @@ export interface PaginationProps {
 }
 
 const navButtonClassName =
-  'h-9 cursor-pointer rounded-lg border border-line px-3 text-sm font-bold text-text-strong outline-none transition hover:bg-surface focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-40';
+  'h-9 cursor-pointer rounded-lg border border-line bg-surface-raised px-3 text-sm font-bold text-text-strong shadow-neu-raised outline-none transition-[background-color,border-color,box-shadow] hover:border-line-strong hover:bg-surface-overlay active:bg-surface-sunken active:shadow-neu-pressed focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:border-line-subtle disabled:bg-surface-sunken disabled:text-text-faint disabled:shadow-none';
 
 function Pagination({
   page,
@@ -27,7 +27,10 @@ function Pagination({
   );
 
   return (
-    <nav className="flex items-center justify-center gap-2" aria-label={ariaLabel}>
+    <nav
+      className="mx-auto flex w-fit items-center justify-center gap-1.5 rounded-xl border border-line-subtle bg-surface-sunken p-1.5 shadow-neu-pressed"
+      aria-label={ariaLabel}
+    >
       <button
         type="button"
         onClick={() => onPageChange(safePage - 1)}
@@ -44,10 +47,10 @@ function Pagination({
           disabled={disabled}
           aria-current={pageNumber === safePage ? 'page' : undefined}
           aria-label={`${pageNumber}페이지`}
-          className={`h-9 min-w-9 cursor-pointer rounded-lg px-2 text-sm font-bold tabular-nums outline-none transition focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-40 ${
+          className={`h-9 min-w-9 cursor-pointer rounded-lg border px-2 text-sm font-bold tabular-nums outline-none transition-[background-color,border-color,color,box-shadow] focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:border-line-subtle disabled:bg-surface-sunken disabled:text-text-faint disabled:shadow-none ${
             pageNumber === safePage
-              ? 'bg-primary text-white'
-              : 'border border-line text-text-strong hover:bg-surface'
+              ? 'border-primary-active/20 bg-primary text-white shadow-neu-pressed'
+              : 'border-line bg-surface-raised text-text-strong shadow-neu-raised hover:border-line-strong hover:bg-surface-overlay active:bg-surface-sunken active:shadow-neu-pressed'
           }`}
         >
           {pageNumber}

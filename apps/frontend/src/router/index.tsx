@@ -30,8 +30,10 @@ const InspectionMobilePage = lazy(() => import('../pages/InspectionMobilePage'))
 
 function FullscreenRouteFallback() {
   return (
-    <div className="flex h-dvh items-center justify-center bg-background text-sm text-text-muted">
-      화면을 준비하고 있습니다.
+    <div className="flex h-dvh items-center justify-center bg-background px-4">
+      <p className="rounded-xl border border-line bg-surface-raised px-5 py-3 text-sm font-bold text-text-muted shadow-neu-raised">
+        화면을 준비하고 있습니다.
+      </p>
     </div>
   );
 }

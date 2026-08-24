@@ -28,10 +28,10 @@ export function CompletionToast({
   return (
     <article
       role="status"
-      className="pointer-events-auto overflow-hidden rounded-2xl border border-success/25 bg-white shadow-floating"
+      className="pointer-events-auto overflow-hidden rounded-xl border border-success/30 bg-surface-overlay shadow-neu-floating"
     >
       <div className="flex gap-3 p-4">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-success-soft text-success-strong">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-success/20 bg-success-soft text-success-strong shadow-neu-raised">
           <CheckCircle2 aria-hidden="true" className="size-5" />
         </div>
         <div className="min-w-0 flex-1">
@@ -43,7 +43,7 @@ export function CompletionToast({
           type="button"
           onClick={() => onDismiss(id)}
           aria-label={dismissLabel}
-          className="flex size-8 shrink-0 items-center justify-center rounded-full text-text-muted outline-none transition hover:bg-surface hover:text-ink focus-visible:ring-2 focus-visible:ring-focus-ring"
+          className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-transparent text-text-muted outline-none transition hover:border-line hover:bg-surface-raised hover:text-ink hover:shadow-neu-raised active:bg-surface-sunken active:shadow-neu-pressed focus-visible:ring-2 focus-visible:ring-focus-ring"
         >
           <X aria-hidden="true" className="h-4 w-4" />
         </button>

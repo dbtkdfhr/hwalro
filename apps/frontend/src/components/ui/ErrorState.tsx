@@ -15,7 +15,7 @@ function ErrorState({ message, onRetry, className = '' }: ErrorStateProps) {
     >
       <div className="flex min-w-0 items-center gap-2.5">
         <AlertTriangle aria-hidden="true" className="h-4 w-4 shrink-0 text-danger" />
-        <p className="text-sm font-medium text-danger-strong">{message}</p>
+        <p className="text-sm font-bold text-danger-strong">{message}</p>
       </div>
       {onRetry ? (
         <Button type="button" variant="secondary" size="sm" onClick={onRetry}>

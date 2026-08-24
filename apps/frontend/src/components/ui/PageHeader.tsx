@@ -11,10 +11,8 @@ function PageHeader({ eyebrow, title, description, actions }: PageHeaderProps) {
   return (
     <header className="flex flex-wrap items-end justify-between gap-4">
       <div className="min-w-0">
-        {eyebrow ? (
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">{eyebrow}</p>
-        ) : null}
-        <h1 className="mt-1.5 text-2xl font-black tracking-tight text-ink lg:text-3xl">{title}</h1>
+        {eyebrow ? <span className="sr-only">{eyebrow}</span> : null}
+        <h1 className="text-2xl font-black tracking-tight text-ink lg:text-3xl">{title}</h1>
         {description ? (
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-text-muted [text-wrap:pretty]">
             {description}

@@ -77,7 +77,7 @@ function Modal({ open, onClose, title, description, size = 'md', children, foote
   return (
     <div
       role="presentation"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/45 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/45 p-4 backdrop-blur-[2px]"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -88,7 +88,7 @@ function Modal({ open, onClose, title, description, size = 'md', children, foote
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className={`max-h-[calc(100dvh-2.5rem)] w-full overflow-y-auto rounded-2xl bg-white shadow-overlay outline-none ${sizeClasses[size]}`}
+        className={`max-h-[calc(100dvh-2.5rem)] w-full overflow-y-auto rounded-2xl border border-line bg-surface-overlay shadow-overlay outline-none ${sizeClasses[size]}`}
       >
         <div className="flex items-start justify-between gap-4 border-b border-line-subtle px-6 py-5">
           <div className="min-w-0">
@@ -99,7 +99,7 @@ function Modal({ open, onClose, title, description, size = 'md', children, foote
             type="button"
             onClick={onClose}
             aria-label="닫기"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-text-muted transition hover:bg-surface hover:text-text-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-line bg-surface-raised text-text-muted shadow-neu-raised transition-[background-color,border-color,color,box-shadow] hover:border-line-strong hover:text-text-strong active:bg-surface-sunken active:shadow-neu-pressed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
           >
             <X aria-hidden="true" className="h-4 w-4" />
           </button>

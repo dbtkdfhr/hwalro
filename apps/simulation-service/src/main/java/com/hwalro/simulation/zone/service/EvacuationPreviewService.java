@@ -69,7 +69,7 @@ public class EvacuationPreviewService {
     private final SimulationEngineRunner engineRunner;
     private final EvacuationRouteCache routeCache;
     private final EvacuationRouteStore routeStore;
-    private final Map<Long, CompletableFuture<List<EvacuationRouteResponse>>> inFlightComputes =
+    private final Map<String, CompletableFuture<List<EvacuationRouteResponse>>> inFlightComputes =
             new ConcurrentHashMap<>();
     private final ExecutorService computeExecutor = Executors.newFixedThreadPool(2, runnable -> {
         Thread thread = new Thread(runnable, "evacuation-route-compute");
@@ -150,7 +150,7 @@ public class EvacuationPreviewService {
         }
 
         List<EvacuationRouteResponse> stale = routeStore.findLatest(versionId);
-        CompletableFuture<List<EvacuationRouteResponse>> inFlight = inFlightComputes.get(layoutId);
+        CompletableFuture<List<EvacuationRouteResponse>> inFlight = inFlightComputes.get(cacheKey);
         if (inFlight == null) {
             inFlight = startCompute(layoutId, versionId, zones, cacheKey);
         }
@@ -171,7 +171,7 @@ public class EvacuationPreviewService {
     private CompletableFuture<List<EvacuationRouteResponse>> startCompute(
             Long layoutId, Long versionId, List<LayoutZone> zones, String cacheKey) {
         boolean[] createdByMe = new boolean[1];
-        CompletableFuture<List<EvacuationRouteResponse>> future = inFlightComputes.computeIfAbsent(layoutId, key -> {
+        CompletableFuture<List<EvacuationRouteResponse>> future = inFlightComputes.computeIfAbsent(cacheKey, key -> {
             createdByMe[0] = true;
             return new CompletableFuture<>();
         });
@@ -190,7 +190,7 @@ public class EvacuationPreviewService {
                         } else {
                             future.complete(fresh);
                         }
-                        inFlightComputes.remove(layoutId, future);
+                        inFlightComputes.remove(cacheKey, future);
                     });
         }
         return future;

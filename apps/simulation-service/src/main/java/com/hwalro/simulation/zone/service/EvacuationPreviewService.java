@@ -150,10 +150,18 @@ public class EvacuationPreviewService {
         }
 
         List<EvacuationRouteResponse> stale = routeStore.findLatest(versionId);
-        CompletableFuture<List<EvacuationRouteResponse>> inFlight = inFlightComputes.get(cacheKey);
-        if (inFlight == null) {
-            inFlight = startCompute(layoutId, versionId, zones, cacheKey);
-        }
+        CompletableFuture<List<EvacuationRouteResponse>> inFlight = inFlightComputes.computeIfAbsent(
+            cacheKey,
+            key -> CompletableFuture.supplyAsync(
+                    () -> {
+                        List<EvacuationRouteResponse> fresh = computeAll(layoutId, versionId, zones);
+                        routeStore.save(layoutId, versionId, key, fresh);
+                        routeCache.put(key, fresh);
+                        return fresh;
+                    },
+                    computeExecutor)
+                .whenComplete((fresh, error) -> inFlightComputes.remove(key)));
+
         if (stale != null) {
             return stale;
         }
@@ -165,6 +173,9 @@ public class EvacuationPreviewService {
                 throw runtimeException;
             }
             throw exception;
+        } finally {
+            // 실패 시 다음 호출에서 즉시 재시도할 수 있도록 맵에서 제거 보장
+            inFlightComputes.remove(cacheKey);
         }
     }
 
@@ -185,12 +196,14 @@ public class EvacuationPreviewService {
                             },
                             computeExecutor)
                     .whenComplete((fresh, error) -> {
+                        // 완료를 호출자에게 알리기 전에 진행 중 항목을 제거해야 즉시 재시도가
+                        // 이미 끝난 실패 future를 다시 집어 들지 않는다.
+                        inFlightComputes.remove(cacheKey, future);
                         if (error != null) {
                             future.completeExceptionally(error);
                         } else {
                             future.complete(fresh);
                         }
-                        inFlightComputes.remove(cacheKey, future);
                     });
         }
         return future;

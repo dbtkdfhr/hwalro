@@ -12,7 +12,14 @@ public interface SimulationReportContextMapper {
 
     List<BottleneckRow> findBottlenecks(@Param("ids") List<Long> ids);
 
-    record SummaryRow(Long simulationResultId, Long simulationId, Long createdBy, String layoutTitle, String title) {}
+    record SummaryRow(
+            Long simulationResultId,
+            Long simulationId,
+            Long createdBy,
+            Long layoutId,
+            Long layoutVersionId,
+            String layoutTitle,
+            String title) {}
 
     record MetricRow(Long simulationResultId, String metricType, double metricValue, String unit) {}
 

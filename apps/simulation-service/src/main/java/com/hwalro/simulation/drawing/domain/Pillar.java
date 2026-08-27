@@ -11,6 +11,7 @@ public class Pillar {
     private BigDecimal endX;
     private BigDecimal endY;
     private BigDecimal rotation;
+    private Integer displayOrder;
 
     public Pillar() {}
 
@@ -76,5 +77,13 @@ public class Pillar {
 
     public void setRotation(BigDecimal rotation) {
         this.rotation = rotation;
+    }
+
+    public Integer getDisplayOrder() {
+        return displayOrder;
+    }
+
+    public void setDisplayOrder(Integer displayOrder) {
+        this.displayOrder = displayOrder;
     }
 }

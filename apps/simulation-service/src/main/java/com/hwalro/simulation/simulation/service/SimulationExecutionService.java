@@ -459,6 +459,10 @@ public class SimulationExecutionService {
         return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos);
     }
 
+    public void persistEngineRun(Long simulationId, SimulationSetupResponse setup, EngineRun run) {
+        persistResult(simulationId, setup, run);
+    }
+
     private void persistResult(Long simulationId, SimulationSetupResponse setup, EngineRun run) {
         EngineResult output = run.result();
         validateEngineResult(output, setup, run.maxSimulationTimeSeconds());

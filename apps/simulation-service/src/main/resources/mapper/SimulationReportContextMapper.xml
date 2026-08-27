@@ -13,6 +13,8 @@
         SELECT result.id AS simulationResultId,
                simulation.id AS simulationId,
                simulation.created_by AS createdBy,
+               layout.id AS layoutId,
+               simulation.layout_version_id AS layoutVersionId,
                layout.title AS layoutTitle,
                simulation.title AS title
         FROM simulation_results result

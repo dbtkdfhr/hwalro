@@ -230,7 +230,7 @@ function SafetyCheckTemplatePage() {
       <Card padded={false} className="mt-5 overflow-hidden">
         <div className="flex items-end justify-between gap-4 border-b border-line px-5 py-4 sm:px-7">
           <div>
-            <h2 className="text-xl font-black text-ink">항목 구성</h2>
+            <h2 className="text-xl font-bold text-ink">항목 구성</h2>
             <p className="mt-2 text-sm text-text-muted">
               현재 버전 <span className="tabular-nums">v{version}</span> · 총{' '}
               <span className="tabular-nums">{items.length}</span>개 항목
@@ -262,10 +262,10 @@ function SafetyCheckTemplatePage() {
               <article key={item.key} className="rounded-xl border border-line bg-surface/70 p-5">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-soft text-sm font-black tabular-nums text-primary">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-soft text-sm font-bold tabular-nums text-primary">
                       {index + 1}
                     </span>
-                    <p className="text-sm font-black text-ink">점검 항목</p>
+                    <p className="text-sm font-bold text-ink">점검 항목</p>
                   </div>
                   {canManage && (
                     <div className="flex items-center gap-1">

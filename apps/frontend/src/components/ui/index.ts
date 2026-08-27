@@ -9,7 +9,7 @@ export type { PageHeaderProps } from './PageHeader';
 export { Field, Input, Textarea, Select, inputBaseClassName } from './Field';
 export type { FieldProps, InputProps, SelectProps, TextareaProps } from './Field';
 export { default as Modal } from './Modal';
-export type { ModalProps, ModalSize } from './Modal';
+export type { ModalLayer, ModalProps, ModalSize } from './Modal';
 export { default as ConfirmDialog } from './ConfirmDialog';
 export type { ConfirmDialogProps } from './ConfirmDialog';
 export { default as EmptyState } from './EmptyState';

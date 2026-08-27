@@ -40,9 +40,9 @@ export function AgentDeletionConfirmDialog({
         event.preventDefault();
         onCancel();
       }}
-      className="m-0 h-dvh max-h-none w-screen max-w-none border-0 bg-transparent p-4 open:flex open:items-start open:justify-end backdrop:bg-ink/15"
+      className="app-modal-dialog m-0 h-dvh max-h-none w-screen max-w-none border-0 bg-transparent p-4 open:flex open:items-start open:justify-end"
     >
-      <article className="w-80 overflow-hidden rounded-2xl border border-danger/25 bg-white shadow-floating">
+      <article className="w-80 overflow-hidden rounded-xl border border-danger/25 bg-surface shadow-floating">
         <div className="flex gap-3 p-4">
           <div
             className="flex size-9 shrink-0 items-center justify-center rounded-full bg-danger-soft text-danger"
@@ -53,7 +53,7 @@ export function AgentDeletionConfirmDialog({
           <div className="min-w-0 flex-1">
             <h2
               id="agent-deletion-confirm-title"
-              className="text-sm font-black tabular-nums text-ink"
+              className="text-sm font-bold tabular-nums text-ink"
             >
               에이전트 {count.toLocaleString()}명을 삭제할까요?
             </h2>
@@ -61,7 +61,7 @@ export function AgentDeletionConfirmDialog({
               id="agent-deletion-confirm-description"
               className="mt-1 text-xs leading-5 text-text-muted"
             >
-              위험구역과 시뮬레이션 조건은 유지됩니다.
+              위험 구역과 시뮬레이션 조건은 유지됩니다.
             </p>
             <div className="mt-3 flex justify-end gap-2">
               <Button type="button" variant="secondary" size="sm" onClick={onCancel} autoFocus>
@@ -96,7 +96,7 @@ export function AgentDeletionSuccessToast({
     <article
       role="status"
       aria-live="polite"
-      className={`absolute right-4 top-4 z-20 w-80 overflow-hidden rounded-2xl border border-success/25 bg-white shadow-floating ${className ?? ''}`}
+      className={`absolute right-4 top-4 z-20 w-80 overflow-hidden rounded-xl border border-success/25 bg-surface shadow-floating ${className ?? ''}`}
     >
       <div className="flex gap-3 p-4">
         <div
@@ -106,11 +106,11 @@ export function AgentDeletionSuccessToast({
           <Check className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-black tabular-nums text-ink">
+          <p className="text-sm font-bold tabular-nums text-ink">
             에이전트 {count.toLocaleString()}명을 삭제했습니다.
           </p>
           <p className="mt-1 text-xs leading-5 text-text-muted">
-            위험구역과 시뮬레이션 조건은 유지됩니다.
+            위험 구역과 시뮬레이션 조건은 유지됩니다.
           </p>
         </div>
         <button

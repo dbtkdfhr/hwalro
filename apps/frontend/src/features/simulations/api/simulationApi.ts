@@ -40,9 +40,9 @@ export const simulationApi = {
       .post<SimulationSetup>('/api/simulations/drafts', body)
       .then((response) => response.data),
 
-  getSetup: (simulationId: number) =>
+  getSetup: (simulationId: number, signal?: AbortSignal) =>
     apiClient
-      .get<SimulationSetup>(`/api/simulations/${simulationId}/setup`)
+      .get<SimulationSetup>(`/api/simulations/${simulationId}/setup`, { signal })
       .then((response) => response.data),
 
   updateSetup: (simulationId: number, body: UpdateSimulationSetupRequest) =>
@@ -68,18 +68,22 @@ export const simulationApi = {
   delete: (simulationId: number) =>
     apiClient.delete<void>(`/api/simulations/${simulationId}`).then((response) => response.data),
 
-  getExecution: (simulationId: number) =>
+  getExecution: (simulationId: number, signal?: AbortSignal) =>
     apiClient
-      .get<SimulationExecution>(`/api/simulations/${simulationId}/execution`)
+      .get<SimulationExecution>(`/api/simulations/${simulationId}/execution`, { signal })
       .then((response) => response.data),
 
-  getTimelineChunk: (simulationId: number, sequence: number) =>
+  getTimelineChunk: (simulationId: number, sequence: number, signal?: AbortSignal) =>
     apiClient
-      .get<SimulationTimelineChunk>(`/api/simulations/${simulationId}/timeline/${sequence}`)
+      .get<SimulationTimelineChunk>(`/api/simulations/${simulationId}/timeline/${sequence}`, {
+        signal,
+      })
       .then((response) => response.data),
 
-  getHeatmapChunk: (simulationId: number, sequence: number) =>
+  getHeatmapChunk: (simulationId: number, sequence: number, signal?: AbortSignal) =>
     apiClient
-      .get<SimulationHeatmapChunk>(`/api/simulations/${simulationId}/heatmap/${sequence}`)
+      .get<SimulationHeatmapChunk>(`/api/simulations/${simulationId}/heatmap/${sequence}`, {
+        signal,
+      })
       .then((response) => response.data),
 };

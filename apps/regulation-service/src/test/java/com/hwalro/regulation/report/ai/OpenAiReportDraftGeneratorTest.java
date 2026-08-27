@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 
 class OpenAiReportDraftGeneratorTest {
     private final ReportDraftInput input =
-            new ReportDraftInput(new Context(1L, 1L, "현재안", List.of(), List.of()), List.of(), List.of());
+            new ReportDraftInput(new Context(1L, 1L, 1L, "현재안", List.of(), List.of()), List.of(), List.of());
 
     @Test
     void returnsValidatedStructuredContent() {

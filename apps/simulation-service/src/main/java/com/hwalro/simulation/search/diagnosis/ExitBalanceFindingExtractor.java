@@ -21,9 +21,49 @@ public class ExitBalanceFindingExtractor {
     }
 
     public List<Finding> extract(List<TimelineChunk> chunks, List<LayoutExit> exits) {
+        DemandSnapshot snapshot = demandSnapshot(frameDataOf(chunks), exits);
+        if (snapshot == null) {
+            return List.of();
+        }
+        double meanDemand = meanDemand(snapshot.demandByExit().values());
+        List<Finding> findings = new ArrayList<>();
+        for (Map.Entry<Long, Double> entry : snapshot.demandByExit().entrySet()) {
+            if (entry.getValue() <= meanDemand) {
+                continue;
+            }
+            double severity = clamp01((entry.getValue() - meanDemand) / meanDemand);
+            LayoutExit exit = snapshot.exitById().get(entry.getKey());
+            Evidence evidence =
+                    new Evidence("EXIT_DEMAND_DENSITY", entry.getValue(), "PERSON_PER_METER", "EXIT_EVENTS");
+            String description = String.format("출구 '%s'의 수요 밀도가 평균보다 높아 대피 흐름이 편중되었습니다.", exit.getName());
+            findings.add(new Finding(FindingType.EXIT_IMBALANCE, severity, null, evidence, description));
+        }
+        findings.sort(Comparator.comparingDouble(Finding::severity).reversed());
+        return findings;
+    }
+
+    /**
+     * 가장 편중된 출구의 심각도. 사용된 출구가 둘 미만이면 편중이 정의되지 않으므로 null이다.
+     */
+    public Double worstExitSeverity(List<String> frameDataList, List<LayoutExit> exits) {
+        DemandSnapshot snapshot = demandSnapshot(frameDataList, exits);
+        if (snapshot == null) {
+            return null;
+        }
+        double meanDemand = meanDemand(snapshot.demandByExit().values());
+        double worst = 0.0;
+        for (Double demand : snapshot.demandByExit().values()) {
+            if (demand > meanDemand) {
+                worst = Math.max(worst, clamp01((demand - meanDemand) / meanDemand));
+            }
+        }
+        return worst;
+    }
+
+    private DemandSnapshot demandSnapshot(List<String> frameDataList, List<LayoutExit> exits) {
         Map<Long, Integer> eventCountByExit = new HashMap<>();
-        for (TimelineChunk chunk : chunks) {
-            collectExitEvents(chunk.getFrameData(), eventCountByExit);
+        for (String frameData : frameDataList) {
+            collectExitEvents(frameData, eventCountByExit);
         }
         Map<Long, LayoutExit> exitById = new HashMap<>();
         Map<Long, Double> widthByExit = new HashMap<>();
@@ -39,36 +79,32 @@ public class ExitBalanceFindingExtractor {
             widthByExit.put(exit.getId(), width);
         }
         Map<Long, Double> demandByExit = new HashMap<>();
-        double demandSum = 0.0;
-        int demandCount = 0;
         for (Map.Entry<Long, Integer> entry : eventCountByExit.entrySet()) {
             Double width = widthByExit.get(entry.getKey());
             if (width == null || entry.getValue() <= 0) {
                 continue;
             }
-            double demand = entry.getValue() / width;
-            demandByExit.put(entry.getKey(), demand);
-            demandSum += demand;
-            demandCount++;
+            demandByExit.put(entry.getKey(), entry.getValue() / width);
         }
-        if (demandCount < 2) {
-            return List.of();
+        return demandByExit.size() < 2 ? null : new DemandSnapshot(demandByExit, exitById);
+    }
+
+    private record DemandSnapshot(Map<Long, Double> demandByExit, Map<Long, LayoutExit> exitById) {}
+
+    private static double meanDemand(java.util.Collection<Double> demands) {
+        double sum = 0.0;
+        for (Double demand : demands) {
+            sum += demand;
         }
-        double meanDemand = demandSum / demandCount;
-        List<Finding> findings = new ArrayList<>();
-        for (Map.Entry<Long, Double> entry : demandByExit.entrySet()) {
-            if (entry.getValue() <= meanDemand) {
-                continue;
-            }
-            double severity = clamp01((entry.getValue() - meanDemand) / meanDemand);
-            LayoutExit exit = exitById.get(entry.getKey());
-            Evidence evidence =
-                    new Evidence("EXIT_DEMAND_DENSITY", entry.getValue(), "PERSON_PER_METER", "EXIT_EVENTS");
-            String description = String.format("출구 '%s'의 수요 밀도가 평균보다 높아 대피 흐름이 편중되었습니다.", exit.getName());
-            findings.add(new Finding(FindingType.EXIT_IMBALANCE, severity, null, evidence, description));
+        return sum / demands.size();
+    }
+
+    private static List<String> frameDataOf(List<TimelineChunk> chunks) {
+        List<String> frameDataList = new ArrayList<>(chunks.size());
+        for (TimelineChunk chunk : chunks) {
+            frameDataList.add(chunk.getFrameData());
         }
-        findings.sort(Comparator.comparingDouble(Finding::severity).reversed());
-        return findings;
+        return frameDataList;
     }
 
     private void collectExitEvents(String frameData, Map<Long, Integer> eventCountByExit) {

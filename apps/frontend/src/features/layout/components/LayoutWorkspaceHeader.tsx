@@ -1,54 +1,28 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Pencil } from 'lucide-react';
 import { CanvasWorkspaceHeader } from '../../../components/workspace';
+import DrawingInfoEditDialog from './DrawingInfoEditDialog';
 
 interface LayoutWorkspaceHeaderProps {
   name: string;
+  description: string | null;
   readOnly: boolean;
-  onRename: (name: string) => void;
+  onUpdateInfo: (info: { title: string; description: string | null }) => void;
 }
 
-export function LayoutWorkspaceHeader({ name, readOnly, onRename }: LayoutWorkspaceHeaderProps) {
-  const [editing, setEditing] = useState(false);
-  const [draftName, setDraftName] = useState('');
-  const editingRef = useRef(false);
+export function LayoutWorkspaceHeader({
+  name,
+  description,
+  readOnly,
+  onUpdateInfo,
+}: LayoutWorkspaceHeaderProps) {
+  const [dialogOpen, setDialogOpen] = useState(false);
 
-  const startEditing = () => {
-    editingRef.current = true;
-    setDraftName(name);
-    setEditing(true);
-  };
-
-  const endEditing = (commit: boolean) => {
-    if (!editingRef.current) return;
-    editingRef.current = false;
-    setEditing(false);
-    if (!commit) return;
-
-    const nextName = draftName.trim();
-    if (nextName !== '' && nextName !== name) onRename(nextName);
-  };
-
-  const title = editing ? (
-    <input
-      autoFocus
-      type="text"
-      value={draftName}
-      onChange={(event) => setDraftName(event.currentTarget.value)}
-      onBlur={() => endEditing(true)}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter') endEditing(true);
-        if (event.key === 'Escape') endEditing(false);
-      }}
-      aria-label="도면 이름"
-      maxLength={50}
-      className="layout-workspace-title-input"
-    />
-  ) : (
+  const title = (
     <h1 className="layout-workspace-title">
       <span className="layout-workspace-title__text">{name}</span>
       {!readOnly ? (
-        <button type="button" onClick={startEditing} aria-label="도면 이름 수정">
+        <button type="button" onClick={() => setDialogOpen(true)} aria-label="도면 정보 수정">
           <Pencil aria-hidden="true" strokeWidth={1.8} />
         </button>
       ) : null}
@@ -56,11 +30,20 @@ export function LayoutWorkspaceHeader({ name, readOnly, onRename }: LayoutWorksp
   );
 
   return (
-    <CanvasWorkspaceHeader
-      title={title}
-      subtitle="도면 배치 편집"
-      status={readOnly ? '편집 잠김' : '편집 가능'}
-      statusTone={readOnly ? 'locked' : 'editing'}
-    />
+    <>
+      <CanvasWorkspaceHeader
+        title={title}
+        subtitle="도면 배치 편집"
+        status={readOnly ? '편집 잠김' : '편집 가능'}
+        statusTone={readOnly ? 'locked' : 'editing'}
+      />
+      <DrawingInfoEditDialog
+        open={dialogOpen}
+        initialTitle={name}
+        initialDescription={description ?? ''}
+        onClose={() => setDialogOpen(false)}
+        onSubmit={(info) => onUpdateInfo(info)}
+      />
+    </>
   );
 }

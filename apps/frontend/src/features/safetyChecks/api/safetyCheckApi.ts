@@ -46,6 +46,29 @@ export const safetyCheckApi = {
     apiClient
       .put<InspectionDetail>(`/api/safety-checks/inspections/${inspectionId}`, body)
       .then((response) => response.data),
+  saveSnapshot: (
+    inspectionId: number,
+    image: Blob,
+    layoutVersionId?: number,
+    layoutId?: number,
+  ) => {
+    const params = {
+      ...(layoutVersionId === undefined ? {} : { layoutVersionId }),
+      ...(layoutId === undefined ? {} : { layoutId }),
+    };
+    return apiClient
+      .put(`/api/safety-checks/inspections/${inspectionId}/snapshot`, image, {
+        params,
+        headers: { 'Content-Type': 'image/png' },
+      })
+      .then(() => undefined);
+  },
+  getSnapshot: (inspectionId: number) =>
+    apiClient
+      .get<Blob>(`/api/safety-checks/inspections/${inspectionId}/snapshot`, {
+        responseType: 'blob',
+      })
+      .then((response) => response.data),
   deleteInspection: (inspectionId: number) =>
     apiClient.delete(`/api/safety-checks/inspections/${inspectionId}`).then(() => undefined),
   getChecklistTemplate: (areaId: number) =>

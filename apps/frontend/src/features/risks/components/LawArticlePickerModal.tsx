@@ -2,6 +2,7 @@ import { FileText, Landmark } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Button, EmptyState, ErrorState, Input, Modal, Skeleton } from '../../../components/ui';
+import type { ModalLayer } from '../../../components/ui';
 import { useLawDetail } from '../hooks/useLawDetail';
 import { useLawSearch } from '../hooks/useLawSearch';
 import type { RegulationSummary } from '../types/regulations';
@@ -17,11 +18,13 @@ function LawArticlePickerModal({
   onClose,
   selected,
   onConfirm,
+  layer = 'default',
 }: {
   open: boolean;
   onClose: () => void;
   selected: AttachedLawRef[];
   onConfirm: (refs: AttachedLawRef[]) => void;
+  layer?: ModalLayer;
 }) {
   const [query, setQuery] = useState('');
   const [activeQuery, setActiveQuery] = useState('');
@@ -109,6 +112,7 @@ function LawArticlePickerModal({
       title="법령 첨부"
       description="첨부할 법령 조문을 검색해 선택하세요."
       size="lg"
+      layer={layer}
       footer={
         <>
           <Button type="button" variant="secondary" onClick={onClose}>

@@ -18,7 +18,6 @@ export function createEmptyDocument(): DrawingDocument {
     pillars: [],
     fabrics: [],
     layoutTexts: [],
-    background: null,
   };
 }
 
@@ -51,12 +50,12 @@ export function nextWallName(doc: DrawingDocument): string {
 export function nextOutsideWallName(doc: DrawingDocument): string {
   let max = 0;
   for (const wall of doc.outsideWalls) {
-    const match = /^외각벽 (\d+)$/.exec(wall.name);
+    const match = /^외(?:곽|각)벽 (\d+)$/.exec(wall.name);
     if (match) {
       max = Math.max(max, Number(match[1]));
     }
   }
-  return `외각벽 ${max + 1}`;
+  return `외곽벽 ${max + 1}`;
 }
 
 export function nextExitName(doc: DrawingDocument): string {

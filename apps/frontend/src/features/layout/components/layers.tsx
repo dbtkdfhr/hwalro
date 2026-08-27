@@ -1,6 +1,6 @@
-import { memo, useEffect, useState } from 'react';
-import { Circle, Group, Image as KonvaImage, Line, Rect, Text as KonvaText } from 'react-konva';
-import type { BackgroundImage, Exit, Fabric, LayoutText, Pillar, Wall } from '../types';
+import { memo } from 'react';
+import { Circle, Group, Line, Rect, Text as KonvaText } from 'react-konva';
+import type { Exit, Fabric, LayoutText, OutsideWall, Pillar, Wall } from '../types';
 import { PX_PER_METER, rectCenter } from '../utils/geometry';
 import {
   MIN_TEXT_SCREEN_PX,
@@ -12,56 +12,6 @@ import { ACCENT_ALPHA_8, CANVAS_COLORS, FONT_UI } from '../utils/colors';
 
 export const MINOR_STEP = 50;
 export const MAJOR_STEP = 250;
-
-const imageCache = new Map<string, HTMLImageElement>();
-
-function useImage(src: string): HTMLImageElement | null {
-  const [, setLoadNonce] = useState(0);
-
-  useEffect(() => {
-    if (imageCache.has(src)) {
-      return;
-    }
-    let cancelled = false;
-    const el = new window.Image();
-    el.onload = () => {
-      imageCache.set(src, el);
-      if (!cancelled) {
-        setLoadNonce((n) => n + 1);
-      }
-    };
-    el.onerror = () => {
-      if (!cancelled) {
-        setLoadNonce((n) => n + 1);
-      }
-    };
-    el.src = src;
-    return () => {
-      cancelled = true;
-      el.onload = null;
-      el.onerror = null;
-    };
-  }, [src]);
-
-  return imageCache.get(src) ?? null;
-}
-
-export const BackgroundLayer = memo(function BackgroundLayer({ bg }: { bg: BackgroundImage }) {
-  const image = useImage(bg.image);
-  if (image === null) {
-    return null;
-  }
-  return (
-    <KonvaImage
-      image={image}
-      x={bg.x}
-      y={bg.y}
-      width={bg.width}
-      height={bg.height}
-      opacity={bg.opacity}
-    />
-  );
-});
 
 interface GridLine {
   x1: number;
@@ -119,7 +69,7 @@ export const GridLayer = memo(function GridLayer({ minX, minY, maxX, maxY, zoom 
 });
 
 interface WallViewProps {
-  wall: Wall;
+  wall: Wall | OutsideWall;
   selected: boolean;
   s: (px: number) => number;
   color?: string;

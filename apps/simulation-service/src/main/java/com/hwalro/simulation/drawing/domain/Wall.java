@@ -10,6 +10,7 @@ public class Wall {
     private BigDecimal startY;
     private BigDecimal endX;
     private BigDecimal endY;
+    private Integer displayOrder;
 
     public Wall() {}
 
@@ -67,5 +68,13 @@ public class Wall {
 
     public void setEndY(BigDecimal endY) {
         this.endY = endY;
+    }
+
+    public Integer getDisplayOrder() {
+        return displayOrder;
+    }
+
+    public void setDisplayOrder(Integer displayOrder) {
+        this.displayOrder = displayOrder;
     }
 }

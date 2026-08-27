@@ -1,5 +1,3 @@
-import type { SimulationExecutionStatus } from '../../simulations/types';
-
 export type LastActivityType = 'LAYOUT_EDIT' | 'SIMULATION_SETUP' | 'SIMULATION_RESULT';
 
 /** auth-service가 보관하는 마지막 작업 포인터. 표시값은 포함하지 않는다. */
@@ -16,7 +14,7 @@ export interface SimulationWorkSummary {
 
 /**
  * 검토 파이프라인 4단계.
- * SCENARIO.md의 "도면 배치 및 저장 → 위험구역, 사람 배치 및 저장 → 시뮬레이션 실행 → 결과 확인" 흐름을 따른다.
+ * SCENARIO.md의 "도면 배치 및 저장 → 주의 구역, 사람 배치 및 저장 → 시뮬레이션 실행 → 결과 확인" 흐름을 따른다.
  */
 export type ReviewStepKey = 'LAYOUT' | 'SIMULATION_LAYOUT' | 'SETUP' | 'ANALYSIS';
 
@@ -45,15 +43,4 @@ export interface PriorityRiskItem {
   status: string;
   assigneeId: number | null;
   assigneeName: string | null;
-}
-
-export interface RecentSimulationRow {
-  id: number;
-  title?: string;
-  layoutTitle: string;
-  executedAt: string | null;
-  createdBy: number;
-  assigneeName: string | null;
-  status: SimulationExecutionStatus;
-  path: string | null;
 }

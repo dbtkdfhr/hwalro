@@ -8,6 +8,8 @@
         SELECT area.id,
                area.name,
                area.description,
+               area.layout_id,
+               NULL AS layout_title,
                area.active,
                COUNT(inspection.id) AS inspection_count,
                MAX(inspection.created_at) AS last_inspected_at,
@@ -27,6 +29,7 @@
         GROUP BY area.id,
                  area.name,
                  area.description,
+                 area.layout_id,
                  area.active,
                  area.created_at
         ORDER BY area.created_at DESC, area.id DESC
@@ -37,6 +40,8 @@
         SELECT area.id,
                area.name,
                area.description,
+               area.layout_id,
+               NULL AS layout_title,
                area.active,
                COUNT(inspection.id) AS inspection_count,
                MAX(inspection.created_at) AS last_inspected_at,
@@ -56,18 +61,20 @@
         GROUP BY area.id,
                  area.name,
                  area.description,
+                 area.layout_id,
                  area.active
     </select>
 
     <insert id="insertArea" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO inspection_areas (name, description)
-        VALUES (#{name}, #{description})
+        INSERT INTO inspection_areas (name, description, layout_id)
+        VALUES (#{name}, #{description}, #{layoutId})
     </insert>
 
     <update id="updateArea">
         UPDATE inspection_areas
         SET name = #{name},
-            description = #{description}
+            description = #{description},
+            layout_id = #{layoutId}
         WHERE id = #{id}
           AND active = TRUE
     </update>
@@ -81,6 +88,13 @@
 
     <select id="areaExists" resultType="boolean">
         SELECT COUNT(*) &gt; 0
+        FROM inspection_areas
+        WHERE id = #{areaId}
+          AND active = TRUE
+    </select>
+
+    <select id="findAreaLayoutId" resultType="long">
+        SELECT layout_id
         FROM inspection_areas
         WHERE id = #{areaId}
           AND active = TRUE
@@ -101,9 +115,10 @@
                inspection.status,
                COALESCE(SUM(item.result != 'PENDING'), 0) AS completed_item_count,
                COUNT(item.id) AS total_item_count,
-               COALESCE(SUM(item.result = 'FAIL'), 0) AS fail_count,
-               COALESCE(SUM(item.result = 'REVIEW_REQUIRED'), 0) AS review_required_count,
-               inspection.created_at
+                COALESCE(SUM(item.result = 'FAIL'), 0) AS fail_count,
+                COALESCE(SUM(item.result = 'REVIEW_REQUIRED'), 0) AS review_required_count,
+                inspection.snapshot_image IS NOT NULL AS has_snapshot,
+                inspection.created_at
         FROM safety_inspections inspection
         LEFT JOIN safety_inspection_items item
                ON item.safety_inspection_id = inspection.id
@@ -114,6 +129,7 @@
         GROUP BY inspection.id,
                  inspection.inspector_id,
                  inspection.status,
+                 inspection.snapshot_image,
                  inspection.created_at
         ORDER BY inspection.created_at DESC, inspection.id DESC
     </select>
@@ -124,6 +140,10 @@
                inspection.inspection_area_id,
                area.name AS area_name,
                inspection.simulation_result_id,
+               inspection.layout_id,
+               inspection.layout_version_id,
+               area.layout_id AS area_layout_id,
+               inspection.snapshot_image IS NOT NULL AS has_snapshot,
                inspection.inspector_id,
                inspection.status,
                inspection.comment,
@@ -142,10 +162,18 @@
                category,
                display_order,
                result,
-               comment
+               comment,
+               marker_x,
+               marker_y
         FROM safety_inspection_items
         WHERE safety_inspection_id = #{inspectionId}
         ORDER BY display_order, id
+    </select>
+
+    <select id="findSnapshotImage" resultType="byte[]">
+        SELECT snapshot_image
+        FROM safety_inspections
+        WHERE id = #{inspectionId}
     </select>
 
     <select id="findActiveTemplateId" resultType="long">
@@ -270,10 +298,21 @@
           ON inspection.id = item.safety_inspection_id
         SET item.result = #{result},
             item.comment = #{comment},
+            item.marker_x = #{markerX},
+            item.marker_y = #{markerY},
             item.checked_at = #{checkedAt}
         WHERE item.id = #{itemId}
           AND item.safety_inspection_id = #{inspectionId}
           AND inspection.status = 'DRAFT'
+    </update>
+
+    <update id="updateSnapshotImage">
+        UPDATE safety_inspections
+        SET snapshot_image = #{image},
+            layout_id = COALESCE(#{layoutId}, layout_id),
+            layout_version_id = #{layoutVersionId}
+        WHERE id = #{inspectionId}
+          AND status = 'DRAFT'
     </update>
 
     <select id="countInspectionItems" resultType="int">

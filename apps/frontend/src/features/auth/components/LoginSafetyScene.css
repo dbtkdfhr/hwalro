@@ -1,0 +1,35 @@
+.login-safety-scene,
+.login-safety-scene__host {
+  position: absolute;
+  inset: 0;
+}
+
+.login-safety-scene {
+  overflow: hidden;
+}
+
+.login-safety-scene__host canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.login-safety-scene__fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.login-safety-scene__fallback-mark {
+  width: 54px;
+  height: 36px;
+  border: 2px solid var(--color-primary);
+  border-top-width: 8px;
+  opacity: 0.45;
+  transform: perspective(80px) rotateX(54deg) rotateZ(-18deg);
+}

@@ -20,6 +20,8 @@ import type {
 import { interpolatePositions, selectFramePair } from '../utils/playback';
 import { FLOOR_LABEL_SOURCE_FONT_SIZE, getFloorLabelPresentation } from './floorLabelPresentation';
 import { composeHeatmapTrail } from './heatmapTrail';
+import { getExitPresentation } from './exitPresentation';
+import { HAZARD_GRADIENT_STOPS } from './hazardPresentation';
 
 export interface PixiCameraTransform {
   scale: number;
@@ -84,11 +86,16 @@ function traceBoundary(graphics: Graphics, points: PixiSceneConfig['drawing']['o
   return graphics.closePath();
 }
 
+// 출구·에이전트(청록), 병목(빨강), 위험 구역(파랑)과 겹치지 않는 보라색 계열을 쓴다.
+const IMPROVED_FABRIC_FILL = 0xe6dbf7;
+const IMPROVED_FABRIC_STROKE = 0x7a45c9;
+
 function addRotatedRectangle(
   container: Container,
   rectangle: PixiSceneConfig['drawing']['pillars'][number],
   fillColor: number,
   strokeColor: number,
+  strokeWidth = 0.18,
 ) {
   const x = Math.min(rectangle.startX, rectangle.endX);
   const y = Math.min(rectangle.startY, rectangle.endY);
@@ -97,19 +104,19 @@ function addRotatedRectangle(
   const graphic = new Graphics()
     .rect(-width / 2, -height / 2, width, height)
     .fill({ color: fillColor })
-    .stroke({ color: strokeColor, width: 0.18 });
+    .stroke({ color: strokeColor, width: strokeWidth });
   graphic.position.set(x + width / 2, y + height / 2);
   graphic.rotation = ((rectangle.rotation ?? 0) * Math.PI) / 180;
   container.addChild(graphic);
 }
 
-function drawFloorPlan(result: PixiSceneConfig) {
+function drawFloorPlan(result: PixiSceneConfig, improvedFabrics: ReadonlySet<number>) {
   const { drawing } = result;
   const baseLayer = new Graphics();
   const structureLayer = new Container();
   const lineLayer = new Graphics();
   const labels: PixiText[] = [];
-  baseLayer.rect(0, 0, drawing.width, drawing.height).fill({ color: 0xf3f7f6 });
+  baseLayer.rect(0, 0, drawing.width, drawing.height).fill({ color: 0xdfe6e3 });
   traceBoundary(baseLayer, drawing.outsideBoundary).fill({ color: 0xffffff });
   traceBoundary(lineLayer, drawing.outsideBoundary).stroke({ color: 0x355b55, width: 0.45 });
   for (const wall of drawing.walls) {
@@ -122,9 +129,20 @@ function drawFloorPlan(result: PixiSceneConfig) {
   for (const pillar of drawing.pillars) {
     addRotatedRectangle(structureLayer, pillar, 0xdce5e3, 0x839793);
   }
-  for (const fabric of drawing.fabrics) {
+  drawing.fabrics.forEach((fabric, index) => {
+    if (improvedFabrics.has(index)) {
+      // 개선안에서 이동·추가된 구조물은 기본 구조물과 다르게 강조한다.
+      addRotatedRectangle(
+        structureLayer,
+        fabric,
+        IMPROVED_FABRIC_FILL,
+        IMPROVED_FABRIC_STROKE,
+        0.45,
+      );
+      return;
+    }
     addRotatedRectangle(structureLayer, fabric, 0xe8efed, 0xa0afac);
-  }
+  });
   for (const text of drawing.layoutTexts) {
     const label = new PixiText({
       text: text.text,
@@ -141,10 +159,11 @@ function drawFloorPlan(result: PixiSceneConfig) {
   }
   const exitLayer = new Graphics();
   for (const exit of drawing.exits) {
+    const presentation = getExitPresentation(exit.active);
     exitLayer
       .moveTo(exit.startX, exit.startY)
       .lineTo(exit.endX, exit.endY)
-      .stroke({ color: 0x078f7e, width: 1, cap: 'round' });
+      .stroke({ color: presentation.color, width: 1, cap: 'round' });
   }
   structureLayer.addChild(exitLayer);
   return { baseLayer, structureLayer, labels };
@@ -178,11 +197,7 @@ function drawHazardZones(result: PixiSceneConfig) {
     innerRadius: 0,
     outerCenter: { x: 0.5, y: 0.5 },
     outerRadius: 0.5,
-    colorStops: [
-      { offset: 0, color: 'rgba(177, 32, 32, 0.58)' },
-      { offset: 0.5, color: 'rgba(225, 75, 75, 0.28)' },
-      { offset: 1, color: 'rgba(239, 119, 119, 0.08)' },
-    ],
+    colorStops: HAZARD_GRADIENT_STOPS.map(({ offset, css }) => ({ offset, color: css })),
     textureSpace: 'local',
   });
   for (const hazard of result.hazardZones) {
@@ -195,6 +210,7 @@ function drawHazardZones(result: PixiSceneConfig) {
 export async function createPixiSimulationScene(
   host: HTMLDivElement,
   result: PixiSceneConfig,
+  improvedFabricIndexes?: readonly number[],
 ): Promise<PixiSimulationScene> {
   const app = new Application();
   await app.init({
@@ -216,7 +232,7 @@ export async function createPixiSimulationScene(
   const hazards = drawHazardZones(result);
   const bottleneckLayer = new Graphics();
   const riskLayer = new Graphics();
-  const floorPlan = drawFloorPlan(result);
+  const floorPlan = drawFloorPlan(result, new Set(improvedFabricIndexes ?? []));
   const agentTexture = createAgentTexture(app);
   const particles = Array.from(
     { length: result.totalPeople },
@@ -253,7 +269,6 @@ export async function createPixiSimulationScene(
     riskLayer,
   );
   app.stage.addChild(world);
-
   return {
     app,
     world,
@@ -399,12 +414,11 @@ function updateBottlenecks(
   }
 }
 
-function updateRiskZones(layer: Graphics, riskZones: RiskZone[], draftZone: Bounds | null) {
+function updateRiskZones(layer: Graphics, riskZones: RiskZone[]) {
   layer.clear();
   for (const zone of riskZones) {
     drawBounds(layer, zone, 0x5c75d9, 0x5c75d9, 0.1);
   }
-  if (draftZone) drawBounds(layer, draftZone, 0x5c75d9, 0x5c75d9, 0.08);
 }
 
 export function updatePixiSimulationScene(
@@ -415,7 +429,6 @@ export function updatePixiSimulationScene(
   selectedBottleneckId: number | null,
   showBottlenecks: boolean,
   riskZones: RiskZone[],
-  draftZone: Bounds | null,
 ) {
   const heatmapFrame = selectFramePair(result.heatmap.frames, currentTimeSeconds).previous;
   if (scene.lastHeatmapTime !== heatmapFrame.timeSeconds) {
@@ -438,7 +451,7 @@ export function updatePixiSimulationScene(
   } else {
     scene.bottleneckLayer.clear();
   }
-  updateRiskZones(scene.riskLayer, riskZones, draftZone);
+  updateRiskZones(scene.riskLayer, riskZones);
   scene.app.render();
 }
 

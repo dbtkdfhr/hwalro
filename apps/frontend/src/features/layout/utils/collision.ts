@@ -146,7 +146,7 @@ function rectObstacles(doc: DrawingDocument): Array<Pillar | Fabric> {
   return [...doc.pillars, ...doc.fabrics];
 }
 
-function rectCorners(element: Pillar | Fabric): Vec2[] {
+export function rectCorners(element: Pillar | Fabric): Vec2[] {
   const center = rectCenter(element);
   return [
     rotatePoint({ x: element.startX, y: element.startY }, center, element.rotation),

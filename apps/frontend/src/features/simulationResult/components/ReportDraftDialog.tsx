@@ -114,7 +114,7 @@ export function ReportDraftDialog({
 
   return (
     <div
-      className="dialog-backdrop"
+      className="app-modal-backdrop dialog-backdrop"
       role="presentation"
       onMouseDown={() => {
         if (!isGenerating) onClose();

@@ -3,7 +3,7 @@ export const CANVAS_COLORS = {
   canvas: '#ffffff',
   ink: '#0d1917',
   outsideWall: '#2f766c',
-  exit: '#c9f438',
+  exit: '#0f766e',
   exitStrong: '#abcf30',
   gridMinor: '#eef1f0',
   gridMajor: '#dce3e0',
@@ -15,6 +15,10 @@ export const CANVAS_COLORS = {
   fabricStroke: '#93aca6',
   problem: '#ea580c',
   problemFill: '#ea580c',
+  zoneFill: 'rgba(22, 143, 128, 0.05)',
+  zoneSelectedFill: 'rgba(22, 143, 128, 0.10)',
+  zoneStroke: '#168f80',
+  zoneLabel: '#0d1917',
 } as const;
 
 export const ACCENT_ALPHA_8 = 'rgba(22, 143, 128, 0.08)';

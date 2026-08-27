@@ -125,7 +125,7 @@ public interface SimulationMapper {
             @Param("simulationResultId") Long simulationResultId,
             @Param("bottlenecks") List<DetectedBottleneck> bottlenecks);
 
-    int countImprovementReferences(@Param("simulationId") Long simulationId);
+    int countBlockingImprovementReferences(@Param("simulationId") Long simulationId);
 
     int countChildSimulations(@Param("simulationId") Long simulationId);
 

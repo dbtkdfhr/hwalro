@@ -14,6 +14,8 @@ import type {
   LayoutText,
 } from '../types';
 import { round1 } from '../utils/geometry';
+import { orderedElements, withAssignedOrder } from '../utils/elementOrder';
+import { reorderRelative, type DropPosition } from '../utils/layerDrop';
 import type { ElementHit } from '../utils/hitTest';
 import { docSnapSources, snapPoint } from '../utils/snapping';
 import { clampLineDraft, clampRectDraft, isInsideObstacleRect } from '../utils/collision';
@@ -32,14 +34,6 @@ import {
 import { applyRedo, applyUndo, clearInteraction, commit } from './history';
 import { applyDragUpdate } from './drag';
 import { applySelectAt } from './selection';
-import {
-  applyBackgroundDragStart,
-  applyBackgroundInsert,
-  applyBackgroundOpacity,
-  applyBackgroundRemove,
-  applyBackgroundResize,
-  applyBackgroundResizeStart,
-} from './background';
 
 export type EditorAction =
   | { type: 'setTool'; tool: Tool }
@@ -59,6 +53,8 @@ export type EditorAction =
   | { type: 'pillarCommit' }
   | { type: 'fabricStart'; point: Vec2 }
   | { type: 'fabricUpdate'; point: Vec2 }
+  | { type: 'zoneStart'; point: Vec2 }
+  | { type: 'zoneUpdate'; point: Vec2 }
   | { type: 'fabricCommit' }
   | { type: 'textPlace'; point: Vec2 }
   | { type: 'textEditStart'; textId: string }
@@ -75,6 +71,13 @@ export type EditorAction =
       additive: boolean;
     }
   | { type: 'dragStartMove'; point: Vec2 }
+  | {
+      /** 벽·기둥·구조물은 단일 순서 축을 공유한다. 종류는 순서에 영향을 주지 않는다. */
+      type: 'reorderElements';
+      draggedId: string;
+      targetId: string;
+      position: DropPosition;
+    }
   | {
       type: 'reshapeStart';
       elementKind: 'wall' | 'outsideWall' | 'pillar' | 'fabric';
@@ -95,16 +98,17 @@ export type EditorAction =
   | { type: 'eraseUpdate'; hit: ElementHit }
   | { type: 'deleteSelection' }
   | { type: 'setValidationProblems'; problems: ValidationProblem[] }
-  | { type: 'backgroundInsert'; image: string; aspect: number }
-  | { type: 'backgroundDragStart'; point: Vec2 }
-  | { type: 'backgroundResizeStart'; point: Vec2 }
-  | { type: 'backgroundDragStart'; point: Vec2 }
-  | { type: 'backgroundResize'; width: number }
-  | { type: 'backgroundOpacity'; opacity: number }
-  | { type: 'backgroundRemove' }
   | { type: 'undo' }
   | { type: 'redo' }
   | { type: 'commit'; prev: DrawingDocument; next: DrawingDocument }
+  | {
+      /** 저장 응답의 서버 ID를 받아들인다. 사용자 편집이 아니므로 실행 취소 이력에 남기지 않는다. */
+      type: 'adoptSavedIds';
+      walls: Array<number | null>;
+      exits: Array<number | null>;
+      pillars: Array<number | null>;
+      fabrics: Array<number | null>;
+    }
   | { type: 'replaceDoc'; doc: DrawingDocument }
   | { type: 'loadDocument'; doc: DrawingDocument }
   | { type: 'renameDoc'; name: string }
@@ -210,8 +214,8 @@ function applyDraftUpdate(
   };
 }
 
-function applyRectDraftStart(state: EditorState, point: Vec2): EditorState {
-  if (isInsideObstacleRect(point, state.doc)) {
+function applyRectDraftStart(state: EditorState, point: Vec2, collide = true): EditorState {
+  if (collide && isInsideObstacleRect(point, state.doc)) {
     return {
       ...state,
       draft: null,
@@ -229,7 +233,7 @@ function applyRectDraftStart(state: EditorState, point: Vec2): EditorState {
   };
 }
 
-function applyRectDraftUpdate(state: EditorState, point: Vec2): EditorState {
+function applyRectDraftUpdate(state: EditorState, point: Vec2, collide = true): EditorState {
   if (!state.draft) {
     return state;
   }
@@ -241,7 +245,7 @@ function applyRectDraftUpdate(state: EditorState, point: Vec2): EditorState {
     state.camera.zoom,
     false,
   );
-  const end = clampRectDraft(state.draft.start, snapped.point, state.doc);
+  const end = collide ? clampRectDraft(state.draft.start, snapped.point, state.doc) : snapped.point;
   return { ...state, draft: { ...state.draft, end } };
 }
 
@@ -312,6 +316,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       }
       const wall: Wall = {
         id: uid(),
+        backendId: null,
         name: nextWallName(state.doc),
         startX: round1(start.x),
         startY: round1(start.y),
@@ -370,6 +375,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       }
       const exit: Exit = {
         id: uid(),
+        backendId: null,
         name: nextExitName(state.doc),
         startX: round1(start.x),
         startY: round1(start.y),
@@ -399,6 +405,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       }
       const pillar: Pillar = {
         id: uid(),
+        backendId: null,
         name: nextPillarName(state.doc),
         startX: round1(start.x),
         startY: round1(start.y),
@@ -416,6 +423,14 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     case 'fabricUpdate':
       return applyRectDraftUpdate(state, action.point);
 
+    // 구역은 문서가 아니라 서버가 소유한다. 편집기는 그리는 동안의 draft만 갖고,
+    // 확정은 페이지가 API로 보낸다(undo/redo 대상이 아님).
+    case 'zoneStart':
+      return applyRectDraftStart(state, action.point, false);
+
+    case 'zoneUpdate':
+      return applyRectDraftUpdate(state, action.point, false);
+
     case 'fabricCommit': {
       if (!state.draft) {
         return state;
@@ -429,6 +444,7 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
       }
       const fabric: Fabric = {
         id: uid(),
+        backendId: null,
         name: nextFabricName(state.doc),
         startX: round1(start.x),
         startY: round1(start.y),
@@ -505,6 +521,54 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
     case 'selectAt':
       return applySelectAt(state, action);
 
+    case 'adoptSavedIds': {
+      // 저장 요청 도중 요소가 추가·삭제됐다면 위치가 어긋난다. 다음 저장이 바로잡도록 건너뛴다.
+      if (
+        action.walls.length !== state.doc.walls.length ||
+        action.exits.length !== state.doc.exits.length ||
+        action.pillars.length !== state.doc.pillars.length ||
+        action.fabrics.length !== state.doc.fabrics.length
+      ) {
+        return state;
+      }
+      const adopt = <T extends { backendId: number | null }>(
+        elements: T[],
+        ids: Array<number | null>,
+      ): T[] =>
+        elements.map((element, index) =>
+          element.backendId === ids[index] ? element : { ...element, backendId: ids[index] },
+        );
+      return {
+        ...state,
+        doc: {
+          ...state.doc,
+          walls: adopt(state.doc.walls, action.walls),
+          exits: adopt(state.doc.exits, action.exits),
+          pillars: adopt(state.doc.pillars, action.pillars),
+          fabrics: adopt(state.doc.fabrics, action.fabrics),
+        },
+      };
+    }
+
+    case 'reorderElements': {
+      if (action.draggedId === action.targetId) {
+        return state;
+      }
+      // 벽·기둥·구조물은 단일 순서 축을 공유하므로 종류가 달라도 자유롭게 배치할 수 있다.
+      const merged = orderedElements(state.doc.walls, state.doc.pillars, state.doc.fabrics);
+      const reordered = reorderRelative(
+        merged,
+        action.draggedId,
+        action.targetId,
+        action.position,
+        (entry) => entry.element.id,
+      );
+      if (reordered === merged) {
+        return state;
+      }
+      return commit(state, state.doc, { ...state.doc, ...withAssignedOrder(reordered) });
+    }
+
     case 'dragStartMove':
       return { ...state, drag: { kind: 'move', origin: action.point, originDoc: state.doc } };
 
@@ -547,24 +611,6 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
 
     case 'dragUpdate':
       return applyDragUpdate(state, action.point);
-
-    case 'backgroundInsert':
-      return applyBackgroundInsert(state, action.image, action.aspect);
-
-    case 'backgroundDragStart':
-      return applyBackgroundDragStart(state, action.point);
-
-    case 'backgroundResizeStart':
-      return applyBackgroundResizeStart(state, action.point);
-
-    case 'backgroundResize':
-      return applyBackgroundResize(state, action.width);
-
-    case 'backgroundOpacity':
-      return applyBackgroundOpacity(state, action.opacity);
-
-    case 'backgroundRemove':
-      return applyBackgroundRemove(state);
 
     case 'dragEnd': {
       if (!state.drag) {

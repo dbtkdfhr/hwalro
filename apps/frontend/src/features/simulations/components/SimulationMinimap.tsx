@@ -116,6 +116,60 @@ function drawHighlight(
   context.fillText(highlight.label, badgeX, badgeY + 0.5);
 }
 
+export function renderMinimapPlan(
+  context: CanvasRenderingContext2D,
+  drawing: MinimapDrawing,
+  width: number,
+  height: number,
+  highlights: MinimapHighlight[] = [],
+) {
+  context.fillStyle = '#ffffff';
+  context.fillRect(0, 0, width, height);
+
+  const drawingWidth = Math.max(drawing.width, 1);
+  const drawingHeight = Math.max(drawing.height, 1);
+  const scale = Math.min(
+    (width - PADDING * 2) / drawingWidth,
+    (height - PADDING * 2) / drawingHeight,
+  );
+  const offsetX = (width - drawingWidth * scale) / 2;
+  const offsetY = (height - drawingHeight * scale) / 2;
+
+  if (drawing.outsideBoundary.length > 0) {
+    context.beginPath();
+    context.moveTo(
+      offsetX + drawing.outsideBoundary[0].x * scale,
+      offsetY + drawing.outsideBoundary[0].y * scale,
+    );
+    for (const point of drawing.outsideBoundary.slice(1)) {
+      context.lineTo(offsetX + point.x * scale, offsetY + point.y * scale);
+    }
+    context.closePath();
+    context.fillStyle = 'rgba(237, 242, 241, 0.6)';
+    context.fill();
+    context.strokeStyle = '#94a3b8';
+    context.lineWidth = 1;
+    context.stroke();
+  }
+
+  context.strokeStyle = '#475569';
+  context.lineWidth = 1.5;
+  for (const wall of drawing.walls) strokeSegment(context, wall, scale, offsetX, offsetY);
+
+  context.strokeStyle = '#188e63';
+  context.lineWidth = 2;
+  for (const exit of drawing.exits) strokeSegment(context, exit, scale, offsetX, offsetY);
+
+  context.fillStyle = 'rgba(148, 163, 184, 0.55)';
+  for (const pillar of drawing.pillars) fillRotatedRect(context, pillar, scale, offsetX, offsetY);
+  context.fillStyle = 'rgba(203, 213, 225, 0.75)';
+  for (const fabric of drawing.fabrics) fillRotatedRect(context, fabric, scale, offsetX, offsetY);
+
+  for (const highlight of highlights) {
+    drawHighlight(context, highlight, scale, offsetX, offsetY);
+  }
+}
+
 export function SimulationMinimap({
   drawing,
   highlights,
@@ -137,51 +191,7 @@ export function SimulationMinimap({
     canvas.height = height * PIXEL_RATIO;
     context.setTransform(PIXEL_RATIO, 0, 0, PIXEL_RATIO, 0, 0);
     context.clearRect(0, 0, width, height);
-    context.fillStyle = '#ffffff';
-    context.fillRect(0, 0, width, height);
-
-    const drawingWidth = Math.max(drawing.width, 1);
-    const drawingHeight = Math.max(drawing.height, 1);
-    const scale = Math.min(
-      (width - PADDING * 2) / drawingWidth,
-      (height - PADDING * 2) / drawingHeight,
-    );
-    const offsetX = (width - drawingWidth * scale) / 2;
-    const offsetY = (height - drawingHeight * scale) / 2;
-
-    if (drawing.outsideBoundary.length > 0) {
-      context.beginPath();
-      context.moveTo(
-        offsetX + drawing.outsideBoundary[0].x * scale,
-        offsetY + drawing.outsideBoundary[0].y * scale,
-      );
-      for (const point of drawing.outsideBoundary.slice(1)) {
-        context.lineTo(offsetX + point.x * scale, offsetY + point.y * scale);
-      }
-      context.closePath();
-      context.fillStyle = 'rgba(237, 242, 241, 0.6)';
-      context.fill();
-      context.strokeStyle = '#94a3b8';
-      context.lineWidth = 1;
-      context.stroke();
-    }
-
-    context.strokeStyle = '#475569';
-    context.lineWidth = 1.5;
-    for (const wall of drawing.walls) strokeSegment(context, wall, scale, offsetX, offsetY);
-
-    context.strokeStyle = '#188e63';
-    context.lineWidth = 2;
-    for (const exit of drawing.exits) strokeSegment(context, exit, scale, offsetX, offsetY);
-
-    context.fillStyle = 'rgba(148, 163, 184, 0.55)';
-    for (const pillar of drawing.pillars) fillRotatedRect(context, pillar, scale, offsetX, offsetY);
-    context.fillStyle = 'rgba(203, 213, 225, 0.75)';
-    for (const fabric of drawing.fabrics) fillRotatedRect(context, fabric, scale, offsetX, offsetY);
-
-    for (const highlight of highlights) {
-      drawHighlight(context, highlight, scale, offsetX, offsetY);
-    }
+    renderMinimapPlan(context, drawing, width, height, highlights);
   }, [drawing, height, highlights, width]);
 
   return (

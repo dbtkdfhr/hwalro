@@ -5,11 +5,15 @@ export interface Vec2 {
 
 export interface Wall {
   id: string;
+  /** 서버가 소유한 walls.id. 구역 멤버십이 이 값을 참조한다. 새로 그린 벽은 저장 전까지 null이다. */
+  backendId: number | null;
   name: string;
   startX: number;
   startY: number;
   endX: number;
   endY: number;
+  /** 도면 버전 전체를 아우르는 표시 순서. 클수록 위에 그려진다. 아직 저장되지 않은 요소는 undefined(맨 위)다. */
+  displayOrder?: number;
 }
 
 export interface OutsideWall {
@@ -23,6 +27,8 @@ export interface OutsideWall {
 
 export interface Exit {
   id: string;
+  /** 서버가 소유한 layout_exits.id. 새로 그린 비상구는 저장 전까지 null이다. */
+  backendId: number | null;
   name: string;
   startX: number;
   startY: number;
@@ -32,22 +38,30 @@ export interface Exit {
 
 export interface Pillar {
   id: string;
+  /** 서버가 소유한 pillars.id. 구역 멤버십이 이 값을 참조한다. 새로 그린 기둥은 저장 전까지 null이다. */
+  backendId: number | null;
   name: string;
   startX: number;
   startY: number;
   endX: number;
   endY: number;
   rotation: number;
+  /** 도면 버전 전체를 아우르는 표시 순서. 클수록 위에 그려진다. 아직 저장되지 않은 요소는 undefined(맨 위)다. */
+  displayOrder?: number;
 }
 
 export interface Fabric {
   id: string;
+  /** 서버가 소유한 fabrics.id. 구역 멤버십과 배치 제약이 이 값을 참조한다. */
+  backendId: number | null;
   name: string;
   startX: number;
   startY: number;
   endX: number;
   endY: number;
   rotation: number;
+  /** 도면 버전 전체를 아우르는 표시 순서. 클수록 위에 그려진다. 아직 저장되지 않은 요소는 undefined(맨 위)다. */
+  displayOrder?: number;
 }
 
 export interface LayoutText {
@@ -55,17 +69,6 @@ export interface LayoutText {
   text: string;
   x: number;
   y: number;
-}
-
-export interface BackgroundImage {
-  id: string;
-  image: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  opacity: number;
-  aspect: number;
 }
 
 export interface DrawingDocument {
@@ -78,7 +81,6 @@ export interface DrawingDocument {
   pillars: Pillar[];
   fabrics: Fabric[];
   layoutTexts: LayoutText[];
-  background: BackgroundImage | null;
 }
 
 export type Tool =
@@ -88,9 +90,10 @@ export type Tool =
   | 'exit'
   | 'text'
   | 'erase'
-  | 'background'
   | 'pillar'
-  | 'fabric';
+  | 'fabric'
+  /** 구역은 서버 소유 상태다. 문서(doc)에 들어가지 않고 그리기 draft만 편집기가 관리한다. */
+  | 'zone';
 
 export interface Camera {
   zoom: number;
@@ -164,18 +167,6 @@ export type DragState =
       handle: WallHandle;
     }
   | {
-      kind: 'backgroundMove';
-      origin: Vec2;
-      originBg: BackgroundImage;
-      originDoc: DrawingDocument;
-    }
-  | {
-      kind: 'backgroundResize';
-      origin: Vec2;
-      originBg: BackgroundImage;
-      originDoc: DrawingDocument;
-    }
-  | {
       kind: 'erase';
       origin: Vec2;
       originDoc: DrawingDocument;
@@ -200,11 +191,13 @@ export interface EditorState {
 }
 
 export interface SerializedWall {
+  id: number | null;
   name: string;
   startX: number;
   startY: number;
   endX: number;
   endY: number;
+  displayOrder?: number;
 }
 
 export interface SerializedOutsideWall {
@@ -216,6 +209,7 @@ export interface SerializedOutsideWall {
 }
 
 export interface SerializedExit {
+  id: number | null;
   name: string;
   startX: number;
   startY: number;
@@ -224,37 +218,31 @@ export interface SerializedExit {
 }
 
 export interface SerializedPillar {
+  id: number | null;
   name: string;
   startX: number;
   startY: number;
   endX: number;
   endY: number;
   rotation: number;
+  displayOrder?: number;
 }
 
 export interface SerializedFabric {
+  id: number | null;
   name: string;
   startX: number;
   startY: number;
   endX: number;
   endY: number;
   rotation: number;
+  displayOrder?: number;
 }
 
 export interface SerializedText {
   text: string;
   x: number;
   y: number;
-}
-
-export interface SerializedBackground {
-  image: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  opacity: number;
-  aspect: number;
 }
 
 export interface SerializedDocument {
@@ -267,5 +255,4 @@ export interface SerializedDocument {
   pillars: SerializedPillar[];
   fabrics: SerializedFabric[];
   layoutTexts: SerializedText[];
-  background: SerializedBackground | null;
 }

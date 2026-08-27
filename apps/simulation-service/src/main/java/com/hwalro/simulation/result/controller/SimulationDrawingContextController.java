@@ -27,7 +27,7 @@ public class SimulationDrawingContextController {
     }
 
     @PostMapping
-    @Operation(summary = "위험 항목 미리보기용 시뮬레이션 결과 도면 조회")
+    @Operation(summary = "주의 항목 미리보기용 시뮬레이션 결과 도면 조회")
     public List<SimulationDrawingContextResponse> findAll(
             @RequestBody SimulationDrawingContextRequest request,
             @RequestAttribute(JwtAuthInterceptor.REQUEST_ATTRIBUTE_USER) JwtUser user) {

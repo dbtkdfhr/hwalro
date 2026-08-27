@@ -1,12 +1,14 @@
 // @vitest-environment happy-dom
 
 import { act } from 'react';
+import { AxiosError } from 'axios';
 import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { simulationApi } from '../api/simulationApi';
 import type { SimulationExecution, SimulationSetup } from '../types';
 import SimulationSetupPage from './SimulationSetupPage';
+import { SIMULATION_SETUP_LOADING_MESSAGE } from '../../../components/workspace/workspaceLoadingMessages';
 
 vi.mock('../components/SimulationCanvas', () => ({
   HAZARD_MAX_RADIUS: 50,
@@ -118,6 +120,28 @@ function executeButton(): HTMLButtonElement {
 }
 
 describe('출입구 기본 선택', () => {
+  it('일시적인 조회 실패는 오류 화면으로 전환하지 않고 자동 복구한다', async () => {
+    vi.useFakeTimers();
+    const getSetup = vi
+      .spyOn(simulationApi, 'getSetup')
+      .mockRejectedValueOnce(
+        new AxiosError('unavailable', undefined, undefined, undefined, { status: 503 } as never),
+      )
+      .mockResolvedValue(setup());
+
+    await renderPage();
+    expect(container.textContent).toContain(SIMULATION_SETUP_LOADING_MESSAGE);
+    expect(container.textContent).not.toContain('다시 시도');
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300);
+    });
+
+    expect(getSetup).toHaveBeenCalledTimes(2);
+    expect(container.querySelector('[data-testid="simulation-canvas"]')).not.toBeNull();
+    expect(container.textContent).not.toContain('다시 시도');
+  });
+
   it('저장된 출입구 선택을 유지한다', async () => {
     vi.spyOn(simulationApi, 'getSetup').mockResolvedValue(setup());
 
@@ -292,5 +316,14 @@ describe('실행 전 라우팅 검증', () => {
     );
     expect(container.querySelector('[data-testid="simulation-list"]')).toBeNull();
     expect(executeButton().disabled).toBe(false);
+  });
+
+  it('배치 개선안 시뮬레이션인 경우 헤더에 배치 개선안 뱃지를 표시한다', async () => {
+    const current = { ...setup(), isImprovement: true };
+    vi.spyOn(simulationApi, 'getSetup').mockResolvedValue(current);
+
+    await renderPage();
+
+    expect(container.textContent).toContain('배치 개선안');
   });
 });

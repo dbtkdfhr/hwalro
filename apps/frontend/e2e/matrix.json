@@ -39,7 +39,7 @@
       }
     },
     "E": {
-      "label": "위험구역",
+      "label": "주의 구역",
       "values": {
         "none": { "count": 0 },
         "some": { "count": 3, "radius": 6.0 }

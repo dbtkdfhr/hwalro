@@ -32,11 +32,11 @@ public class RegulationUsageClient {
                     .header(HttpHeaders.AUTHORIZATION, authorization)
                     .retrieve()
                     .body(RegulationUsageResponse.class);
-            return response != null ? response : new RegulationUsageResponse(false, false);
+            return response != null ? response : new RegulationUsageResponse(false);
         } catch (RestClientException exception) {
             throw new IllegalStateException("규정 서비스 연동 중 오류가 발생했습니다.", exception);
         }
     }
 
-    public record RegulationUsageResponse(boolean usedInRisks, boolean usedInReports) {}
+    public record RegulationUsageResponse(boolean usedInReports) {}
 }

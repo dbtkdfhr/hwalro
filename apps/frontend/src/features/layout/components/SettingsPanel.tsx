@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import type { Dispatch } from 'react';
 import type { EditorState, Exit, Fabric, LayoutText, OutsideWall, Pillar, Wall } from '../types';
 import type { EditorAction } from '../state/editorReducer';
@@ -246,148 +246,59 @@ function InfoRow({ label, value }: InfoRowProps) {
   );
 }
 
-function readBackgroundFile(file: File): Promise<{ image: string; aspect: number }> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error('파일을 읽을 수 없습니다.'));
-    reader.onload = () => {
-      const dataUrl = typeof reader.result === 'string' ? reader.result : null;
-      if (dataUrl === null) {
-        reject(new Error('파일을 읽을 수 없습니다.'));
-        return;
-      }
-      const img = new window.Image();
-      img.onerror = () => reject(new Error('이미지 파일만 지원합니다.'));
-      img.onload = () => {
-        if (img.naturalWidth > 0 && img.naturalHeight > 0) {
-          resolve({ image: dataUrl, aspect: img.naturalWidth / img.naturalHeight });
-        } else {
-          reject(new Error('이미지 파일만 지원합니다.'));
-        }
-      };
-      img.src = dataUrl;
-    };
-    reader.readAsDataURL(file);
-  });
-}
+export const SettingsPanel = memo(
+  function SettingsPanel({ state, dispatch }: SettingsPanelProps) {
+    const wall = selectedWall(state);
+    const outsideWall = wall === null ? selectedOutsideWall(state) : null;
+    const exit = outsideWall === null ? selectedExit(state) : null;
+    const pillar = exit === null ? selectedPillar(state) : null;
+    const fabric = pillar === null ? selectedFabric(state) : null;
+    const text = fabric === null ? selectedText(state) : null;
+    const { doc } = state;
+    const hasSelection =
+      wall !== null ||
+      outsideWall !== null ||
+      exit !== null ||
+      pillar !== null ||
+      fabric !== null ||
+      text !== null;
 
-function BackgroundSection({ state, dispatch }: SettingsPanelProps) {
-  const bg = state.doc.background;
-  const inputRef = useRef<HTMLInputElement | null>(null);
-
-  const pickFile = (file: File | undefined) => {
-    if (!file) {
-      return;
-    }
-    void readBackgroundFile(file).then(
-      ({ image, aspect }) => dispatch({ type: 'backgroundInsert', image, aspect }),
-      (reason: unknown) =>
-        dispatch({
-          type: 'setError',
-          message: reason instanceof Error ? reason.message : '이미지를 읽을 수 없습니다.',
-        }),
-    );
-  };
-
-  return (
-    <section className="mt-4 border-t border-panel-divider pt-4">
-      <h3 className="text-sm font-bold text-panel-text">배경</h3>
-      <p className="mt-0.5 text-xs text-panel-muted">
-        저장되지 않고 화면에만 표시됩니다. 배경 도구로 이동·크기 조절.
-      </p>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(event) => {
-          pickFile(event.currentTarget.files?.[0]);
-          event.currentTarget.value = '';
-        }}
-      />
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
-        className="mt-2 flex h-8 w-full items-center justify-center rounded-md border border-panel-border bg-panel-soft text-sm font-bold text-panel-text transition-colors hover:bg-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
-      >
-        {bg ? '배경 교체' : '배경 이미지 추가'}
-      </button>
-      {bg && (
-        <div className="mt-3 space-y-3">
-          <label className="block">
-            <span className="text-xs text-panel-muted">투명도</span>
-            <input
-              type="range"
-              min={0.1}
-              max={1}
-              step={0.05}
-              value={bg.opacity}
-              onChange={(event) =>
-                dispatch({ type: 'backgroundOpacity', opacity: Number(event.currentTarget.value) })
-              }
-              className="mt-1 w-full"
+    return (
+      <section aria-label="도면 상세 설정" className="layout-settings-content">
+        {wall !== null ? (
+          <WallFields wall={wall} dispatch={dispatch} />
+        ) : outsideWall !== null ? (
+          <OutsideWallFields wall={outsideWall} dispatch={dispatch} />
+        ) : exit !== null ? (
+          <ExitFields exit={exit} dispatch={dispatch} />
+        ) : pillar !== null ? (
+          <RectFields element={pillar} dispatch={dispatch} kind="pillar" />
+        ) : fabric !== null ? (
+          <RectFields element={fabric} dispatch={dispatch} kind="fabric" />
+        ) : text !== null ? (
+          <TextFields text={text} dispatch={dispatch} />
+        ) : null}
+        <section className={hasSelection ? 'mt-4 border-t border-panel-divider pt-4' : ''}>
+          <h3 className="text-sm font-bold text-panel-text">레이어</h3>
+          <div className="mt-1">
+            <InfoRow
+              label="크기"
+              value={`${doc.width.toLocaleString('ko-KR')}m × ${doc.height.toLocaleString('ko-KR')}m`}
             />
-          </label>
-          <button
-            type="button"
-            onClick={() => dispatch({ type: 'backgroundRemove' })}
-            className="flex h-8 w-full items-center justify-center rounded-md border border-danger/40 bg-panel-soft text-sm font-bold text-danger transition-colors hover:bg-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
-          >
-            배경 제거
-          </button>
-        </div>
-      )}
-    </section>
-  );
-}
-
-export function SettingsPanel({ state, dispatch }: SettingsPanelProps) {
-  const wall = selectedWall(state);
-  const outsideWall = wall === null ? selectedOutsideWall(state) : null;
-  const exit = outsideWall === null ? selectedExit(state) : null;
-  const pillar = exit === null ? selectedPillar(state) : null;
-  const fabric = pillar === null ? selectedFabric(state) : null;
-  const text = fabric === null ? selectedText(state) : null;
-  const { doc } = state;
-  const hasSelection =
-    wall !== null ||
-    outsideWall !== null ||
-    exit !== null ||
-    pillar !== null ||
-    fabric !== null ||
-    text !== null;
-
-  return (
-    <section aria-label="도면 상세 설정" className="layout-settings-content">
-      {wall !== null ? (
-        <WallFields wall={wall} dispatch={dispatch} />
-      ) : outsideWall !== null ? (
-        <OutsideWallFields wall={outsideWall} dispatch={dispatch} />
-      ) : exit !== null ? (
-        <ExitFields exit={exit} dispatch={dispatch} />
-      ) : pillar !== null ? (
-        <RectFields element={pillar} dispatch={dispatch} kind="pillar" />
-      ) : fabric !== null ? (
-        <RectFields element={fabric} dispatch={dispatch} kind="fabric" />
-      ) : text !== null ? (
-        <TextFields text={text} dispatch={dispatch} />
-      ) : null}
-      <section className={hasSelection ? 'mt-4 border-t border-panel-divider pt-4' : ''}>
-        <h3 className="text-sm font-bold text-panel-text">레이어</h3>
-        <div className="mt-1">
-          <InfoRow
-            label="크기"
-            value={`${doc.width.toLocaleString('ko-KR')}m × ${doc.height.toLocaleString('ko-KR')}m`}
-          />
-          <InfoRow label="벽" value={`${doc.walls.length}개`} />
-          <InfoRow label="외각벽" value={`${doc.outsideWalls.length}개`} />
-          <InfoRow label="비상구" value={`${doc.exits.length}개`} />
-          <InfoRow label="기둥" value={`${doc.pillars.length}개`} />
-          <InfoRow label="구조물" value={`${doc.fabrics.length}개`} />
-          <InfoRow label="텍스트" value={`${doc.layoutTexts.length}개`} />
-        </div>
+            <InfoRow label="벽" value={`${doc.walls.length}개`} />
+            <InfoRow label="외곽벽" value={`${doc.outsideWalls.length}개`} />
+            <InfoRow label="비상구" value={`${doc.exits.length}개`} />
+            <InfoRow label="기둥" value={`${doc.pillars.length}개`} />
+            <InfoRow label="구조물" value={`${doc.fabrics.length}개`} />
+            <InfoRow label="텍스트" value={`${doc.layoutTexts.length}개`} />
+          </div>
+        </section>
       </section>
-      <BackgroundSection state={state} dispatch={dispatch} />
-    </section>
-  );
-}
+    );
+  },
+  (prev, next) =>
+    prev.state.doc === next.state.doc &&
+    prev.state.selection === next.state.selection &&
+    prev.state.validationProblems === next.state.validationProblems &&
+    prev.dispatch === next.dispatch,
+);

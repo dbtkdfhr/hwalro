@@ -74,7 +74,8 @@ public final class SimulationDtos {
             String title,
             String status,
             LocalDateTime createdAt,
-            Integer totalPeople) {}
+            Integer totalPeople,
+            Boolean isImprovement) {}
 
     public record SimulationOverviewResponse(
             Long id,
@@ -90,7 +91,9 @@ public final class SimulationDtos {
             LocalDateTime startedAt,
             LocalDateTime finishedAt,
             Integer totalPeople,
-            String terminationReason) {}
+            String terminationReason,
+            Boolean isImprovement,
+            Boolean hasLayoutSearch) {}
 
     public record SimulationOverviewPageResponse(
             int totalCount, int page, int size, boolean hasNext, List<SimulationOverviewResponse> items) {}
@@ -113,7 +116,8 @@ public final class SimulationDtos {
             List<PointDto> agentPositions,
             List<HazardZoneDto> hazardZones,
             List<Long> selectedExitIds,
-            DrawingGeometryDto drawing) {}
+            DrawingGeometryDto drawing,
+            Boolean isImprovement) {}
 
     public record SimulationMetricResponse(String metricType, String unit, double metricValue) {}
 

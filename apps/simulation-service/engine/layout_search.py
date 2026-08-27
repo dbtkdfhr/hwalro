@@ -431,11 +431,12 @@ def _exit_demand(drawing: dict[str, Any], agents, hazards, exits) -> ExitDemand 
     """Only exits agents actually route to appear here; an exit nobody uses is absent."""
     try:
         snapshot = _baseline(drawing, agents, hazards, exits)
+        relocated, _ = relocate_agents(snapshot.routing_area, tuple(agents))
     except (AgentRouteUnreachableError, ValueError):
         return None
     counts: dict[Any, int] = {}
     positions: dict[Any, tuple[float, float]] = {}
-    for position in agents:
+    for position in relocated:
         route = snapshot.router.plan(position)
         counts[route.exit_id] = counts.get(route.exit_id, 0) + 1
         positions.setdefault(

@@ -1,0 +1,71 @@
+.floor-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+  transition: opacity 0.45s ease;
+}
+
+.floor-label--hidden {
+  opacity: 0;
+}
+
+.floor-label__id {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: rgb(93 111 104 / 0.85);
+}
+
+.floor-label__line {
+  width: 30px;
+  border-top: 1px dashed rgb(93 111 104 / 0.45);
+  transition: border-color 0.25s ease;
+}
+
+.floor-label--active .floor-label__id {
+  color: #4d7c0f;
+}
+
+.floor-label--active .floor-label__line {
+  border-color: rgb(101 163 13 / 0.8);
+}
+
+.floor-picker-chrome {
+  transition:
+    opacity 280ms ease,
+    transform 360ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.floor-picker-page--focused .floor-picker-chrome {
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.floor-picker-transition-cover {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: var(--color-background);
+  animation: floor-picker-transition-cover 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes floor-picker-transition-cover {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .floor-picker-chrome {
+    transition: none;
+  }
+
+  .floor-picker-transition-cover {
+    animation: none;
+  }
+}

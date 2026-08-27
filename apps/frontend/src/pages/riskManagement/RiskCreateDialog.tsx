@@ -1,9 +1,10 @@
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Button, ErrorState, Field, Input, Modal, Select, Textarea } from '../../components/ui';
 import { AttachedLawChipList } from '../../features/risks/components/AttachedLawChipList';
 import LawArticlePickerModal from '../../features/risks/components/LawArticlePickerModal';
 import { SEVERITY_OPTIONS, STATUS_OPTIONS } from '../../features/risks/constants/riskOptions';
+import { drawingApi } from '../../features/drawings/api/drawingApi';
 import { useRiskForm } from '../../features/risks/hooks/useRiskForm';
 import { useCreateRisk } from '../../features/risks/hooks/useRiskMutations';
 import type { RegulationDetail } from '../../features/risks/types/regulations';
@@ -36,6 +37,11 @@ function RiskCreateDialog({ onClose }: { onClose: () => void }) {
   const createMutation = useCreateRisk();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [attachedLawNames, setAttachedLawNames] = useState<Map<string, string>>(new Map());
+  const [layoutId, setLayoutId] = useState<number | null>(null);
+  const layoutsQuery = useQuery({
+    queryKey: ['drawings-for-risk-create'],
+    queryFn: () => drawingApi.list(1, 100),
+  });
 
   const errorMessage = createMutation.isError ? getRiskErrorMessage(createMutation.error) : null;
 
@@ -73,7 +79,8 @@ function RiskCreateDialog({ onClose }: { onClose: () => void }) {
   };
 
   const handleSubmit = () => {
-    createMutation.mutate(toCreateRequest(), { onSuccess: onClose });
+    if (layoutId === null) return;
+    createMutation.mutate({ ...toCreateRequest(), layoutId }, { onSuccess: onClose });
   };
 
   return (
@@ -81,7 +88,7 @@ function RiskCreateDialog({ onClose }: { onClose: () => void }) {
       <Modal
         open
         onClose={onClose}
-        title="위험 예상 항목 등록"
+        title="주의 항목 등록"
         size="md"
         footer={
           <>
@@ -91,7 +98,7 @@ function RiskCreateDialog({ onClose }: { onClose: () => void }) {
             <Button
               type="button"
               onClick={handleSubmit}
-              disabled={createMutation.isPending || !title.trim()}
+              disabled={createMutation.isPending || !title.trim() || layoutId === null}
             >
               {createMutation.isPending ? '등록 중...' : '등록'}
             </Button>
@@ -99,7 +106,7 @@ function RiskCreateDialog({ onClose }: { onClose: () => void }) {
         }
       >
         <div className="space-y-5">
-          <Field label="위험 항목명" htmlFor="risk-create-name" required>
+          <Field label="주의 항목명" htmlFor="risk-create-name" required>
             <Input
               id="risk-create-name"
               required
@@ -108,6 +115,24 @@ function RiskCreateDialog({ onClose }: { onClose: () => void }) {
               onChange={(event) => setTitle(event.target.value)}
               placeholder="예: 중앙 통로 밀집도 초과"
             />
+          </Field>
+          <Field label="연결 도면" htmlFor="risk-create-layout" required>
+            <Select
+              id="risk-create-layout"
+              value={layoutId === null ? '' : String(layoutId)}
+              onChange={(event) =>
+                setLayoutId(event.target.value === '' ? null : Number(event.target.value))
+              }
+            >
+              <option value="" disabled>
+                도면을 선택하세요
+              </option>
+              {(layoutsQuery.data?.items ?? []).map((drawing) => (
+                <option key={drawing.id} value={drawing.id}>
+                  {drawing.title}
+                </option>
+              ))}
+            </Select>
           </Field>
           <Field label="심각도" htmlFor="risk-create-severity">
             <Select

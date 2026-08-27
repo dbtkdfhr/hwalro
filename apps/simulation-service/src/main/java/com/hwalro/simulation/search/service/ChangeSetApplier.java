@@ -81,7 +81,8 @@ public final class ChangeSetApplier {
                 relaxedAgents,
                 baseline.hazardZones(),
                 baseline.selectedExitIds(),
-                mutatedDrawing);
+                mutatedDrawing,
+                baseline.isImprovement());
     }
 
     /**

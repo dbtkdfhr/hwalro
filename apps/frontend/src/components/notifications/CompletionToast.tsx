@@ -28,14 +28,14 @@ export function CompletionToast({
   return (
     <article
       role="status"
-      className="pointer-events-auto overflow-hidden rounded-2xl border border-success/25 bg-white shadow-floating"
+      className="pointer-events-auto overflow-hidden rounded-xl border border-success/25 bg-surface shadow-floating"
     >
       <div className="flex gap-3 p-4">
         <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-success-soft text-success-strong">
           <CheckCircle2 aria-hidden="true" className="size-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-black text-ink">{title}</p>
+          <p className="text-sm font-bold text-ink">{title}</p>
           <p className="mt-1 truncate text-sm tabular-nums text-text-muted">{description}</p>
           {action}
         </div>

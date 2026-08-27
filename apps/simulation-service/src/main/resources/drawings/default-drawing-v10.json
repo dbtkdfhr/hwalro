@@ -1,0 +1,3997 @@
+{
+  "name": "더현대 지하 2층",
+  "width": 170,
+  "height": 100,
+  "walls": [
+    {
+      "name": "벽 1",
+      "startX": 40.029,
+      "startY": 5.44,
+      "endX": 40.029,
+      "endY": 11.5,
+      "displayOrder": 0
+    },
+    {
+      "name": "벽 2",
+      "startX": 30.481,
+      "startY": 17.24,
+      "endX": 33.626,
+      "endY": 17.24,
+      "displayOrder": 1
+    },
+    {
+      "name": "벽 3",
+      "startX": 42.177,
+      "startY": 5.87,
+      "endX": 42.177,
+      "endY": 14.96,
+      "displayOrder": 2
+    },
+    {
+      "name": "벽 4",
+      "startX": 45.254,
+      "startY": 14.96,
+      "endX": 42.177,
+      "endY": 14.96,
+      "displayOrder": 3
+    },
+    {
+      "name": "벽 5",
+      "startX": 48.926,
+      "startY": 14.76,
+      "endX": 50.745,
+      "endY": 14.76,
+      "displayOrder": 4
+    },
+    {
+      "name": "벽 7",
+      "startX": 57.868,
+      "startY": 15.14,
+      "endX": 55.029,
+      "endY": 15.14,
+      "displayOrder": 5
+    },
+    {
+      "name": "벽 9",
+      "startX": 61.897,
+      "startY": 15.14,
+      "endX": 64.464,
+      "endY": 15.14,
+      "displayOrder": 6
+    },
+    {
+      "name": "벽 11",
+      "startX": 68.272,
+      "startY": 15.26,
+      "endX": 70.924,
+      "endY": 15.26,
+      "displayOrder": 7
+    },
+    {
+      "name": "벽 25",
+      "startX": 36.9,
+      "startY": 61.5,
+      "endX": 36.9,
+      "endY": 64.8,
+      "displayOrder": 8
+    },
+    {
+      "name": "벽 40",
+      "startX": 47.43,
+      "startY": 18.76,
+      "endX": 47.43,
+      "endY": 22.08,
+      "displayOrder": 9
+    },
+    {
+      "name": "벽 41",
+      "startX": 47.43,
+      "startY": 18.76,
+      "endX": 51.119,
+      "endY": 18.76,
+      "displayOrder": 10
+    },
+    {
+      "name": "벽 42",
+      "startX": 59.007,
+      "startY": 18.6,
+      "endX": 61.421,
+      "endY": 18.6,
+      "displayOrder": 11
+    },
+    {
+      "name": "벽 43",
+      "startX": 61.421,
+      "startY": 18.6,
+      "endX": 61.421,
+      "endY": 21.5,
+      "displayOrder": 12
+    },
+    {
+      "name": "벽 44",
+      "startX": 61.421,
+      "startY": 25.24,
+      "endX": 61.421,
+      "endY": 27.78,
+      "displayOrder": 13
+    },
+    {
+      "name": "벽 45",
+      "startX": 61.421,
+      "startY": 27.78,
+      "endX": 59.279,
+      "endY": 27.78,
+      "displayOrder": 14
+    },
+    {
+      "name": "벽 46",
+      "startX": 53.141,
+      "startY": 27.7242,
+      "endX": 57,
+      "endY": 27.7242,
+      "displayOrder": 15
+    },
+    {
+      "name": "벽 47",
+      "startX": 47.4632,
+      "startY": 25.2519,
+      "endX": 47.4632,
+      "endY": 27.7519,
+      "displayOrder": 16
+    },
+    {
+      "name": "벽 48",
+      "startX": 47.4462,
+      "startY": 27.7519,
+      "endX": 49.5712,
+      "endY": 27.7519,
+      "displayOrder": 17
+    },
+    {
+      "name": "벽 49",
+      "startX": 47.447,
+      "startY": 31.6,
+      "endX": 47.447,
+      "endY": 37.54,
+      "displayOrder": 18
+    },
+    {
+      "name": "벽 54",
+      "startX": 58.208,
+      "startY": 43.74,
+      "endX": 55.913,
+      "endY": 43.74,
+      "displayOrder": 19
+    },
+    {
+      "name": "벽 55",
+      "startX": 52.887,
+      "startY": 43.78,
+      "endX": 49.198,
+      "endY": 43.78,
+      "displayOrder": 20
+    },
+    {
+      "name": "벽 56",
+      "startX": 62.849,
+      "startY": 20.84,
+      "endX": 62.849,
+      "endY": 26.34,
+      "displayOrder": 21
+    },
+    {
+      "name": "벽 61",
+      "startX": 78.3,
+      "startY": 21.9,
+      "endX": 78.3,
+      "endY": 24.38,
+      "displayOrder": 22
+    },
+    {
+      "name": "벽 91",
+      "startX": 73.321,
+      "startY": 3.12,
+      "endX": 73.321,
+      "endY": 15.06,
+      "displayOrder": 23
+    },
+    {
+      "name": "벽 92",
+      "startX": 80.427,
+      "startY": 3.12,
+      "endX": 80.427,
+      "endY": 10.44,
+      "displayOrder": 24
+    },
+    {
+      "name": "벽 93",
+      "startX": 88.995,
+      "startY": 2.9,
+      "endX": 88.995,
+      "endY": 10.9,
+      "displayOrder": 25
+    },
+    {
+      "name": "벽 94",
+      "startX": 96.05,
+      "startY": 3.12,
+      "endX": 96.05,
+      "endY": 14.6,
+      "displayOrder": 26
+    },
+    {
+      "name": "벽 96",
+      "startX": 81.787,
+      "startY": 13.48,
+      "endX": 81.787,
+      "endY": 22.96,
+      "displayOrder": 27
+    },
+    {
+      "name": "벽 97",
+      "startX": 81.787,
+      "startY": 13.48,
+      "endX": 88.009,
+      "endY": 13.48,
+      "displayOrder": 28
+    },
+    {
+      "name": "벽 98",
+      "startX": 88.009,
+      "startY": 13.48,
+      "endX": 88.009,
+      "endY": 22.52,
+      "displayOrder": 29
+    },
+    {
+      "name": "벽 99",
+      "startX": 81.787,
+      "startY": 22.96,
+      "endX": 84.898,
+      "endY": 22.96,
+      "displayOrder": 30
+    },
+    {
+      "name": "벽 100",
+      "startX": 86.683,
+      "startY": 22.52,
+      "endX": 88.009,
+      "endY": 22.52,
+      "displayOrder": 31
+    },
+    {
+      "name": "벽 110",
+      "startX": 61.1375,
+      "startY": 31.86,
+      "endX": 61.1375,
+      "endY": 43.44,
+      "displayOrder": 32
+    },
+    {
+      "name": "벽 123",
+      "startX": 28.271,
+      "startY": 78.5,
+      "endX": 28.271,
+      "endY": 78.28,
+      "displayOrder": 33
+    },
+    {
+      "name": "벽 127",
+      "startX": 39.882,
+      "startY": 99.22,
+      "endX": 39.882,
+      "endY": 69.62,
+      "displayOrder": 34
+    },
+    {
+      "name": "벽 130",
+      "startX": 39.882,
+      "startY": 69.62,
+      "endX": 45.849,
+      "endY": 69.62,
+      "displayOrder": 35
+    },
+    {
+      "name": "벽 153",
+      "startX": 45.849,
+      "startY": 69.62,
+      "endX": 51.391,
+      "endY": 69.62,
+      "displayOrder": 36
+    },
+    {
+      "name": "벽 154",
+      "startX": 51.391,
+      "startY": 69.62,
+      "endX": 51.391,
+      "endY": 86.84,
+      "displayOrder": 37
+    },
+    {
+      "name": "벽 155",
+      "startX": 53.788,
+      "startY": 88.64,
+      "endX": 58.463,
+      "endY": 92.74,
+      "displayOrder": 38
+    },
+    {
+      "name": "벽 156",
+      "startX": 58.463,
+      "startY": 92.74,
+      "endX": 58.463,
+      "endY": 99.56,
+      "displayOrder": 39
+    },
+    {
+      "name": "벽 182",
+      "startX": 64.26,
+      "startY": 76.16,
+      "endX": 70.941,
+      "endY": 76.16,
+      "displayOrder": 40
+    },
+    {
+      "name": "벽 183",
+      "startX": 70.941,
+      "startY": 76.16,
+      "endX": 70.941,
+      "endY": 99.22,
+      "displayOrder": 41
+    },
+    {
+      "name": "벽 192",
+      "startX": 39.814,
+      "startY": 47.1,
+      "endX": 39.814,
+      "endY": 50.16,
+      "displayOrder": 42
+    },
+    {
+      "name": "벽 193",
+      "startX": 39.814,
+      "startY": 47.1,
+      "endX": 47.498,
+      "endY": 47.1,
+      "displayOrder": 43
+    },
+    {
+      "name": "벽 194",
+      "startX": 47.498,
+      "startY": 47.1,
+      "endX": 47.498,
+      "endY": 41.52,
+      "displayOrder": 44
+    },
+    {
+      "name": "벽 195",
+      "startX": 61.149,
+      "startY": 43.44,
+      "endX": 61.149,
+      "endY": 47.06,
+      "displayOrder": 45
+    },
+    {
+      "name": "벽 196",
+      "startX": 61.144,
+      "startY": 47.06,
+      "endX": 47.493,
+      "endY": 47.06,
+      "displayOrder": 46
+    },
+    {
+      "name": "벽 197",
+      "startX": 50.83,
+      "startY": 46.78,
+      "endX": 50.83,
+      "endY": 49.82,
+      "displayOrder": 47
+    },
+    {
+      "name": "벽 198",
+      "startX": 50.762,
+      "startY": 53.94,
+      "endX": 50.762,
+      "endY": 56.64,
+      "displayOrder": 48
+    },
+    {
+      "name": "벽 199",
+      "startX": 50.762,
+      "startY": 56.64,
+      "endX": 48.382,
+      "endY": 56.64,
+      "displayOrder": 49
+    },
+    {
+      "name": "벽 200",
+      "startX": 42.109,
+      "startY": 56.46,
+      "endX": 39.899,
+      "endY": 56.46,
+      "displayOrder": 50
+    },
+    {
+      "name": "벽 202",
+      "startX": 39.899,
+      "startY": 56.46,
+      "endX": 39.899,
+      "endY": 53.64,
+      "displayOrder": 51
+    },
+    {
+      "name": "벽 203",
+      "startX": 45.271,
+      "startY": 47.1,
+      "endX": 45.271,
+      "endY": 56.5,
+      "displayOrder": 52
+    },
+    {
+      "name": "벽 204",
+      "startX": 53.363,
+      "startY": 52.44,
+      "endX": 52.258,
+      "endY": 53.88,
+      "displayOrder": 53
+    },
+    {
+      "name": "벽 205",
+      "startX": 52.258,
+      "startY": 53.88,
+      "endX": 54.145,
+      "endY": 56.2,
+      "displayOrder": 54
+    },
+    {
+      "name": "벽 206",
+      "startX": 54.145,
+      "startY": 56.2,
+      "endX": 55.267,
+      "endY": 54.76,
+      "displayOrder": 55
+    },
+    {
+      "name": "벽 207",
+      "startX": 55.267,
+      "startY": 54.76,
+      "endX": 56.5,
+      "endY": 56.1,
+      "displayOrder": 56
+    },
+    {
+      "name": "벽 208",
+      "startX": 56.5,
+      "startY": 56.1,
+      "endX": 58,
+      "endY": 54.4,
+      "displayOrder": 57
+    },
+    {
+      "name": "벽 210",
+      "startX": 60.1677,
+      "startY": 51.7797,
+      "endX": 58.8417,
+      "endY": 50.2197,
+      "displayOrder": 58
+    },
+    {
+      "name": "벽 211",
+      "startX": 58.123,
+      "startY": 49.16,
+      "endX": 56.525,
+      "endY": 47.28,
+      "displayOrder": 59
+    },
+    {
+      "name": "벽 212",
+      "startX": 56.525,
+      "startY": 47.28,
+      "endX": 52.479,
+      "endY": 51.56,
+      "displayOrder": 60
+    },
+    {
+      "name": "벽 213",
+      "startX": 52.479,
+      "startY": 51.56,
+      "endX": 53.363,
+      "endY": 52.44,
+      "displayOrder": 61
+    },
+    {
+      "name": "벽 214",
+      "startX": 70.96,
+      "startY": 72.76,
+      "endX": 70.96,
+      "endY": 76.16,
+      "displayOrder": 62
+    },
+    {
+      "name": "벽 229",
+      "startX": 91.307,
+      "startY": 59.64,
+      "endX": 91.307,
+      "endY": 63,
+      "displayOrder": 63
+    },
+    {
+      "name": "벽 230",
+      "startX": 91.307,
+      "startY": 59.64,
+      "endX": 93.721,
+      "endY": 59.64,
+      "displayOrder": 64
+    },
+    {
+      "name": "벽 231",
+      "startX": 96.05,
+      "startY": 59.62,
+      "endX": 111.962,
+      "endY": 59.62,
+      "displayOrder": 65
+    },
+    {
+      "name": "벽 232",
+      "startX": 114.393,
+      "startY": 59.5,
+      "endX": 121.584,
+      "endY": 59.5,
+      "displayOrder": 66
+    },
+    {
+      "name": "벽 233",
+      "startX": 121.584,
+      "startY": 59.5,
+      "endX": 121.584,
+      "endY": 69.9,
+      "displayOrder": 67
+    },
+    {
+      "name": "벽 234",
+      "startX": 121.584,
+      "startY": 69.9,
+      "endX": 116.705,
+      "endY": 69.9,
+      "displayOrder": 68
+    },
+    {
+      "name": "벽 235",
+      "startX": 116.705,
+      "startY": 69.9,
+      "endX": 116.705,
+      "endY": 86.14,
+      "displayOrder": 69
+    },
+    {
+      "name": "벽 236",
+      "startX": 116.705,
+      "startY": 86.14,
+      "endX": 111.945,
+      "endY": 86.14,
+      "displayOrder": 70
+    },
+    {
+      "name": "벽 237",
+      "startX": 111.945,
+      "startY": 86.14,
+      "endX": 111.945,
+      "endY": 99.82,
+      "displayOrder": 71
+    },
+    {
+      "name": "벽 239",
+      "startX": 91.477,
+      "startY": 99.82,
+      "endX": 91.477,
+      "endY": 89.68,
+      "displayOrder": 72
+    },
+    {
+      "name": "벽 240",
+      "startX": 91.477,
+      "startY": 86.24,
+      "endX": 91.477,
+      "endY": 73.7,
+      "displayOrder": 73
+    },
+    {
+      "name": "벽 241",
+      "startX": 91.477,
+      "startY": 73.7,
+      "endX": 93.2,
+      "endY": 73.7,
+      "displayOrder": 74
+    },
+    {
+      "name": "벽 248",
+      "startX": 105.128,
+      "startY": 68.44,
+      "endX": 105.128,
+      "endY": 65.14,
+      "displayOrder": 75
+    },
+    {
+      "name": "벽 249",
+      "startX": 105.128,
+      "startY": 65.14,
+      "endX": 98.481,
+      "endY": 65.14,
+      "displayOrder": 76
+    },
+    {
+      "name": "벽 250",
+      "startX": 98.481,
+      "startY": 65.14,
+      "endX": 98.481,
+      "endY": 70.76,
+      "displayOrder": 77
+    },
+    {
+      "name": "벽 251",
+      "startX": 98.481,
+      "startY": 70.76,
+      "endX": 91.443,
+      "endY": 70.76,
+      "displayOrder": 78
+    },
+    {
+      "name": "벽 284",
+      "startX": 63.155,
+      "startY": 49.32,
+      "endX": 63.155,
+      "endY": 51.14,
+      "displayOrder": 79
+    },
+    {
+      "name": "벽 285",
+      "startX": 63.138,
+      "startY": 54.12,
+      "endX": 63.138,
+      "endY": 56.36,
+      "displayOrder": 80
+    },
+    {
+      "name": "벽 286",
+      "startX": 63.138,
+      "startY": 56.36,
+      "endX": 66.215,
+      "endY": 56.36,
+      "displayOrder": 81
+    },
+    {
+      "name": "벽 287",
+      "startX": 69.275,
+      "startY": 56.38,
+      "endX": 71.893,
+      "endY": 56.38,
+      "displayOrder": 82
+    },
+    {
+      "name": "벽 288",
+      "startX": 75.14,
+      "startY": 56.34,
+      "endX": 78.353,
+      "endY": 56.34,
+      "displayOrder": 83
+    },
+    {
+      "name": "벽 289",
+      "startX": 78.353,
+      "startY": 56.34,
+      "endX": 78.353,
+      "endY": 53.88,
+      "displayOrder": 84
+    },
+    {
+      "name": "벽 290",
+      "startX": 78.302,
+      "startY": 49.34,
+      "endX": 78.302,
+      "endY": 50.5,
+      "displayOrder": 85
+    },
+    {
+      "name": "벽 291",
+      "startX": 78.302,
+      "startY": 49.34,
+      "endX": 75.208,
+      "endY": 49.34,
+      "displayOrder": 86
+    },
+    {
+      "name": "벽 292",
+      "startX": 71.91,
+      "startY": 49.34,
+      "endX": 69.207,
+      "endY": 49.34,
+      "displayOrder": 87
+    },
+    {
+      "name": "벽 293",
+      "startX": 63.155,
+      "startY": 49.32,
+      "endX": 66.113,
+      "endY": 49.32,
+      "displayOrder": 88
+    },
+    {
+      "name": "벽 297",
+      "startX": 146.183,
+      "startY": 56.26,
+      "endX": 139.366,
+      "endY": 56.26,
+      "displayOrder": 89
+    },
+    {
+      "name": "벽 298",
+      "startX": 146.183,
+      "startY": 46.18,
+      "endX": 139.502,
+      "endY": 46.18,
+      "displayOrder": 90
+    },
+    {
+      "name": "벽 299",
+      "startX": 104.873,
+      "startY": 48.66,
+      "endX": 107.134,
+      "endY": 48.66,
+      "displayOrder": 91
+    },
+    {
+      "name": "벽 300",
+      "startX": 109.344,
+      "startY": 48.7,
+      "endX": 112.778,
+      "endY": 48.7,
+      "displayOrder": 92
+    },
+    {
+      "name": "벽 301",
+      "startX": 110.636,
+      "startY": 48.7,
+      "endX": 110.636,
+      "endY": 56.44,
+      "displayOrder": 93
+    },
+    {
+      "name": "벽 302",
+      "startX": 109.191,
+      "startY": 56.44,
+      "endX": 112.523,
+      "endY": 56.44,
+      "displayOrder": 94
+    },
+    {
+      "name": "벽 305",
+      "startX": 104.873,
+      "startY": 56.32,
+      "endX": 106.879,
+      "endY": 56.32,
+      "displayOrder": 95
+    },
+    {
+      "name": "벽 306",
+      "startX": 115.277,
+      "startY": 48.68,
+      "endX": 115.277,
+      "endY": 51.46,
+      "displayOrder": 96
+    },
+    {
+      "name": "벽 307",
+      "startX": 115.277,
+      "startY": 53.28,
+      "endX": 115.277,
+      "endY": 56.32,
+      "displayOrder": 97
+    },
+    {
+      "name": "벽 312",
+      "startX": 116.875,
+      "startY": 48.62,
+      "endX": 116.875,
+      "endY": 51.28,
+      "displayOrder": 98
+    },
+    {
+      "name": "벽 313",
+      "startX": 116.875,
+      "startY": 48.62,
+      "endX": 118.49,
+      "endY": 48.62,
+      "displayOrder": 99
+    },
+    {
+      "name": "벽 327",
+      "startX": 126.259,
+      "startY": 48.72,
+      "endX": 126.259,
+      "endY": 56.48,
+      "displayOrder": 100
+    },
+    {
+      "name": "벽 328",
+      "startX": 126.259,
+      "startY": 48.72,
+      "endX": 127.517,
+      "endY": 48.72,
+      "displayOrder": 101
+    },
+    {
+      "name": "벽 329",
+      "startX": 133.348,
+      "startY": 48.46,
+      "endX": 133.348,
+      "endY": 51.02,
+      "displayOrder": 102
+    },
+    {
+      "name": "벽 349",
+      "startX": 60.2,
+      "startY": 51.8,
+      "endX": 59.1,
+      "endY": 53,
+      "displayOrder": 103
+    },
+    {
+      "name": "벽 355",
+      "startX": 70.924,
+      "startY": 15.26,
+      "endX": 70.924,
+      "endY": 5.87,
+      "displayOrder": 104
+    },
+    {
+      "name": "벽 357",
+      "startX": 50.745,
+      "startY": 14.76,
+      "endX": 50.745,
+      "endY": 5.87,
+      "displayOrder": 105
+    },
+    {
+      "name": "벽 358",
+      "startX": 57.868,
+      "startY": 15.14,
+      "endX": 57.868,
+      "endY": 5.87,
+      "displayOrder": 106
+    },
+    {
+      "name": "벽 359",
+      "startX": 64.464,
+      "startY": 15.14,
+      "endX": 64.464,
+      "endY": 5.87,
+      "displayOrder": 107
+    },
+    {
+      "name": "벽 360",
+      "startX": 99.076,
+      "startY": 14.3,
+      "endX": 99.076,
+      "endY": 5.77,
+      "displayOrder": 108
+    },
+    {
+      "name": "벽 362",
+      "startX": 104.958,
+      "startY": 5.77,
+      "endX": 104.958,
+      "endY": 14.14,
+      "displayOrder": 109
+    },
+    {
+      "name": "벽 363",
+      "startX": 110.925,
+      "startY": 5.77,
+      "endX": 110.925,
+      "endY": 13.9,
+      "displayOrder": 110
+    },
+    {
+      "name": "벽 364",
+      "startX": 116.603,
+      "startY": 5.77,
+      "endX": 116.603,
+      "endY": 13.82,
+      "displayOrder": 111
+    },
+    {
+      "name": "벽 365",
+      "startX": 123.199,
+      "startY": 5.77,
+      "endX": 123.199,
+      "endY": 13.54,
+      "displayOrder": 112
+    },
+    {
+      "name": "벽 380",
+      "startX": 128.316,
+      "startY": 5.77,
+      "endX": 128.316,
+      "endY": 13.66,
+      "displayOrder": 113
+    },
+    {
+      "name": "벽 383",
+      "startX": 90.576,
+      "startY": 39.26,
+      "endX": 90.576,
+      "endY": 42,
+      "displayOrder": 114
+    },
+    {
+      "name": "벽 384",
+      "startX": 90.678,
+      "startY": 46.62,
+      "endX": 98.158,
+      "endY": 46.62,
+      "displayOrder": 115
+    },
+    {
+      "name": "벽 385",
+      "startX": 98.158,
+      "startY": 46.62,
+      "endX": 98.158,
+      "endY": 31.68,
+      "displayOrder": 116
+    },
+    {
+      "name": "벽 386",
+      "startX": 98.158,
+      "startY": 31.68,
+      "endX": 105.74,
+      "endY": 31.68,
+      "displayOrder": 117
+    },
+    {
+      "name": "벽 387",
+      "startX": 98.158,
+      "startY": 39.84,
+      "endX": 103.088,
+      "endY": 39.84,
+      "displayOrder": 118
+    },
+    {
+      "name": "벽 388",
+      "startX": 105.74,
+      "startY": 31.68,
+      "endX": 105.74,
+      "endY": 18.8,
+      "displayOrder": 119
+    },
+    {
+      "name": "벽 389",
+      "startX": 100.793,
+      "startY": 31.68,
+      "endX": 100.793,
+      "endY": 18.82,
+      "displayOrder": 120
+    },
+    {
+      "name": "벽 393",
+      "startX": 103.088,
+      "startY": 39.84,
+      "endX": 104.533,
+      "endY": 39.84,
+      "displayOrder": 121
+    },
+    {
+      "name": "벽 402",
+      "startX": 108.137,
+      "startY": 33.36,
+      "endX": 108.137,
+      "endY": 18.84,
+      "displayOrder": 122
+    },
+    {
+      "name": "벽 403",
+      "startX": 108.137,
+      "startY": 33.36,
+      "endX": 113.084,
+      "endY": 25.78,
+      "displayOrder": 123
+    },
+    {
+      "name": "벽 404",
+      "startX": 113.084,
+      "startY": 25.78,
+      "endX": 113.084,
+      "endY": 18.9,
+      "displayOrder": 124
+    },
+    {
+      "name": "벽 405",
+      "startX": 114.937,
+      "startY": 18.84,
+      "endX": 114.937,
+      "endY": 25.56,
+      "displayOrder": 125
+    },
+    {
+      "name": "벽 406",
+      "startX": 114.937,
+      "startY": 25.56,
+      "endX": 119.391,
+      "endY": 32.52,
+      "displayOrder": 126
+    },
+    {
+      "name": "벽 407",
+      "startX": 108.256,
+      "startY": 36.72,
+      "endX": 112.71,
+      "endY": 43.52,
+      "displayOrder": 127
+    },
+    {
+      "name": "벽 408",
+      "startX": 112.71,
+      "startY": 43.52,
+      "endX": 112.71,
+      "endY": 45.98,
+      "displayOrder": 128
+    },
+    {
+      "name": "벽 409",
+      "startX": 108.256,
+      "startY": 36.72,
+      "endX": 108.256,
+      "endY": 45.88,
+      "displayOrder": 129
+    },
+    {
+      "name": "벽 410",
+      "startX": 116.9025,
+      "startY": 28.6313,
+      "endX": 123.964,
+      "endY": 19.22,
+      "displayOrder": 130
+    },
+    {
+      "name": "벽 411",
+      "startX": 119.391,
+      "startY": 32.52,
+      "endX": 124.083,
+      "endY": 32.52,
+      "displayOrder": 131
+    },
+    {
+      "name": "벽 438",
+      "startX": 131.937,
+      "startY": 5.84,
+      "endX": 131.937,
+      "endY": 13.5,
+      "displayOrder": 132
+    },
+    {
+      "name": "벽 440",
+      "startX": 137.343,
+      "startY": 5.84,
+      "endX": 137.343,
+      "endY": 13.36,
+      "displayOrder": 133
+    },
+    {
+      "name": "벽 454",
+      "startX": 135.133,
+      "startY": 17.44,
+      "endX": 139.723,
+      "endY": 17.44,
+      "displayOrder": 134
+    },
+    {
+      "name": "벽 455",
+      "startX": 139.723,
+      "startY": 17.44,
+      "endX": 139.723,
+      "endY": 13.39,
+      "displayOrder": 135
+    },
+    {
+      "name": "벽 458",
+      "startX": 135.626,
+      "startY": 25.24,
+      "endX": 139.893,
+      "endY": 25.24,
+      "displayOrder": 136
+    },
+    {
+      "name": "벽 459",
+      "startX": 139.893,
+      "startY": 25.24,
+      "endX": 139.893,
+      "endY": 43.18,
+      "displayOrder": 137
+    },
+    {
+      "name": "벽 460",
+      "startX": 139.893,
+      "startY": 43.2,
+      "endX": 146.064,
+      "endY": 43.2,
+      "displayOrder": 138
+    },
+    {
+      "name": "벽 461",
+      "startX": 139.893,
+      "startY": 43.18,
+      "endX": 135.575,
+      "endY": 43.18,
+      "displayOrder": 139
+    },
+    {
+      "name": "벽 468",
+      "startX": 36.9,
+      "startY": 45.7,
+      "endX": 25.7,
+      "endY": 45.6976,
+      "displayOrder": 140
+    },
+    {
+      "name": "벽 469",
+      "startX": 36.1,
+      "startY": 26.9,
+      "endX": 36.1,
+      "endY": 29.4,
+      "displayOrder": 141
+    },
+    {
+      "name": "벽 470",
+      "startX": 38.6,
+      "startY": 29.4,
+      "endX": 45,
+      "endY": 29.4,
+      "displayOrder": 142
+    },
+    {
+      "name": "벽 471",
+      "startX": 40.8,
+      "startY": 29.4,
+      "endX": 40.8,
+      "endY": 18.7,
+      "displayOrder": 143
+    },
+    {
+      "name": "벽 472",
+      "startX": 45,
+      "startY": 29.4,
+      "endX": 45,
+      "endY": 35.3,
+      "displayOrder": 144
+    },
+    {
+      "name": "벽 473",
+      "startX": 45,
+      "startY": 35.3,
+      "endX": 43.1,
+      "endY": 35.3,
+      "displayOrder": 145
+    },
+    {
+      "name": "벽 474",
+      "startX": 38.4,
+      "startY": 35.3,
+      "endX": 36.1,
+      "endY": 35.3,
+      "displayOrder": 146
+    },
+    {
+      "name": "벽 475",
+      "startX": 36.1,
+      "startY": 35.3,
+      "endX": 36.1,
+      "endY": 31.5,
+      "displayOrder": 147
+    },
+    {
+      "name": "벽 477",
+      "startX": 47.4,
+      "startY": 29.2,
+      "endX": 61.3,
+      "endY": 29.2,
+      "displayOrder": 148
+    },
+    {
+      "name": "벽 478",
+      "startX": 62.8,
+      "startY": 29.4,
+      "endX": 62.8,
+      "endY": 31.5,
+      "displayOrder": 149
+    },
+    {
+      "name": "벽 479",
+      "startX": 62.8,
+      "startY": 31.5,
+      "endX": 71.4,
+      "endY": 31.5,
+      "displayOrder": 150
+    },
+    {
+      "name": "벽 480",
+      "startX": 71.4,
+      "startY": 31.5,
+      "endX": 71.4,
+      "endY": 18.4,
+      "displayOrder": 151
+    },
+    {
+      "name": "벽 481",
+      "startX": 71.4,
+      "startY": 18.4,
+      "endX": 78.3,
+      "endY": 18.4,
+      "displayOrder": 152
+    },
+    {
+      "name": "벽 482",
+      "startX": 78.3,
+      "startY": 18.4,
+      "endX": 78.3,
+      "endY": 20.8,
+      "displayOrder": 153
+    },
+    {
+      "name": "벽 483",
+      "startX": 78.398,
+      "startY": 31.0979,
+      "endX": 78.398,
+      "endY": 32.4979,
+      "displayOrder": 154
+    },
+    {
+      "name": "벽 484",
+      "startX": 78.4,
+      "startY": 36.8,
+      "endX": 78.4,
+      "endY": 34.7,
+      "displayOrder": 155
+    },
+    {
+      "name": "벽 485",
+      "startX": 78.4,
+      "startY": 28.0993,
+      "endX": 78.4,
+      "endY": 26.8993,
+      "displayOrder": 156
+    },
+    {
+      "name": "벽 486",
+      "startX": 71.4,
+      "startY": 31.5,
+      "endX": 71.4,
+      "endY": 38.8,
+      "displayOrder": 157
+    },
+    {
+      "name": "벽 487",
+      "startX": 71.4,
+      "startY": 38.8,
+      "endX": 76.7,
+      "endY": 38.8,
+      "displayOrder": 158
+    },
+    {
+      "name": "벽 488",
+      "startX": 71.4,
+      "startY": 38.8,
+      "endX": 62.7,
+      "endY": 38.8,
+      "displayOrder": 159
+    },
+    {
+      "name": "벽 489",
+      "startX": 62.7,
+      "startY": 38.8,
+      "endX": 62.7,
+      "endY": 46.8,
+      "displayOrder": 160
+    },
+    {
+      "name": "벽 490",
+      "startX": 71.4,
+      "startY": 38.8,
+      "endX": 71.4,
+      "endY": 46.6,
+      "displayOrder": 161
+    },
+    {
+      "name": "벽 491",
+      "startX": 78.4,
+      "startY": 38.8,
+      "endX": 78.4,
+      "endY": 40.7,
+      "displayOrder": 162
+    },
+    {
+      "name": "벽 492",
+      "startX": 76,
+      "startY": 46.6,
+      "endX": 74.9,
+      "endY": 46.6,
+      "displayOrder": 163
+    },
+    {
+      "name": "벽 493",
+      "startX": 78.4,
+      "startY": 43.9,
+      "endX": 78.4,
+      "endY": 42.4,
+      "displayOrder": 164
+    },
+    {
+      "name": "벽 494",
+      "startX": 45.3965,
+      "startY": 69.5928,
+      "endX": 45.3965,
+      "endY": 59.7928,
+      "displayOrder": 165
+    },
+    {
+      "name": "벽 495",
+      "startX": 70.9,
+      "startY": 81.5,
+      "endX": 76.6,
+      "endY": 81.5,
+      "displayOrder": 166
+    },
+    {
+      "name": "벽 496",
+      "startX": 116.3,
+      "startY": 43.1,
+      "endX": 119.4,
+      "endY": 36.5,
+      "displayOrder": 167
+    },
+    {
+      "name": "벽 497",
+      "startX": 119.4,
+      "startY": 36.5,
+      "endX": 124,
+      "endY": 36.5,
+      "displayOrder": 168
+    },
+    {
+      "name": "벽 498",
+      "startX": 124.3,
+      "startY": 52.9,
+      "endX": 124.3,
+      "endY": 48.4,
+      "displayOrder": 169
+    },
+    {
+      "name": "벽 499",
+      "startX": 124.3,
+      "startY": 48.4,
+      "endX": 122.3,
+      "endY": 48.4,
+      "displayOrder": 170
+    },
+    {
+      "name": "벽 500",
+      "startX": 124.4,
+      "startY": 54.3,
+      "endX": 124.4,
+      "endY": 56.5,
+      "displayOrder": 171
+    },
+    {
+      "name": "벽 501",
+      "startX": 124.4,
+      "startY": 56.5,
+      "endX": 123.2,
+      "endY": 56.5,
+      "displayOrder": 172
+    },
+    {
+      "name": "벽 502",
+      "startX": 121.7,
+      "startY": 56.5,
+      "endX": 120.2,
+      "endY": 56.5,
+      "displayOrder": 173
+    },
+    {
+      "name": "벽 503",
+      "startX": 116.3,
+      "startY": 43.1,
+      "endX": 116.3,
+      "endY": 45.9,
+      "displayOrder": 174
+    },
+    {
+      "name": "벽 504",
+      "startX": 71.4,
+      "startY": 31.5,
+      "endX": 78.4,
+      "endY": 31.5,
+      "displayOrder": 175
+    },
+    {
+      "name": "벽 505",
+      "startX": 105.1,
+      "startY": 71,
+      "endX": 105.1,
+      "endY": 74,
+      "displayOrder": 176
+    },
+    {
+      "name": "벽 506",
+      "startX": 95.3,
+      "startY": 73.7,
+      "endX": 96.8,
+      "endY": 73.7,
+      "displayOrder": 177
+    },
+    {
+      "name": "벽 507",
+      "startX": 96.8,
+      "startY": 73.7,
+      "endX": 96.8,
+      "endY": 80.1,
+      "displayOrder": 178
+    },
+    {
+      "name": "벽 508",
+      "startX": 98.3,
+      "startY": 80.1,
+      "endX": 96.8,
+      "endY": 80.1,
+      "displayOrder": 179
+    },
+    {
+      "name": "벽 509",
+      "startX": 96.8,
+      "startY": 80.1,
+      "endX": 91.5,
+      "endY": 80.1,
+      "displayOrder": 180
+    },
+    {
+      "name": "벽 510",
+      "startX": 130.4471,
+      "startY": 67.692,
+      "endX": 130.4471,
+      "endY": 63.992,
+      "displayOrder": 181
+    }
+  ],
+  "outsideWalls": [
+    {
+      "name": "외곽벽 1",
+      "startX": 25.738,
+      "startY": 17.24,
+      "endX": 30.481,
+      "endY": 17.24
+    },
+    {
+      "name": "외곽벽 2",
+      "startX": 30.481,
+      "startY": 17.24,
+      "endX": 30.481,
+      "endY": 5.44
+    },
+    {
+      "name": "외곽벽 3",
+      "startX": 30.481,
+      "startY": 5.44,
+      "endX": 34.901,
+      "endY": 5.44
+    },
+    {
+      "name": "외곽벽 4",
+      "startX": 34.901,
+      "startY": 5.44,
+      "endX": 42.177,
+      "endY": 5.44
+    },
+    {
+      "name": "외곽벽 5",
+      "startX": 42.177,
+      "startY": 5.44,
+      "endX": 42.177,
+      "endY": 5.87
+    },
+    {
+      "name": "외곽벽 6",
+      "startX": 42.177,
+      "startY": 5.87,
+      "endX": 70.924,
+      "endY": 5.87
+    },
+    {
+      "name": "외곽벽 7",
+      "startX": 70.924,
+      "startY": 5.87,
+      "endX": 73.321,
+      "endY": 5.87
+    },
+    {
+      "name": "외곽벽 8",
+      "startX": 73.321,
+      "startY": 5.87,
+      "endX": 73.321,
+      "endY": 3.12
+    },
+    {
+      "name": "외곽벽 9",
+      "startX": 73.321,
+      "startY": 3.12,
+      "endX": 96.05,
+      "endY": 3.12
+    },
+    {
+      "name": "외곽벽 10",
+      "startX": 96.05,
+      "startY": 3.12,
+      "endX": 99.076,
+      "endY": 3.12
+    },
+    {
+      "name": "외곽벽 11",
+      "startX": 99.076,
+      "startY": 3.12,
+      "endX": 99.076,
+      "endY": 5.77
+    },
+    {
+      "name": "외곽벽 12",
+      "startX": 99.076,
+      "startY": 5.77,
+      "endX": 128.316,
+      "endY": 5.77
+    },
+    {
+      "name": "외곽벽 13",
+      "startX": 128.316,
+      "startY": 5.77,
+      "endX": 131.937,
+      "endY": 5.77
+    },
+    {
+      "name": "외곽벽 14",
+      "startX": 131.937,
+      "startY": 5.77,
+      "endX": 131.937,
+      "endY": 5.84
+    },
+    {
+      "name": "외곽벽 15",
+      "startX": 131.937,
+      "startY": 5.84,
+      "endX": 137.343,
+      "endY": 5.84
+    },
+    {
+      "name": "외곽벽 16",
+      "startX": 137.343,
+      "startY": 5.84,
+      "endX": 139.723,
+      "endY": 5.84
+    },
+    {
+      "name": "외곽벽 17",
+      "startX": 139.723,
+      "startY": 5.84,
+      "endX": 139.723,
+      "endY": 13.39
+    },
+    {
+      "name": "외곽벽 18",
+      "startX": 139.723,
+      "startY": 13.39,
+      "endX": 146.064,
+      "endY": 13.39
+    },
+    {
+      "name": "외곽벽 19",
+      "startX": 146.064,
+      "startY": 13.39,
+      "endX": 146.064,
+      "endY": 43.2
+    },
+    {
+      "name": "외곽벽 20",
+      "startX": 146.064,
+      "startY": 43.2,
+      "endX": 146.183,
+      "endY": 43.2
+    },
+    {
+      "name": "외곽벽 21",
+      "startX": 146.183,
+      "startY": 43.2,
+      "endX": 146.183,
+      "endY": 46.18
+    },
+    {
+      "name": "외곽벽 22",
+      "startX": 146.183,
+      "startY": 46.18,
+      "endX": 146.183,
+      "endY": 64.04
+    },
+    {
+      "name": "외곽벽 23",
+      "startX": 146.183,
+      "startY": 64.04,
+      "endX": 133.1,
+      "endY": 64
+    },
+    {
+      "name": "외곽벽 25",
+      "startX": 130.8,
+      "startY": 79.3,
+      "endX": 130.815,
+      "endY": 85.96
+    },
+    {
+      "name": "외곽벽 26",
+      "startX": 130.815,
+      "startY": 85.96,
+      "endX": 121.431,
+      "endY": 85.96
+    },
+    {
+      "name": "외곽벽 27",
+      "startX": 121.431,
+      "startY": 85.96,
+      "endX": 121.431,
+      "endY": 99.82
+    },
+    {
+      "name": "외곽벽 28",
+      "startX": 121.431,
+      "startY": 99.82,
+      "endX": 111.945,
+      "endY": 99.82
+    },
+    {
+      "name": "외곽벽 29",
+      "startX": 111.945,
+      "startY": 99.82,
+      "endX": 91.477,
+      "endY": 99.82
+    },
+    {
+      "name": "외곽벽 30",
+      "startX": 91.477,
+      "startY": 99.82,
+      "endX": 91.477,
+      "endY": 99.22
+    },
+    {
+      "name": "외곽벽 31",
+      "startX": 91.477,
+      "startY": 99.22,
+      "endX": 78.404,
+      "endY": 99.22
+    },
+    {
+      "name": "외곽벽 32",
+      "startX": 78.404,
+      "startY": 99.22,
+      "endX": 39.882,
+      "endY": 99.22
+    },
+    {
+      "name": "외곽벽 33",
+      "startX": 39.882,
+      "startY": 99.22,
+      "endX": 36.686,
+      "endY": 99.22
+    },
+    {
+      "name": "외곽벽 34",
+      "startX": 36.686,
+      "startY": 99.22,
+      "endX": 36.686,
+      "endY": 78.28
+    },
+    {
+      "name": "외곽벽 35",
+      "startX": 36.686,
+      "startY": 78.28,
+      "endX": 28.271,
+      "endY": 78.28
+    },
+    {
+      "name": "외곽벽 36",
+      "startX": 28.271,
+      "startY": 78.28,
+      "endX": 28.271,
+      "endY": 71.68
+    },
+    {
+      "name": "외곽벽 37",
+      "startX": 28.271,
+      "startY": 71.68,
+      "endX": 28.407,
+      "endY": 71.68
+    },
+    {
+      "name": "외곽벽 38",
+      "startX": 28.407,
+      "startY": 71.68,
+      "endX": 36.8,
+      "endY": 71.7
+    },
+    {
+      "name": "외곽벽 39",
+      "startX": 36.8,
+      "startY": 71.7,
+      "endX": 36.9,
+      "endY": 64.8
+    },
+    {
+      "name": "외곽벽 40",
+      "startX": 36.9,
+      "startY": 64.8,
+      "endX": 25.738,
+      "endY": 64.76
+    },
+    {
+      "name": "외곽벽 41",
+      "startX": 25.738,
+      "startY": 64.76,
+      "endX": 25.738,
+      "endY": 17.24
+    },
+    {
+      "name": "외곽벽 42",
+      "startX": 133.1,
+      "startY": 64,
+      "endX": 133.1,
+      "endY": 79.3
+    },
+    {
+      "name": "외곽벽 43",
+      "startX": 130.8,
+      "startY": 79.3,
+      "endX": 133.1,
+      "endY": 79.3
+    }
+  ],
+  "pillars": [
+    {
+      "name": "기둥 1",
+      "startX": 33.1,
+      "startY": 45.7,
+      "endX": 36.9,
+      "endY": 49.7,
+      "rotation": 0,
+      "displayOrder": 182
+    },
+    {
+      "name": "기둥 2",
+      "startX": 36.1,
+      "startY": 29.4,
+      "endX": 38.7,
+      "endY": 31.7,
+      "rotation": 0,
+      "displayOrder": 183
+    },
+    {
+      "name": "기둥 3",
+      "startX": 36.3,
+      "startY": 20.6,
+      "endX": 38.1,
+      "endY": 22.4,
+      "rotation": 0,
+      "displayOrder": 184
+    },
+    {
+      "name": "기둥 4",
+      "startX": 69.1,
+      "startY": 44.3,
+      "endX": 71.4,
+      "endY": 46.6,
+      "rotation": 0,
+      "displayOrder": 185
+    },
+    {
+      "name": "기둥 5",
+      "startX": 77.2,
+      "startY": 45.1,
+      "endX": 78.6,
+      "endY": 46.5,
+      "rotation": 0,
+      "displayOrder": 186
+    },
+    {
+      "name": "기둥 6",
+      "startX": 76.7,
+      "startY": 36.8,
+      "endX": 78.4,
+      "endY": 38.8,
+      "rotation": 0,
+      "displayOrder": 187
+    },
+    {
+      "name": "기둥 7",
+      "startX": 77.2,
+      "startY": 20.8,
+      "endX": 78.3,
+      "endY": 21.9,
+      "rotation": 0,
+      "displayOrder": 188
+    },
+    {
+      "name": "기둥 8",
+      "startX": 77.4,
+      "startY": 30.1,
+      "endX": 78.4,
+      "endY": 31.1,
+      "rotation": 0,
+      "displayOrder": 189
+    },
+    {
+      "name": "기둥 9",
+      "startX": 76.6,
+      "startY": 80.8512,
+      "endX": 77.7,
+      "endY": 82.1512,
+      "rotation": 0,
+      "displayOrder": 190
+    },
+    {
+      "name": "기둥 10",
+      "startX": 76.7,
+      "startY": 89.9,
+      "endX": 77.8,
+      "endY": 91.4,
+      "rotation": 0,
+      "displayOrder": 191
+    },
+    {
+      "name": "기둥 11",
+      "startX": 76.8,
+      "startY": 68.9,
+      "endX": 78.5,
+      "endY": 70.6,
+      "rotation": 0,
+      "displayOrder": 192
+    },
+    {
+      "name": "기둥 12",
+      "startX": 98.3,
+      "startY": 74.0042,
+      "endX": 105.0957,
+      "endY": 80.1,
+      "rotation": 0,
+      "displayOrder": 193
+    },
+    {
+      "name": "기둥 13",
+      "startX": 51.267,
+      "startY": 31.8992,
+      "endX": 57.867,
+      "endY": 38.2992,
+      "rotation": 0,
+      "displayOrder": 194
+    },
+    {
+      "name": "기둥 14",
+      "startX": 81.2615,
+      "startY": 28.1931,
+      "endX": 87.9,
+      "endY": 46.3,
+      "rotation": 0,
+      "displayOrder": 195
+    },
+    {
+      "name": "기둥 15",
+      "startX": 127.2932,
+      "startY": 27.7621,
+      "endX": 130.9932,
+      "endY": 43.1621,
+      "rotation": 0,
+      "displayOrder": 196
+    },
+    {
+      "name": "기둥 16",
+      "startX": 121.3302,
+      "startY": 79.1692,
+      "endX": 130.7302,
+      "endY": 85.8692,
+      "rotation": 0,
+      "displayOrder": 197
+    },
+    {
+      "name": "기둥 17",
+      "startX": 125.8,
+      "startY": 69.8,
+      "endX": 130.3966,
+      "endY": 74.5,
+      "rotation": 0,
+      "displayOrder": 198
+    },
+    {
+      "name": "기둥 18",
+      "startX": 30.7,
+      "startY": 26.6,
+      "endX": 33,
+      "endY": 39.9,
+      "rotation": 0,
+      "displayOrder": 199
+    },
+    {
+      "name": "기둥 19",
+      "startX": 63.1,
+      "startY": 61.3,
+      "endX": 72.9,
+      "endY": 72.3,
+      "rotation": 0,
+      "displayOrder": 255
+    },
+    {
+      "name": "기둥 20",
+      "startX": 70.1,
+      "startY": 59.8,
+      "endX": 71.7,
+      "endY": 61.3,
+      "rotation": 0,
+      "displayOrder": 256
+    },
+    {
+      "name": "기둥 21",
+      "startX": 77,
+      "startY": 59.9,
+      "endX": 78.6,
+      "endY": 61.4,
+      "rotation": 0,
+      "displayOrder": 257
+    }
+  ],
+  "fabrics": [
+    {
+      "name": "구조물 1",
+      "startX": 81.1115,
+      "startY": 59.9083,
+      "endX": 81.3,
+      "endY": 84.7483,
+      "rotation": 0,
+      "displayOrder": 200
+    },
+    {
+      "name": "구조물 6",
+      "startX": 45.4,
+      "startY": 59.7364,
+      "endX": 51.24,
+      "endY": 64.9764,
+      "rotation": 0,
+      "displayOrder": 201
+    },
+    {
+      "name": "구조물 8",
+      "startX": 36.2,
+      "startY": 37.499,
+      "endX": 36.4,
+      "endY": 43.1,
+      "rotation": 0,
+      "displayOrder": 202
+    },
+    {
+      "name": "구조물 9",
+      "startX": 90.72,
+      "startY": 18.7,
+      "endX": 92.56,
+      "endY": 35.94,
+      "rotation": 0,
+      "displayOrder": 203
+    },
+    {
+      "name": "구조물 11",
+      "startX": 127.5151,
+      "startY": 18.9,
+      "endX": 127.7,
+      "endY": 22.9,
+      "rotation": 0,
+      "displayOrder": 204
+    },
+    {
+      "name": "구조물 15",
+      "startX": 94.12,
+      "startY": 61.7,
+      "endX": 95.76,
+      "endY": 67.14,
+      "rotation": 0,
+      "displayOrder": 205
+    },
+    {
+      "name": "구조물 17",
+      "startX": 57.7865,
+      "startY": 76.9312,
+      "endX": 59.8,
+      "endY": 79.3,
+      "rotation": 0,
+      "displayOrder": 206
+    },
+    {
+      "name": "구조물 18",
+      "startX": 122.92,
+      "startY": 61.5,
+      "endX": 124.36,
+      "endY": 66.34,
+      "rotation": 0,
+      "displayOrder": 207
+    },
+    {
+      "name": "구조물 21",
+      "startX": 106.92,
+      "startY": 8.3,
+      "endX": 108.36,
+      "endY": 12.14,
+      "rotation": 0,
+      "displayOrder": 208
+    },
+    {
+      "name": "구조물 22",
+      "startX": 118.52,
+      "startY": 53.3,
+      "endX": 120.16,
+      "endY": 56.54,
+      "rotation": 0,
+      "displayOrder": 209
+    },
+    {
+      "name": "구조물 23",
+      "startX": 127.32,
+      "startY": 61.9,
+      "endX": 128.56,
+      "endY": 65.94,
+      "rotation": 0,
+      "displayOrder": 210
+    },
+    {
+      "name": "구조물 24",
+      "startX": 131.52,
+      "startY": 54.1,
+      "endX": 133.36,
+      "endY": 56.54,
+      "rotation": 0,
+      "displayOrder": 211
+    },
+    {
+      "name": "구조물 25",
+      "startX": 58.6617,
+      "startY": 67.8049,
+      "endX": 59.2417,
+      "endY": 72.7049,
+      "rotation": 0,
+      "displayOrder": 212
+    },
+    {
+      "name": "구조물 26",
+      "startX": 112.92,
+      "startY": 8.3,
+      "endX": 114.16,
+      "endY": 12.14,
+      "rotation": 0,
+      "displayOrder": 213
+    },
+    {
+      "name": "구조물 30",
+      "startX": 55.3791,
+      "startY": 64.2079,
+      "endX": 58.0085,
+      "endY": 64.9062,
+      "rotation": 0,
+      "displayOrder": 214
+    },
+    {
+      "name": "구조물 32",
+      "startX": 125.3613,
+      "startY": 66.4459,
+      "endX": 127.0013,
+      "endY": 68.4859,
+      "rotation": 0,
+      "displayOrder": 215
+    },
+    {
+      "name": "구조물 33",
+      "startX": 104.92,
+      "startY": 51.3,
+      "endX": 106.36,
+      "endY": 53.34,
+      "rotation": 0,
+      "displayOrder": 216
+    },
+    {
+      "name": "구조물 34",
+      "startX": 130.92,
+      "startY": 48.7,
+      "endX": 132.16,
+      "endY": 51.14,
+      "rotation": 0,
+      "displayOrder": 217
+    },
+    {
+      "name": "구조물 36",
+      "startX": 118.12,
+      "startY": 8.1,
+      "endX": 120.96,
+      "endY": 11.14,
+      "rotation": 0,
+      "displayOrder": 218
+    },
+    {
+      "name": "구조물 37",
+      "startX": 122.52,
+      "startY": 52.9,
+      "endX": 124.36,
+      "endY": 54.34,
+      "rotation": 0,
+      "displayOrder": 219
+    },
+    {
+      "name": "구조물 41",
+      "startX": 117.8267,
+      "startY": 39.8496,
+      "endX": 119.0667,
+      "endY": 41.4896,
+      "rotation": 0,
+      "displayOrder": 220
+    },
+    {
+      "name": "구조물 43",
+      "startX": 139.5428,
+      "startY": 57.699,
+      "endX": 141.1828,
+      "endY": 58.739,
+      "rotation": 0,
+      "displayOrder": 221
+    },
+    {
+      "name": "구조물 44",
+      "startX": 139.5502,
+      "startY": 60.1209,
+      "endX": 141.1902,
+      "endY": 61.1609,
+      "rotation": 0,
+      "displayOrder": 222
+    },
+    {
+      "name": "구조물 46",
+      "startX": 121.72,
+      "startY": 55.7,
+      "endX": 123.16,
+      "endY": 56.54,
+      "rotation": 0,
+      "displayOrder": 223
+    },
+    {
+      "name": "구조물 49",
+      "startX": 36.4,
+      "startY": 42.8635,
+      "endX": 40.724,
+      "endY": 43.1,
+      "rotation": 0,
+      "displayOrder": 224
+    },
+    {
+      "name": "구조물 50",
+      "startX": 36.3987,
+      "startY": 37.4958,
+      "endX": 40.6987,
+      "endY": 37.6971,
+      "rotation": 0,
+      "displayOrder": 225
+    },
+    {
+      "name": "구조물 51",
+      "startX": 40.7,
+      "startY": 41.4,
+      "endX": 40.9,
+      "endY": 43.1,
+      "rotation": 0,
+      "displayOrder": 226
+    },
+    {
+      "name": "구조물 52",
+      "startX": 40.7087,
+      "startY": 37.496,
+      "endX": 40.9,
+      "endY": 39.7,
+      "rotation": 0,
+      "displayOrder": 227
+    },
+    {
+      "name": "구조물 53",
+      "startX": 48.2,
+      "startY": 66.4,
+      "endX": 51.9,
+      "endY": 68.2,
+      "rotation": 0,
+      "displayOrder": 228
+    },
+    {
+      "name": "구조물 54",
+      "startX": 41.2,
+      "startY": 60.729,
+      "endX": 42.6172,
+      "endY": 67.9,
+      "rotation": 14.4,
+      "displayOrder": 229
+    },
+    {
+      "name": "구조물 56",
+      "startX": 61.2,
+      "startY": 85.8,
+      "endX": 63.5,
+      "endY": 88.5,
+      "rotation": 0,
+      "displayOrder": 230
+    },
+    {
+      "name": "구조물 60",
+      "startX": 87.9,
+      "startY": 59.9,
+      "endX": 88.1,
+      "endY": 84.7,
+      "rotation": 0,
+      "displayOrder": 231
+    },
+    {
+      "name": "구조물 61",
+      "startX": 81.3016,
+      "startY": 84.5963,
+      "endX": 83.3979,
+      "endY": 84.7498,
+      "rotation": 0,
+      "displayOrder": 232
+    },
+    {
+      "name": "구조물 62",
+      "startX": 86.1,
+      "startY": 84.5,
+      "endX": 87.9,
+      "endY": 84.7,
+      "rotation": 0,
+      "displayOrder": 233
+    },
+    {
+      "name": "구조물 63",
+      "startX": 136.697,
+      "startY": 27.7018,
+      "endX": 137.297,
+      "endY": 31.8018,
+      "rotation": -30,
+      "displayOrder": 234
+    },
+    {
+      "name": "구조물 64",
+      "startX": 136.4184,
+      "startY": 32.2017,
+      "endX": 137.1184,
+      "endY": 36.3171,
+      "rotation": -30,
+      "displayOrder": 235
+    },
+    {
+      "name": "구조물 65",
+      "startX": 136.3756,
+      "startY": 37.0825,
+      "endX": 137.0756,
+      "endY": 41.1825,
+      "rotation": -30,
+      "displayOrder": 236
+    },
+    {
+      "name": "구조물 66",
+      "startX": 91.291,
+      "startY": 49.5866,
+      "endX": 100.891,
+      "endY": 51.1866,
+      "rotation": 0,
+      "displayOrder": 237
+    },
+    {
+      "name": "구조물 67",
+      "startX": 92.4249,
+      "startY": 52.4434,
+      "endX": 94.6249,
+      "endY": 52.8434,
+      "rotation": 0,
+      "displayOrder": 238
+    },
+    {
+      "name": "구조물 68",
+      "startX": 92.4357,
+      "startY": 54.064,
+      "endX": 94.479,
+      "endY": 54.412,
+      "rotation": 0,
+      "displayOrder": 239
+    },
+    {
+      "name": "구조물 69",
+      "startX": 92.5,
+      "startY": 55.4,
+      "endX": 94.5249,
+      "endY": 55.8464,
+      "rotation": 0,
+      "displayOrder": 240
+    },
+    {
+      "name": "구조물 70",
+      "startX": 97.4249,
+      "startY": 52.5569,
+      "endX": 99.8249,
+      "endY": 52.9569,
+      "rotation": 0,
+      "displayOrder": 241
+    },
+    {
+      "name": "구조물 71",
+      "startX": 97.5249,
+      "startY": 54.0551,
+      "endX": 99.8249,
+      "endY": 54.4551,
+      "rotation": 0,
+      "displayOrder": 242
+    },
+    {
+      "name": "구조물 72",
+      "startX": 97.5495,
+      "startY": 55.4551,
+      "endX": 99.9495,
+      "endY": 55.8551,
+      "rotation": 0,
+      "displayOrder": 243
+    },
+    {
+      "name": "구조물 73",
+      "startX": 139.9,
+      "startY": 48.2,
+      "endX": 142.2,
+      "endY": 53.3,
+      "rotation": 0,
+      "displayOrder": 244
+    },
+    {
+      "name": "구조물 74",
+      "startX": 127.7,
+      "startY": 18.9,
+      "endX": 130.8,
+      "endY": 19.1,
+      "rotation": 0,
+      "displayOrder": 245
+    },
+    {
+      "name": "구조물 75",
+      "startX": 130.8,
+      "startY": 18.9,
+      "endX": 131,
+      "endY": 22.9,
+      "rotation": 0,
+      "displayOrder": 246
+    },
+    {
+      "name": "구조물 76",
+      "startX": 129.9,
+      "startY": 22.7,
+      "endX": 130.8,
+      "endY": 22.9,
+      "rotation": 0,
+      "displayOrder": 247
+    },
+    {
+      "name": "구조물 77",
+      "startX": 127.7,
+      "startY": 22.7,
+      "endX": 128.5,
+      "endY": 22.9,
+      "rotation": 0,
+      "displayOrder": 248
+    },
+    {
+      "name": "구조물 78",
+      "startX": 81,
+      "startY": 49.6,
+      "endX": 81.2,
+      "endY": 56.2,
+      "rotation": 0,
+      "displayOrder": 249
+    },
+    {
+      "name": "구조물 79",
+      "startX": 81.2,
+      "startY": 49.6,
+      "endX": 87.8,
+      "endY": 49.8,
+      "rotation": 0,
+      "displayOrder": 250
+    },
+    {
+      "name": "구조물 80",
+      "startX": 87.8,
+      "startY": 49.5967,
+      "endX": 88,
+      "endY": 52.4,
+      "rotation": 0,
+      "displayOrder": 251
+    },
+    {
+      "name": "구조물 81",
+      "startX": 81.2,
+      "startY": 56,
+      "endX": 84.9,
+      "endY": 56.2,
+      "rotation": 0,
+      "displayOrder": 252
+    },
+    {
+      "name": "구조물 82",
+      "startX": 87.8,
+      "startY": 54,
+      "endX": 88,
+      "endY": 56.2,
+      "rotation": 0,
+      "displayOrder": 253
+    },
+    {
+      "name": "구조물 83",
+      "startX": 86.4,
+      "startY": 56,
+      "endX": 87.7982,
+      "endY": 56.2,
+      "rotation": 0,
+      "displayOrder": 254
+    }
+  ],
+  "exits": [
+    {
+      "name": "비상구 1",
+      "startX": 78.4,
+      "startY": 97.8558,
+      "endX": 91.5,
+      "endY": 97.8558
+    },
+    {
+      "name": "비상구 2",
+      "startX": 145.2819,
+      "startY": 43.2,
+      "endX": 145.2819,
+      "endY": 46.2
+    },
+    {
+      "name": "비상구 3",
+      "startX": 40,
+      "startY": 6.358,
+      "endX": 42.2,
+      "endY": 6.358
+    },
+    {
+      "name": "비상구 4",
+      "startX": 70.9,
+      "startY": 6.7,
+      "endX": 73.3,
+      "endY": 6.7
+    },
+    {
+      "name": "비상구 5",
+      "startX": 26.3,
+      "startY": 40.1,
+      "endX": 26.3,
+      "endY": 42.7
+    },
+    {
+      "name": "비상구 6",
+      "startX": 50.8154,
+      "startY": 38.2955,
+      "endX": 50.8154,
+      "endY": 34.4955
+    },
+    {
+      "name": "비상구 7",
+      "startX": 58.3757,
+      "startY": 34.255,
+      "endX": 58.3757,
+      "endY": 31.9539
+    },
+    {
+      "name": "비상구 8",
+      "startX": 29.3,
+      "startY": 77.7,
+      "endX": 29.3,
+      "endY": 72.2
+    },
+    {
+      "name": "비상구 9",
+      "startX": 37.2819,
+      "startY": 98.2991,
+      "endX": 39.2819,
+      "endY": 98.2991
+    },
+    {
+      "name": "비상구 10",
+      "startX": 67.478,
+      "startY": 75.2265,
+      "endX": 64.378,
+      "endY": 75.2265
+    },
+    {
+      "name": "비상구 11",
+      "startX": 128.3,
+      "startY": 6.4,
+      "endX": 131.9,
+      "endY": 6.4
+    },
+    {
+      "name": "비상구 12",
+      "startX": 132.3,
+      "startY": 70.4,
+      "endX": 132.3,
+      "endY": 71.9
+    },
+    {
+      "name": "비상구 13",
+      "startX": 132.5,
+      "startY": 76.5,
+      "endX": 132.5,
+      "endY": 78.1
+    },
+    {
+      "name": "비상구 14",
+      "startX": 130.9,
+      "startY": 78.7,
+      "endX": 132.1,
+      "endY": 78.7
+    },
+    {
+      "name": "비상구 15",
+      "startX": 98.1,
+      "startY": 78.6,
+      "endX": 98.1,
+      "endY": 79.7
+    },
+    {
+      "name": "비상구 16",
+      "startX": 103.4,
+      "startY": 73.6,
+      "endX": 104.7,
+      "endY": 73.6
+    }
+  ],
+  "layoutTexts": [
+    {
+      "text": "MLB",
+      "x": 44.8641,
+      "y": 9.7506
+    },
+    {
+      "text": "AAPE",
+      "x": 52.3966,
+      "y": 9.9446
+    },
+    {
+      "text": "칼하트윕",
+      "x": 58.6288,
+      "y": 10.2555
+    },
+    {
+      "text": "더비넷",
+      "x": 65.5411,
+      "y": 10.1696
+    },
+    {
+      "text": "뉴발",
+      "x": 26.7665,
+      "y": 32.2694
+    },
+    {
+      "text": "아디다스 스타디움",
+      "x": 26.214,
+      "y": 54.94
+    },
+    {
+      "text": "CK 진",
+      "x": 38.7059,
+      "y": 32.0033
+    },
+    {
+      "text": "HDEX",
+      "x": 36.3305,
+      "y": 24.4617
+    },
+    {
+      "text": "노페",
+      "x": 41.7548,
+      "y": 23.3749
+    },
+    {
+      "text": "노메뉴얼\n코이세이오",
+      "x": 51.3555,
+      "y": 22.1538
+    },
+    {
+      "text": "PEER",
+      "x": 50.677,
+      "y": 40.72
+    },
+    {
+      "text": "포토그램",
+      "x": 51.785,
+      "y": 29.6988
+    },
+    {
+      "text": "산산기어",
+      "x": 64.804,
+      "y": 24.86
+    },
+    {
+      "text": "쿠어",
+      "x": 83.5764,
+      "y": 7.1126
+    },
+    {
+      "text": "포터",
+      "x": 83.6945,
+      "y": 17.559
+    },
+    {
+      "text": "망고매니",
+      "x": 89.621,
+      "y": 7.3739
+    },
+    {
+      "text": "THISIS\nNEVERTHAT",
+      "x": 73.6678,
+      "y": 6.7861
+    },
+    {
+      "text": "포인트 오브 뷰",
+      "x": 72.3165,
+      "y": 24.8936
+    },
+    {
+      "text": "ODE",
+      "x": 74.4562,
+      "y": 34.1794
+    },
+    {
+      "text": "마뗑킴",
+      "x": 64.6,
+      "y": 41.68
+    },
+    {
+      "text": "더치랩",
+      "x": 72.59,
+      "y": 42.4
+    },
+    {
+      "text": "팝업",
+      "x": 36.9729,
+      "y": 39.5947
+    },
+    {
+      "text": "디오디",
+      "x": 40.732,
+      "y": 52
+    },
+    {
+      "text": "크록스",
+      "x": 46.1403,
+      "y": 51.1166
+    },
+    {
+      "text": "하이츠",
+      "x": 68.9049,
+      "y": 52.2706
+    },
+    {
+      "text": "나이키 라이즈",
+      "x": 58.0407,
+      "y": 81.8167
+    },
+    {
+      "text": "ATTAG",
+      "x": 71.621,
+      "y": 79.18
+    },
+    {
+      "text": "팝마트",
+      "x": 73.542,
+      "y": 65.2
+    },
+    {
+      "text": "케이스티파이",
+      "x": 72.5537,
+      "y": 94.3792
+    },
+    {
+      "text": "팝업",
+      "x": 83.0555,
+      "y": 71.3827
+    },
+    {
+      "text": "나이스웨더",
+      "x": 52.9472,
+      "y": 50.975
+    },
+    {
+      "text": "베흐트",
+      "x": 111.0973,
+      "y": 51.9035
+    },
+    {
+      "text": "스미스",
+      "x": 105.298,
+      "y": 50.4
+    },
+    {
+      "text": "틸아이다이",
+      "x": 117.2987,
+      "y": 51.9669
+    },
+    {
+      "text": "스탠드오일",
+      "x": 138.4511,
+      "y": 50.8503
+    },
+    {
+      "text": "아프리카안경",
+      "x": 137.003,
+      "y": 61.64
+    },
+    {
+      "text": "LMC",
+      "x": 124.865,
+      "y": 60.74
+    },
+    {
+      "text": "스타벅스",
+      "x": 92.956,
+      "y": 26.78
+    },
+    {
+      "text": "켈빈",
+      "x": 100.4422,
+      "y": 35.0744
+    },
+    {
+      "text": "EQL",
+      "x": 99.8742,
+      "y": 42.6315
+    },
+    {
+      "text": "팝업",
+      "x": 128.107,
+      "y": 19.5311
+    },
+    {
+      "text": "E/S",
+      "x": 81.379,
+      "y": 36.1
+    },
+    {
+      "text": "ES",
+      "x": 127.432,
+      "y": 34.18
+    },
+    {
+      "text": "YPHAUS",
+      "x": 138.8626,
+      "y": 20.7327
+    },
+    {
+      "text": "시티브리즈",
+      "x": 126.8966,
+      "y": 51.6338
+    },
+    {
+      "text": "드파운드",
+      "x": 120.095,
+      "y": 42.4862
+    },
+    {
+      "text": "29CM",
+      "x": 107.9499,
+      "y": 34.2052
+    },
+    {
+      "text": "트리밍버드",
+      "x": 113.1513,
+      "y": 31.1088
+    },
+    {
+      "text": "레이브",
+      "x": 114.2074,
+      "y": 38.0127
+    },
+    {
+      "text": "DIC",
+      "x": 116.6581,
+      "y": 22.2334
+    },
+    {
+      "text": "루에브르",
+      "x": 108.2122,
+      "y": 24.1382
+    },
+    {
+      "text": "락피쉬",
+      "x": 101.3915,
+      "y": 24.8453
+    },
+    {
+      "text": "시에",
+      "x": 100.7281,
+      "y": 9.6845
+    },
+    {
+      "text": "폴리테루",
+      "x": 105.3276,
+      "y": 9.5069
+    },
+    {
+      "text": "인사일런스",
+      "x": 116.9446,
+      "y": 9.5713
+    },
+    {
+      "text": "세터",
+      "x": 133.2545,
+      "y": 9.3496
+    },
+    {
+      "text": "데우스",
+      "x": 111.9073,
+      "y": 8.9676
+    },
+    {
+      "text": "구호플러스",
+      "x": 122.8553,
+      "y": 8.5833
+    },
+    {
+      "text": "유니폼 브릿지",
+      "x": 117.8174,
+      "y": 27.7939
+    },
+    {
+      "text": "론론",
+      "x": 108.9,
+      "y": 43.3
+    },
+    {
+      "text": "비클린",
+      "x": 92.891,
+      "y": 52.7836
+    },
+    {
+      "text": "팝업",
+      "x": 83.1058,
+      "y": 52.4193
+    },
+    {
+      "text": "ARKET\nCAFE",
+      "x": 91.8401,
+      "y": 75.7479
+    },
+    {
+      "text": "ARKET",
+      "x": 99.3315,
+      "y": 88.9718
+    },
+    {
+      "text": "E/S",
+      "x": 30.7,
+      "y": 32.1
+    }
+  ],
+  "zones": [
+    {
+      "name": "29CM",
+      "zoneType": "WORK",
+      "x": 108.2,
+      "y": 25.5,
+      "width": 5.8,
+      "height": 18,
+      "displayOrder": 47,
+      "defaultExitIndex": null,
+      "members": []
+    },
+    {
+      "name": "AAPE",
+      "zoneType": "WORK",
+      "x": 50.8,
+      "y": 5.9,
+      "width": 7.1,
+      "height": 9.2,
+      "displayOrder": 2,
+      "defaultExitIndex": 2,
+      "members": []
+    },
+    {
+      "name": "ARKET",
+      "zoneType": "WORK",
+      "x": 91.3,
+      "y": 59.7,
+      "width": 30.2,
+      "height": 40.1,
+      "displayOrder": 64,
+      "defaultExitIndex": null,
+      "members": [
+        {
+          "kind": "FABRIC",
+          "index": 5
+        }
+      ]
+    },
+    {
+      "name": "ARKET CAFE",
+      "zoneType": "WORK",
+      "x": 91.5,
+      "y": 73.8,
+      "width": 5.2,
+      "height": 6.3,
+      "displayOrder": 63,
+      "defaultExitIndex": 14,
+      "members": []
+    },
+    {
+      "name": "ATTAG",
+      "zoneType": "WORK",
+      "x": 71,
+      "y": 72.2,
+      "width": 7.5,
+      "height": 9.3,
+      "displayOrder": 27,
+      "defaultExitIndex": 0,
+      "members": []
+    },
+    {
+      "name": "CK 진",
+      "zoneType": "WORK",
+      "x": 36.2,
+      "y": 29.5,
+      "width": 8.7,
+      "height": 5.7,
+      "displayOrder": 7,
+      "defaultExitIndex": 5,
+      "members": [
+        {
+          "kind": "PILLAR",
+          "index": 1
+        }
+      ]
+    },
+    {
+      "name": "DIC",
+      "zoneType": "WORK",
+      "x": 114.9,
+      "y": 18.9,
+      "width": 9.1,
+      "height": 9.8,
+      "displayOrder": 50,
+      "defaultExitIndex": 10,
+      "members": []
+    },
+    {
+      "name": "E/S(서)",
+      "zoneType": "WORK",
+      "x": 30.1,
+      "y": 26.1,
+      "width": 3.5,
+      "height": 14.3,
+      "displayOrder": 65,
+      "defaultExitIndex": 4,
+      "members": [
+        {
+          "kind": "PILLAR",
+          "index": 17
+        }
+      ]
+    },
+    {
+      "name": "E/S(중)",
+      "zoneType": "WORK",
+      "x": 80.6,
+      "y": 27.6,
+      "width": 7.9,
+      "height": 19.2,
+      "displayOrder": 42,
+      "defaultExitIndex": 3,
+      "members": [
+        {
+          "kind": "PILLAR",
+          "index": 13
+        }
+      ]
+    },
+    {
+      "name": "EQL",
+      "zoneType": "WORK",
+      "x": 98.2,
+      "y": 39.9,
+      "width": 7.7,
+      "height": 6.7,
+      "displayOrder": 40,
+      "defaultExitIndex": null,
+      "members": []
+    },
+    {
+      "name": "ES(동)",
+      "zoneType": "WORK",
+      "x": 126.8,
+      "y": 27.4,
+      "width": 4.7,
+      "height": 16.2,
+      "displayOrder": 43,
+      "defaultExitIndex": 1,
+      "members": [
+        {
+          "kind": "PILLAR",
+          "index": 14
+        }
+      ]
+    },
+    {
+      "name": "HDEX",
+      "zoneType": "WORK",
+      "x": 36.2,
+      "y": 18.7,
+      "width": 4.6,
+      "height": 10.7,
+      "displayOrder": 8,
+      "defaultExitIndex": 2,
+      "members": [
+        {
+          "kind": "PILLAR",
+          "index": 2
+        }
+      ]
+    },
+    {
+      "name": "LMC",
+      "zoneType": "WORK",
+      "x": 121.6,
+      "y": 59.6,
+      "width": 8.8,
+      "height": 10.1,
+      "displayOrder": 37,
+      "defaultExitIndex": 11,
+      "members": [
+        {
+          "kind": "FABRIC",
+          "index": 7
+        },
+        {
+          "kind": "FABRIC",
+          "index": 10
+        },
+        {
+          "kind": "FABRIC",
+          "index": 15
+        }
+      ]
+    },
+    {
+      "name": "MLB",
+      "zoneType": "WORK",
+      "x": 42.2,
+      "y": 5.9,
+      "width": 8.5,
+      "height": 9,
+      "displayOrder": 1,
+      "defaultExitIndex": 2,
+      "members": []
+    },
+    {
+      "name": "ODE",
+      "zoneType": "WORK",
+      "x": 71.4,
+      "y": 31.5,
+      "width": 7,
+      "height": 7.3,
+      "displayOrder": 19,
+      "defaultExitIndex": 3,
+      "members": [
+        {
+          "kind": "PILLAR",
+          "index": 5
+        }
+      ]
+    },
+    {
+      "name": "PEER",
+      "zoneType": "WORK",
+      "x": 47.4,
+      "y": 31.9,
+      "width": 13.8,
+      "height": 15.1,
+      "displayOrder": 11,
+      "defaultExitIndex": null,
+      "members": [
+        {
+          "kind": "PILLAR",
+          "index": 12
+        },
+        {
+          "kind": "WALL",
+          "index": 20
+        },
+        {
+          "kind": "WALL",
+          "index": 19
+        }
+      ]
+    },
+    {
+      "name": "THISIS NEVERTHAT",
+      "zoneType": "WORK",
+      "x": 73.4,
+      "y": 3.2,
+      "width": 7,
+      "height": 11.7,
+      "displayOrder": 17,
+      "defaultExitIndex": 3,
+      "members": []
+    },
+    {
+      "name": "YPHAUS",
+      "zoneType": "WORK",
+      "x": 139.8,
+      "y": 13.5,
+      "width": 6.2,
+      "height": 29.6,
+      "displayOrder": 44,
+      "defaultExitIndex": 10,
+      "members": []
+    },
+    {
+      "name": "구호플러스",
+      "zoneType": "WORK",
+      "x": 123.2,
+      "y": 5.8,
+      "width": 5.1,
+      "height": 7.8,
+      "displayOrder": 58,
+      "defaultExitIndex": 10,
+      "members": []
+    },
+    {
+      "name": "나이스웨더",
+      "zoneType": "WORK",
+      "x": 51.7,
+      "y": 47.1,
+      "width": 8.5,
+      "height": 9.1,
+      "displayOrder": 31,
+      "defaultExitIndex": null,
+      "members": [
+        {
+          "kind": "WALL",
+          "index": 53
+        },
+        {
+          "kind": "WALL",
+          "index": 61
+        },
+        {
+          "kind": "WALL",
+          "index": 54
+        },
+        {
+          "kind": "WALL",
+          "index": 55
+        },
+        {
+          "kind": "WALL",
+          "index": 57
+        },
+        {
+          "kind": "WALL",
+          "index": 56
+        },
+        {
+          "kind": "WALL",
+          "index": 103
+        },
+        {
+          "kind": "WALL",
+          "index": 58
+        },
+        {
+          "kind": "WALL",
+          "index": 59
+        },
+        {
+          "kind": "WALL",
+          "index": 60
+        }
+      ]
+    },
+    {
+      "name": "나이키 라이즈",
+      "zoneType": "WORK",
+      "x": 45.5,
+      "y": 59.8,
+      "width": 25.4,
+      "height": 39.4,
+      "displayOrder": 26,
+      "defaultExitIndex": 9,
+      "members": [
+        {
+          "kind": "FABRIC",
+          "index": 6
+        },
+        {
+          "kind": "FABRIC",
+          "index": 30
+        },
+        {
+          "kind": "FABRIC",
+          "index": 1
+        },
+        {
+          "kind": "FABRIC",
+          "index": 28
+        },
+        {
+          "kind": "FABRIC",
+          "index": 14
+        },
+        {
+          "kind": "FABRIC",
+          "index": 12
+        },
+        {
+          "kind": "PILLAR",
+          "index": 19
+        },
+        {
+          "kind": "PILLAR",
+          "index": 18
+        }
+      ]
+    },
+    {
+      "name": "노메뉴얼 코이세이오",
+      "zoneType": "WORK",
+      "x": 47.5,
+      "y": 18.7,
+      "width": 13.9,
+      "height": 9,
+      "displayOrder": 10,
+      "defaultExitIndex": null,
+      "members": []
+    },
+    {
+      "name": "노페",
+      "zoneType": "WORK",
+      "x": 40.8,
+      "y": 18.7,
+      "width": 4.2,
+      "height": 10.7,
+      "displayOrder": 9,
+      "defaultExitIndex": 2,
+      "members": []
+    },
+    {
+      "name": "뉴발",
+      "zoneType": "WORK",
+      "x": 25.8,
+      "y": 17.3,
+      "width": 4.3,
+      "height": 28.2,
+      "displayOrder": 5,
+      "defaultExitIndex": 4,
+      "members": []
+    },
+    {
+      "name": "더비넷",
+      "zoneType": "WORK",
+      "x": 64.5,
+      "y": 5.9,
+      "width": 6.4,
+      "height": 9.3,
+      "displayOrder": 4,
+      "defaultExitIndex": 3,
+      "members": []
+    },
+    {
+      "name": "더치랩",
+      "zoneType": "WORK",
+      "x": 71.4,
+      "y": 38.8,
+      "width": 7.1,
+      "height": 7.8,
+      "displayOrder": 21,
+      "defaultExitIndex": 6,
+      "members": [
+        {
+          "kind": "PILLAR",
+          "index": 4
+        }
+      ]
+    },
+    {
+      "name": "데우스",
+      "zoneType": "WORK",
+      "x": 110.9,
+      "y": 5.8,
+      "width": 5.7,
+      "height": 8.2,
+      "displayOrder": 57,
+      "defaultExitIndex": 10,
+      "members": [
+        {
+          "kind": "FABRIC",
+          "index": 13
+        }
+      ]
+    },
+    {
+      "name": "드파운드",
+      "zoneType": "WORK",
+      "x": 116.3,
+      "y": 36.5,
+      "width": 7.7,
+      "height": 9.3,
+      "displayOrder": 46,
+      "defaultExitIndex": 1,
+      "members": [
+        {
+          "kind": "FABRIC",
+          "index": 20
+        }
+      ]
+    },
+    {
+      "name": "디오디",
+      "zoneType": "WORK",
+      "x": 39.8,
+      "y": 47.1,
+      "width": 5.4,
+      "height": 9.4,
+      "displayOrder": 23,
+      "defaultExitIndex": null,
+      "members": []
+    },
+    {
+      "name": "락피쉬",
+      "zoneType": "WORK",
+      "x": 100.9,
+      "y": 18.9,
+      "width": 4.8,
+      "height": 12.8,
+      "displayOrder": 52,
+      "defaultExitIndex": null,
+      "members": []
+    },
+    {
+      "name": "레이브",
+      "zoneType": "WORK",
+      "x": 114,
+      "y": 34.4,
+      "width": 5.4,
+      "height": 9.1,
+      "displayOrder": 49,
+      "defaultExitIndex": null,
+      "members": []
+    },
+    {
+      "name": "론론",
+      "zoneType": "WORK",
+      "x": 108.3,
+      "y": 36.8,
+      "width": 4.4,
+      "height": 9.2,
+      "displayOrder": 60,
+      "defaultExitIndex": 1,
+      "members": []
+    },
+    {
+      "name": "루에브르",
+      "zoneType": "WORK",
+      "x": 108.1,
+      "y": 18.9,
+      "width": 5,
+      "height": 14.3,
+      "displayOrder": 51,
+      "defaultExitIndex": 10,
+      "members": []
+    },
+    {
+      "name": "마뗑킴",
+      "zoneType": "WORK",
+      "x": 62.7,
+      "y": 38.8,
+      "width": 8.7,
+      "height": 8,
+      "displayOrder": 20,
+      "defaultExitIndex": 6,
+      "members": [
+        {
+          "kind": "PILLAR",
+          "index": 3
+        }
+      ]
+    },
+    {
+      "name": "망고매니",
+      "zoneType": "WORK",
+      "x": 89,
+      "y": 3.2,
+      "width": 7,
+      "height": 11.5,
+      "displayOrder": 16,
+      "defaultExitIndex": 3,
+      "members": []
+    },
+    {
+      "name": "베흐트",
+      "zoneType": "WORK",
+      "x": 110.7,
+      "y": 48.7,
+      "width": 4.6,
+      "height": 7.7,
+      "displayOrder": 32,
+      "defaultExitIndex": null,
+      "members": []
+    },
+    {
+      "name": "비클린",
+      "zoneType": "WORK",
+      "x": 91.3,
+      "y": 49.6,
+      "width": 9.6,
+      "height": 6.8,
+      "displayOrder": 61,
+      "defaultExitIndex": null,
+      "members": [
+        {
+          "kind": "FABRIC",
+          "index": 37
+        },
+        {
+          "kind": "FABRIC",
+          "index": 38
+        },
+        {
+          "kind": "FABRIC",
+          "index": 39
+        },
+        {
+          "kind": "FABRIC",
+          "index": 40
+        },
+        {
+          "kind": "FABRIC",
+          "index": 41
+        },
+        {
+          "kind": "FABRIC",
+          "index": 42
+        },
+        {
+          "kind": "FABRIC",
+          "index": 43
+        }
+      ]
+    },
+    {
+      "name": "산산기어",
+      "zoneType": "WORK",
+      "x": 62.9,
+      "y": 17.6,
+      "width": 8.5,
+      "height": 13.9,
+      "displayOrder": 13,
+      "defaultExitIndex": null,
+      "members": []
+    },
+    {
+      "name": "세터",
+      "zoneType": "WORK",
+      "x": 132,
+      "y": 5.9,
+      "width": 5.3,
+      "height": 7.5,
+      "displayOrder": 56,
+      "defaultExitIndex": 10,
+      "members": []
+    },
+    {
+      "name": "스미스",
+      "zoneType": "WORK",
+      "x": 104.9,
+      "y": 48.7,
+      "width": 5.7,
+      "height": 7.7,
+      "displayOrder": 33,
+      "defaultExitIndex": null,
+      "members": [
+        {
+          "kind": "FABRIC",
+          "index": 16
+        }
+      ]
+    },
+    {
+      "name": "스타벅스",
+      "zoneType": "WORK",
+      "x": 90.5,
+      "y": 18.6,
+      "width": 10.3,
+      "height": 28,
+      "displayOrder": 38,
+      "defaultExitIndex": 3,
+      "members": [
+        {
+          "kind": "FABRIC",
+          "index": 3
+        }
+      ]
+    },
+    {
+      "name": "스탠드오일",
+      "zoneType": "WORK",
+      "x": 139.5,
+      "y": 46.2,
+      "width": 6.7,
+      "height": 10.1,
+      "displayOrder": 35,
+      "defaultExitIndex": 1,
+      "members": [
+        {
+          "kind": "FABRIC",
+          "index": 44
+        }
+      ]
+    },
+    {
+      "name": "시에",
+      "zoneType": "WORK",
+      "x": 99.1,
+      "y": 5.8,
+      "width": 5.8,
+      "height": 8.5,
+      "displayOrder": 53,
+      "defaultExitIndex": null,
+      "members": []
+    },
+    {
+      "name": "시티브리즈",
+      "zoneType": "WORK",
+      "x": 126.3,
+      "y": 48.8,
+      "width": 7.1,
+      "height": 7.7,
+      "displayOrder": 45,
+      "defaultExitIndex": null,
+      "members": [
+        {
+          "kind": "FABRIC",
+          "index": 17
+        },
+        {
+          "kind": "FABRIC",
+          "index": 11
+        }
+      ]
+    },
+    {
+      "name": "아디다스 스타디움",
+      "zoneType": "WORK",
+      "x": 25.8,
+      "y": 45.7,
+      "width": 11.1,
+      "height": 19.1,
+      "displayOrder": 6,
+      "defaultExitIndex": 4,
+      "members": [
+        {
+          "kind": "PILLAR",
+          "index": 0
+        }
+      ]
+    },
+    {
+      "name": "아프리카안경",
+      "zoneType": "WORK",
+      "x": 133.2,
+      "y": 56.3,
+      "width": 13,
+      "height": 7.7,
+      "displayOrder": 36,
+      "defaultExitIndex": null,
+      "members": [
+        {
+          "kind": "FABRIC",
+          "index": 21
+        },
+        {
+          "kind": "FABRIC",
+          "index": 22
+        }
+      ]
+    },
+    {
+      "name": "오픈Yy",
+      "zoneType": "WORK",
+      "x": 39.8,
+      "y": 59.8,
+      "width": 5.6,
+      "height": 9.8,
+      "displayOrder": 0,
+      "defaultExitIndex": 7,
+      "members": [
+        {
+          "kind": "FABRIC",
+          "index": 29
+        }
+      ]
+    },
+    {
+      "name": "유니폼 브릿지",
+      "zoneType": "WORK",
+      "x": 116.9,
+      "y": 25.4,
+      "width": 7.3,
+      "height": 7.1,
+      "displayOrder": 59,
+      "defaultExitIndex": 10,
+      "members": []
+    },
+    {
+      "name": "이미스",
+      "zoneType": "WORK",
+      "x": 135.6,
+      "y": 25.2,
+      "width": 4.2,
+      "height": 17.9,
+      "displayOrder": 0,
+      "defaultExitIndex": 1,
+      "members": [
+        {
+          "kind": "FABRIC",
+          "index": 34
+        },
+        {
+          "kind": "FABRIC",
+          "index": 35
+        },
+        {
+          "kind": "FABRIC",
+          "index": 36
+        }
+      ]
+    },
+    {
+      "name": "인사일런스",
+      "zoneType": "WORK",
+      "x": 116.6,
+      "y": 5.8,
+      "width": 6.6,
+      "height": 8,
+      "displayOrder": 55,
+      "defaultExitIndex": 10,
+      "members": [
+        {
+          "kind": "FABRIC",
+          "index": 18
+        }
+      ]
+    },
+    {
+      "name": "칼하트윕",
+      "zoneType": "WORK",
+      "x": 57.9,
+      "y": 5.9,
+      "width": 6.5,
+      "height": 9.1,
+      "displayOrder": 3,
+      "defaultExitIndex": 3,
+      "members": []
+    },
+    {
+      "name": "케이스티파이",
+      "zoneType": "WORK",
+      "x": 71,
+      "y": 81.5,
+      "width": 7.6,
+      "height": 17.7,
+      "displayOrder": 29,
+      "defaultExitIndex": 0,
+      "members": [
+        {
+          "kind": "PILLAR",
+          "index": 9
+        }
+      ]
+    },
+    {
+      "name": "켈빈",
+      "zoneType": "WORK",
+      "x": 98.2,
+      "y": 31.7,
+      "width": 6.3,
+      "height": 8.2,
+      "displayOrder": 39,
+      "defaultExitIndex": null,
+      "members": []
+    },
+    {
+      "name": "쿠어",
+      "zoneType": "WORK",
+      "x": 80.5,
+      "y": 3.2,
+      "width": 8.4,
+      "height": 7.6,
+      "displayOrder": 14,
+      "defaultExitIndex": 3,
+      "members": []
+    },
+    {
+      "name": "크록스",
+      "zoneType": "WORK",
+      "x": 45.3,
+      "y": 47.1,
+      "width": 5.5,
+      "height": 9.5,
+      "displayOrder": 24,
+      "defaultExitIndex": 7,
+      "members": []
+    },
+    {
+      "name": "트리밍버드",
+      "zoneType": "WORK",
+      "x": 114,
+      "y": 25.5,
+      "width": 5.4,
+      "height": 8.9,
+      "displayOrder": 48,
+      "defaultExitIndex": null,
+      "members": []
+    },
+    {
+      "name": "틸아이다이",
+      "zoneType": "WORK",
+      "x": 116.9,
+      "y": 48.5,
+      "width": 7.4,
+      "height": 8,
+      "displayOrder": 34,
+      "defaultExitIndex": null,
+      "members": [
+        {
+          "kind": "FABRIC",
+          "index": 9
+        },
+        {
+          "kind": "FABRIC",
+          "index": 19
+        },
+        {
+          "kind": "FABRIC",
+          "index": 23
+        }
+      ]
+    },
+    {
+      "name": "팝마트",
+      "zoneType": "WORK",
+      "x": 72.9,
+      "y": 59.8,
+      "width": 5.6,
+      "height": 12.3,
+      "displayOrder": 28,
+      "defaultExitIndex": null,
+      "members": [
+        {
+          "kind": "PILLAR",
+          "index": 10
+        },
+        {
+          "kind": "PILLAR",
+          "index": 20
+        }
+      ]
+    },
+    {
+      "name": "팝업",
+      "zoneType": "WORK",
+      "x": 81,
+      "y": 49.6,
+      "width": 7,
+      "height": 6.6,
+      "displayOrder": 62,
+      "defaultExitIndex": null,
+      "members": [
+        {
+          "kind": "FABRIC",
+          "index": 49
+        },
+        {
+          "kind": "FABRIC",
+          "index": 50
+        },
+        {
+          "kind": "FABRIC",
+          "index": 51
+        },
+        {
+          "kind": "FABRIC",
+          "index": 52
+        },
+        {
+          "kind": "FABRIC",
+          "index": 53
+        },
+        {
+          "kind": "FABRIC",
+          "index": 54
+        }
+      ]
+    },
+    {
+      "name": "팝업 아이코닉",
+      "zoneType": "WORK",
+      "x": 81,
+      "y": 59.8,
+      "width": 7.1,
+      "height": 25,
+      "displayOrder": 30,
+      "defaultExitIndex": 0,
+      "members": [
+        {
+          "kind": "FABRIC",
+          "index": 0
+        },
+        {
+          "kind": "FABRIC",
+          "index": 32
+        },
+        {
+          "kind": "FABRIC",
+          "index": 33
+        },
+        {
+          "kind": "FABRIC",
+          "index": 31
+        }
+      ]
+    },
+    {
+      "name": "팝업(동)",
+      "zoneType": "WORK",
+      "x": 127.5,
+      "y": 18.9,
+      "width": 3.5,
+      "height": 4,
+      "displayOrder": 41,
+      "defaultExitIndex": 10,
+      "members": [
+        {
+          "kind": "FABRIC",
+          "index": 4
+        },
+        {
+          "kind": "FABRIC",
+          "index": 45
+        },
+        {
+          "kind": "FABRIC",
+          "index": 46
+        },
+        {
+          "kind": "FABRIC",
+          "index": 47
+        },
+        {
+          "kind": "FABRIC",
+          "index": 48
+        }
+      ]
+    },
+    {
+      "name": "팝업(서)",
+      "zoneType": "WORK",
+      "x": 36.2,
+      "y": 37.5,
+      "width": 4.8,
+      "height": 5.6,
+      "displayOrder": 22,
+      "defaultExitIndex": 5,
+      "members": [
+        {
+          "kind": "FABRIC",
+          "index": 2
+        },
+        {
+          "kind": "FABRIC",
+          "index": 24
+        },
+        {
+          "kind": "FABRIC",
+          "index": 25
+        },
+        {
+          "kind": "FABRIC",
+          "index": 26
+        },
+        {
+          "kind": "FABRIC",
+          "index": 27
+        }
+      ]
+    },
+    {
+      "name": "포인트 오브 뷰",
+      "zoneType": "WORK",
+      "x": 71.4,
+      "y": 18.4,
+      "width": 7,
+      "height": 13.1,
+      "displayOrder": 18,
+      "defaultExitIndex": 3,
+      "members": [
+        {
+          "kind": "PILLAR",
+          "index": 6
+        },
+        {
+          "kind": "PILLAR",
+          "index": 7
+        }
+      ]
+    },
+    {
+      "name": "포터",
+      "zoneType": "WORK",
+      "x": 81.837,
+      "y": 13.53,
+      "width": 6.122,
+      "height": 9.38,
+      "displayOrder": 15,
+      "defaultExitIndex": 2,
+      "members": []
+    },
+    {
+      "name": "포토그램",
+      "zoneType": "WORK",
+      "x": 47.4,
+      "y": 29.2,
+      "width": 13.8,
+      "height": 2.6,
+      "displayOrder": 12,
+      "defaultExitIndex": 6,
+      "members": []
+    },
+    {
+      "name": "폴리테루",
+      "zoneType": "WORK",
+      "x": 105,
+      "y": 5.8,
+      "width": 5.9,
+      "height": 8.2,
+      "displayOrder": 54,
+      "defaultExitIndex": 10,
+      "members": [
+        {
+          "kind": "FABRIC",
+          "index": 8
+        }
+      ]
+    },
+    {
+      "name": "하이츠",
+      "zoneType": "WORK",
+      "x": 63.1,
+      "y": 49.3,
+      "width": 15.3,
+      "height": 7.1,
+      "displayOrder": 25,
+      "defaultExitIndex": null,
+      "members": []
+    }
+  ]
+}

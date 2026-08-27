@@ -3,6 +3,7 @@ package com.hwalro.auth.controller;
 import com.hwalro.auth.auth.AuthResult;
 import com.hwalro.auth.auth.AuthService;
 import com.hwalro.auth.controller.dto.AuthResponse;
+import com.hwalro.auth.controller.dto.EmployeeSummaryResponse;
 import com.hwalro.auth.controller.dto.LoginRequest;
 import com.hwalro.auth.controller.dto.UserResponse;
 import com.hwalro.auth.controller.dto.UserSummaryResponse;
@@ -142,6 +143,17 @@ public class AuthController {
         }
         return authService.findUsersByIds(ids).stream()
                 .map(user -> new UserSummaryResponse(user.getUserId(), user.getName()))
+                .toList();
+    }
+
+    @Operation(
+            summary = "구역 배정 대상 직원 조회",
+            description = "활성 일반 직원 목록을 반환한다. ids를 주면 그중 조건을 만족하는 사용자만 반환하므로 배정 대상 검증에도 쓸 수 있다."
+                    + " 관리자·안전 검토자·운영 담당자만 호출할 수 있다.")
+    @GetMapping("/employees")
+    public List<EmployeeSummaryResponse> employees(@RequestParam(required = false) List<Long> ids) {
+        return authService.findActiveEmployees(ids).stream()
+                .map(user -> new EmployeeSummaryResponse(user.getUserId(), user.getName()))
                 .toList();
     }
 

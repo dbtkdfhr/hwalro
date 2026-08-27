@@ -37,18 +37,18 @@ public class LayoutGeometryValidator {
         }
         if (walls.size() + outsideWalls.size() > MAX_VALIDATION_SEGMENTS) {
             throw new IllegalArgumentException(
-                    "벽과 외각벽의 총 개수가 " + MAX_VALIDATION_SEGMENTS + "개를 초과하여 기하 검증을 수행할 수 없습니다.");
+                    "벽과 외곽벽의 총 개수가 " + MAX_VALIDATION_SEGMENTS + "개를 초과하여 기하 검증을 수행할 수 없습니다.");
         }
         List<Walk> frameCandidates = findBoundedWalks(outsideWalls, List.of()).stream()
                 .filter(walk -> walk.area() > 0)
                 .toList();
         if (frameCandidates.isEmpty()) {
             throw new DrawingValidationException(
-                    "외각벽으로 둘러싸인 닫힌 다각형이 없습니다. 외각벽을 이어 하나의 닫힌 틀을 만들어 주세요.", allOutsideWallProblems(outsideWalls));
+                    "외곽벽으로 둘러싸인 닫힌 다각형이 없습니다. 외곽벽을 이어 하나의 닫힌 틀을 만들어 주세요.", allOutsideWallProblems(outsideWalls));
         }
         if (frameCandidates.size() > 1) {
             throw new DrawingValidationException(
-                    "외각벽으로 둘러싸인 닫힌 다각형이 2개 이상입니다. 외각벽 틀은 정확히 1개만 있어야 합니다.", allOutsideWallProblems(outsideWalls));
+                    "외곽벽으로 둘러싸인 닫힌 다각형이 2개 이상입니다. 외곽벽 틀은 정확히 1개만 있어야 합니다.", allOutsideWallProblems(outsideWalls));
         }
         Walk frame = frameCandidates.get(0);
         List<String> messages = new ArrayList<>();
@@ -228,7 +228,7 @@ public class LayoutGeometryValidator {
             if (!rectInsideFrame(
                     frame,
                     rectCorners(pillar.startX(), pillar.startY(), pillar.endX(), pillar.endY(), pillar.rotation()))) {
-                messages.add("외각벽 밖에 위치한 시설물이 있습니다: " + describe(pillar.name(), "기둥"));
+                messages.add("외곽벽 밖에 위치한 시설물이 있습니다: " + describe(pillar.name(), "기둥"));
                 addProblem(problems, "pillar", pillar.name());
             }
         }
@@ -239,7 +239,7 @@ public class LayoutGeometryValidator {
             if (!rectInsideFrame(
                     frame,
                     rectCorners(fabric.startX(), fabric.startY(), fabric.endX(), fabric.endY(), fabric.rotation()))) {
-                messages.add("외각벽 밖에 위치한 시설물이 있습니다: " + describe(fabric.name(), "구조물"));
+                messages.add("외곽벽 밖에 위치한 시설물이 있습니다: " + describe(fabric.name(), "구조물"));
                 addProblem(problems, "fabric", fabric.name());
             }
         }
@@ -250,7 +250,7 @@ public class LayoutGeometryValidator {
             Point start = new Point(exit.startX().doubleValue(), exit.startY().doubleValue());
             Point end = new Point(exit.endX().doubleValue(), exit.endY().doubleValue());
             if (!contains(frame, start) || !contains(frame, end) || crossesFrame(frame, start, end)) {
-                messages.add("외각벽 밖에 위치한 비상구가 있습니다: " + describe(exit.name(), "비상구"));
+                messages.add("외곽벽 밖에 위치한 비상구가 있습니다: " + describe(exit.name(), "비상구"));
                 addProblem(problems, "exit", exit.name());
             }
         }

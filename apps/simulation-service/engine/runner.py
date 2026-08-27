@@ -77,6 +77,10 @@ class NoReachableSelectedExitRunnerError(RunnerError):
     pass
 
 
+class NoWalkableOriginInZoneRunnerError(RunnerError):
+    pass
+
+
 class RecoveryMutationRollbackRunnerError(RunnerError):
     pass
 
@@ -409,7 +413,11 @@ def _load_dependencies():
 
 
 def run(
-    input_path: Path, output_dir: Path, *, validate_only: bool = False
+    input_path: Path,
+    output_dir: Path,
+    *,
+    validate_only: bool = False,
+    route_preview: bool = False,
 ) -> dict[str, Any]:
     phase_profile = _phase_profile_from_environment()
     setup_started = time.perf_counter_ns() if phase_profile is not None else 0
@@ -425,10 +433,14 @@ def run(
             parse_exits,
             parse_exit_segments,
             parse_hazards,
+            naturalize_exit_approach,
+            orthogonalize_display_path,
+            relocate_agent_within_bounds,
             relocate_agents,
             split_agent_components,
             usable_exit_segment,
         )
+        from route_coverage import RoutePreviewZone, serialize_route_coverage, zone_branch_origins
     except ModuleNotFoundError:
         from .route_planner import (  # type: ignore[no-redef]
             AgentRouteUnreachableError,
@@ -440,10 +452,14 @@ def run(
             parse_exits,
             parse_exit_segments,
             parse_hazards,
+            naturalize_exit_approach,
+            orthogonalize_display_path,
+            relocate_agent_within_bounds,
             relocate_agents,
             split_agent_components,
             usable_exit_segment,
         )
+        from .route_coverage import RoutePreviewZone, serialize_route_coverage, zone_branch_origins
 
     payload = _read_input(input_path)
     model = _object(payload.get("model"), "model")
@@ -513,6 +529,12 @@ def run(
     if not isinstance(recovery_value, bool):
         raise RunnerError("recoveryDetectorEnabled must be a boolean")
     recovery_enabled = recovery_value
+    route_origin_bounds = (
+        _route_origin_bounds(payload.get("routeOriginBounds")) if route_preview else None
+    )
+    route_preview_zones = (
+        _route_preview_zones(payload.get("routePreviewZones")) if route_preview else ()
+    )
 
     try:
         hazards = parse_hazards(hazards_value)
@@ -521,7 +543,30 @@ def run(
             usable_exit_segment(exit_, AGENT_RADIUS_METERS)
         walkable = build_walkable_geometry(drawing)
         routing_area = build_routing_geometry(drawing, AGENT_RADIUS_METERS)
-        agents, relocations = relocate_agents(routing_area, agents)
+        original_agents = tuple(agents)
+        if route_origin_bounds is not None:
+            if len(agents) != 1:
+                raise RunnerError("routeOriginBounds requires exactly one agent")
+            relocated = relocate_agent_within_bounds(
+                routing_area, agents[0], route_origin_bounds
+            )
+            if relocated is None:
+                output_dir.mkdir(parents=True, exist_ok=True)
+                _write_json(
+                    output_dir / "error.json",
+                    {
+                        "schemaVersion": 1,
+                        "code": "NO_WALKABLE_ORIGIN_IN_ZONE",
+                        "agentId": 1,
+                    },
+                )
+                raise NoWalkableOriginInZoneRunnerError(
+                    "NO_WALKABLE_ORIGIN_IN_ZONE"
+                )
+            agents = (relocated,)
+            relocations = ()
+        else:
+            agents, relocations = relocate_agents(routing_area, agents)
         groups = split_agent_components(routing_area, agents)
     except ValueError as exc:
         raise RunnerError(str(exc)) from exc
@@ -559,7 +604,7 @@ def run(
             continue
         routing_groups.append((physical_component, router, indexed_agents))
 
-    if failed_components:
+    if failed_components and (not route_preview_zones or not routing_groups):
         output_dir.mkdir(parents=True, exist_ok=True)
         affected_indexes = sorted(
             index for indexed_agents in failed_components for index, _position in indexed_agents
@@ -587,6 +632,7 @@ def run(
         for _physical_component, router, indexed_agents in routing_groups
         for index, position in indexed_agents
     )
+    router_by_index = {index: router for index, _position, router in indexed_routers}
     for index, position, router in indexed_routers:
         try:
             routes_by_index[index] = router.plan(position)
@@ -630,6 +676,53 @@ def run(
     if phase_profile is not None:
         phase_profile.add("routePlanning", route_started)
         setup_started = time.perf_counter_ns()
+    # Every failure mode worth reporting has already been handled above: geometry
+    # validation, relocation out of obstacles, NO_REACHABLE_SELECTED_EXIT and
+    # AGENT_ROUTE_UNREACHABLE. Emitting the planned routes here reuses all of it
+    # and stops short of building JuPedSim contexts, which is the expensive part.
+    if route_preview:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        serialized_routes = []
+        for index in sorted(routes_by_index):
+            route = routes_by_index[index]
+            serialized = _serialize_preview_route(
+                route,
+                agents[index],
+                original_agents[index],
+                router_by_index[index],
+                orthogonalize_display_path,
+            )
+            serialized["agentId"] = index + 1
+            serialized_routes.append(serialized)
+        routers = [item[1] for item in routing_groups]
+        coverage = serialize_route_coverage(routers, exits)
+        zone_routes = _zone_preview_routes(
+            route_preview_zones,
+            coverage,
+            routing_area,
+            routers,
+            exits,
+            hazards,
+            relocate_agent_within_bounds,
+            GridRouter,
+            zone_branch_origins,
+            orthogonalize_display_path,
+            naturalize_exit_approach,
+            AgentRouteUnreachableError,
+            _id_key,
+        )
+        _write_json(
+            output_dir / "routes.json",
+            {
+                "schemaVersion": 1,
+                "routes": serialized_routes,
+                "coverage": coverage,
+                "zoneRoutes": zone_routes,
+            },
+        )
+        if phase_profile is not None:
+            phase_profile.write()
+        return {"routePreview": True, "routeCount": len(routes_by_index)}
     if validate_only:
         if phase_profile is not None:
             phase_profile.write()
@@ -1871,6 +1964,190 @@ def _agents(value: Any) -> list[tuple[float, float]]:
     return result
 
 
+def _route_origin_bounds(value: Any) -> tuple[float, float, float, float] | None:
+    if value is None:
+        return None
+    item = _object(value, "routeOriginBounds")
+    try:
+        bounds = tuple(float(item[key]) for key in ("x", "y", "width", "height"))
+    except (KeyError, TypeError, ValueError) as exc:
+        raise RunnerError(
+            "routeOriginBounds must contain numeric x, y, width and height"
+        ) from exc
+    if not all(math.isfinite(number) for number in bounds):
+        raise RunnerError("routeOriginBounds values must be finite")
+    if bounds[2] <= 0 or bounds[3] <= 0:
+        raise RunnerError("routeOriginBounds width and height must be positive")
+    return bounds
+
+
+def _route_preview_zones(value: Any) -> tuple[dict[str, Any], ...]:
+    if value is None:
+        return ()
+    if not isinstance(value, list):
+        raise RunnerError("routePreviewZones must be an array")
+    zones = []
+    zone_ids = set()
+    for index, value_item in enumerate(value):
+        item = _object(value_item, f"routePreviewZones[{index}]")
+        zone_id = item.get("zoneId")
+        default_exit_id = item.get("defaultExitId")
+        if not isinstance(zone_id, int) or isinstance(zone_id, bool) or zone_id in zone_ids:
+            raise RunnerError("routePreviewZones zoneId must be a unique integer")
+        if default_exit_id is not None and (
+            not isinstance(default_exit_id, int) or isinstance(default_exit_id, bool)
+        ):
+            raise RunnerError("routePreviewZones defaultExitId must be an integer or null")
+        try:
+            bounds = tuple(float(item[key]) for key in ("x", "y", "width", "height"))
+        except (KeyError, TypeError, ValueError) as exc:
+            raise RunnerError(
+                "routePreviewZones must contain numeric x, y, width and height"
+            ) from exc
+        if not all(math.isfinite(number) for number in bounds):
+            raise RunnerError("routePreviewZones bounds must be finite")
+        if bounds[2] <= 0 or bounds[3] <= 0:
+            raise RunnerError("routePreviewZones width and height must be positive")
+        zone_ids.add(zone_id)
+        zones.append(
+            {
+                "zoneId": zone_id,
+                "x": bounds[0],
+                "y": bounds[1],
+                "width": bounds[2],
+                "height": bounds[3],
+                "defaultExitId": default_exit_id,
+            }
+        )
+    return tuple(zones)
+
+
+def _serialize_preview_route(
+    route,
+    origin,
+    original_origin,
+    router,
+    display_path,
+    final_approach_path=None,
+) -> dict[str, Any]:
+    waypoints = list(route.waypoints)
+    if not waypoints or math.dist(origin, waypoints[0]) > 1e-9:
+        waypoints.insert(0, origin)
+    if not waypoints or math.dist(waypoints[-1], route.terminal_point) > 1e-9:
+        waypoints.append(route.terminal_point)
+    waypoints = (
+        final_approach_path(
+            waypoints,
+            router.can_connect,
+            segment_cost=router.display_connection_cost,
+        )
+        if final_approach_path is not None
+        else display_path(waypoints, router.can_connect)
+    )
+    distance_meters = sum(
+        math.dist(start, end) for start, end in zip(waypoints, waypoints[1:])
+    )
+    return {
+        "exitId": route.exit_id,
+        "routeOrigin": {"x": _rounded(origin[0]), "y": _rounded(origin[1])},
+        "originAdjusted": math.dist(original_origin, origin) > 1e-9,
+        "distanceMeters": _rounded(distance_meters),
+        "waypoints": [
+            {"x": _rounded(x), "y": _rounded(y)} for x, y in waypoints
+        ],
+        "terminalPoint": {
+            "x": _rounded(route.terminal_point[0]),
+            "y": _rounded(route.terminal_point[1]),
+        },
+    }
+
+
+def _zone_preview_routes(
+    zones,
+    coverage,
+    routing_area,
+    routers,
+    exits,
+    hazards,
+    relocate_within_bounds,
+    router_type,
+    branch_origin_builder,
+    display_path,
+    final_approach_path,
+    route_unreachable_error,
+    id_key,
+) -> list[dict[str, Any]]:
+    serialized_routes = []
+    assigned_routers = {}
+    exits_by_id = {id_key(exit_.id): exit_ for exit_ in exits}
+    for zone in zones:
+        bounds = (zone["x"], zone["y"], zone["width"], zone["height"])
+        default_exit_id = zone["defaultExitId"]
+        if default_exit_id is None:
+            candidates = branch_origin_builder(coverage, zone)
+        else:
+            candidates = [
+                (
+                    default_exit_id,
+                    (
+                        zone["x"] + zone["width"] / 2,
+                        zone["y"] + zone["height"] / 2,
+                    ),
+                )
+            ]
+        for exit_id, requested_origin in candidates:
+            origin = relocate_within_bounds(routing_area, requested_origin, bounds)
+            if origin is None:
+                continue
+            planned = None
+            planned_router = None
+            for router in routers:
+                candidate_router = router
+                if default_exit_id is not None:
+                    key = (id(router), id_key(exit_id))
+                    if key not in assigned_routers:
+                        target_exit = exits_by_id.get(id_key(exit_id))
+                        if target_exit is None:
+                            assigned_routers[key] = None
+                        else:
+                            try:
+                                assigned_routers[key] = router_type(
+                                    router.walkable,
+                                    hazards,
+                                    [target_exit],
+                                    physical_walkable=router.physical_walkable,
+                                    exit_clearance=AGENT_RADIUS_METERS,
+                                    fast_single_exit_field=True,
+                                )
+                            except ValueError:
+                                assigned_routers[key] = None
+                    candidate_router = assigned_routers[key]
+                    if candidate_router is None:
+                        continue
+                try:
+                    route = candidate_router.plan(origin)
+                except (ValueError, route_unreachable_error):
+                    continue
+                if id_key(route.exit_id) != id_key(exit_id):
+                    continue
+                planned = route
+                planned_router = candidate_router
+                break
+            if planned is None or planned_router is None:
+                continue
+            serialized = _serialize_preview_route(
+                planned,
+                origin,
+                requested_origin,
+                planned_router,
+                display_path,
+                final_approach_path,
+            )
+            serialized["zoneId"] = zone["zoneId"]
+            serialized_routes.append(serialized)
+    return serialized_routes
+
+
 def _rounded(value: Any) -> float:
     return round(float(value), 6)
 
@@ -1889,22 +2166,43 @@ def main(argv: Sequence[str] | None = None) -> int:
         action="store_true",
         help="validate initial routes without running simulation iterations",
     )
+    parser.add_argument(
+        "--route-preview",
+        action="store_true",
+        help=(
+            "write routes.json with the planned route per agent and exit without "
+            "running simulation iterations; wins over --validate-only"
+        ),
+    )
     parser.add_argument("input", nargs="?", type=Path, help="input JSON path")
     parser.add_argument("output_dir", nargs="?", type=Path, help="output directory")
     args = parser.parse_args(argv)
     try:
         if args.version:
-            if args.validate_only or args.input is not None or args.output_dir is not None:
+            if (
+                args.validate_only
+                or args.route_preview
+                or args.input is not None
+                or args.output_dir is not None
+            ):
                 parser.error("--version does not accept input or output paths")
             *_dependencies, version = _load_dependencies()
             print(f"jupedsim {version}")
             return 0
         if args.input is None or args.output_dir is None:
             parser.error("input and output_dir are required")
-        run(args.input, args.output_dir, validate_only=args.validate_only)
+        run(
+            args.input,
+            args.output_dir,
+            validate_only=args.validate_only,
+            route_preview=args.route_preview,
+        )
         return 0
     except NoReachableSelectedExitRunnerError:
         print("runner error: NO_REACHABLE_SELECTED_EXIT", file=sys.stderr)
+        return 3
+    except NoWalkableOriginInZoneRunnerError:
+        print("runner error: NO_WALKABLE_ORIGIN_IN_ZONE", file=sys.stderr)
         return 3
     except AgentRouteUnreachableRunnerError:
         print("runner error: AGENT_ROUTE_UNREACHABLE", file=sys.stderr)

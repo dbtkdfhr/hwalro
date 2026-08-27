@@ -72,6 +72,7 @@ class OpenAiReportContentSmokeTest {
         Context source = new Context(
                 9301L,
                 9201L,
+                9101L,
                 "더현대 서울 B2 팝업 행사장 현재 배치안",
                 List.of(
                         new Metric("TOTAL_EVACUATION_TIME", 264, "SECOND"),
@@ -83,6 +84,7 @@ class OpenAiReportContentSmokeTest {
         Context comparison = new Context(
                 9302L,
                 9202L,
+                9102L,
                 "중앙 통로 확장 배치안",
                 List.of(
                         new Metric("TOTAL_EVACUATION_TIME", 302, "SECOND"),
@@ -92,8 +94,8 @@ class OpenAiReportContentSmokeTest {
                 source,
                 List.of(comparison),
                 List.of(
-                        new ReportDraftInput.Risk(9301L, "중앙 행사 집기 인접 구역", "사용자 지정", "HIGH"),
-                        new ReportDraftInput.Risk(9301L, "남측 출구 대기 구역", "사용자 지정", "MEDIUM")));
+                        new ReportDraftInput.Risk(9101L, "중앙 행사 집기 인접 구역", "사용자 지정", "HIGH"),
+                        new ReportDraftInput.Risk(9101L, "남측 출구 대기 구역", "사용자 지정", "MEDIUM")));
     }
 
     private String requireEnvironmentVariable(String name) {

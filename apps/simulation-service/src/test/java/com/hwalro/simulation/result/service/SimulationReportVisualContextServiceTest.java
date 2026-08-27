@@ -33,8 +33,8 @@ class SimulationReportVisualContextServiceTest {
         Bottleneck bottleneck = new Bottleneck(30L, 1, "병목 1", 12, 72, 4.8, 3.5, new Bounds(1, 2, 3, 4));
         when(mapper.findSummaries(List.of(20L, 10L), 7L))
                 .thenReturn(List.of(
-                        new SimulationReportContextMapper.SummaryRow(10L, 100L, 7L, "현재 배치안", "현재 시뮬레이션"),
-                        new SimulationReportContextMapper.SummaryRow(20L, 200L, 7L, "비교 배치안", "비교 시뮬레이션")));
+                        new SimulationReportContextMapper.SummaryRow(10L, 100L, 7L, 300L, 400L, "현재 배치안", "현재 시뮬레이션"),
+                        new SimulationReportContextMapper.SummaryRow(20L, 200L, 7L, 300L, 400L, "비교 배치안", "비교 시뮬레이션")));
         when(detailService.findDrawing(200L)).thenReturn(firstDrawing);
         when(detailService.findDrawing(100L)).thenReturn(secondDrawing);
         when(detailService.findBottlenecks(20L)).thenReturn(List.of(bottleneck));
@@ -78,6 +78,6 @@ class SimulationReportVisualContextServiceTest {
     }
 
     private Drawing drawing(String name) {
-        return new Drawing(name, 20, 10, List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
+        return new Drawing(name, 20, 10, List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
     }
 }

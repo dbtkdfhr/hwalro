@@ -51,12 +51,14 @@ const roleLabels: Record<string, string> = {
   ADMIN: '관리자',
   OPERATOR: '운영 담당자',
   SAFETY_REVIEWER: '안전 검토자',
+  GENERAL_EMPLOYEE: '매장 직원',
 };
 
 const roleScopeSummaries: Record<string, string> = {
   ADMIN: '사용자와 역할을 관리하고 전체 업무 데이터를 확인합니다.',
   OPERATOR: '담당 도면과 시뮬레이션을 운영하고 보고서를 작성합니다.',
-  SAFETY_REVIEWER: '전체 검토 데이터를 확인하고 위험 항목, 안전 점검 및 보고서를 검토합니다.',
+  SAFETY_REVIEWER: '전체 검토 데이터를 확인하고 주의 항목, 안전 점검 및 보고서를 검토합니다.',
+  GENERAL_EMPLOYEE: '담당 구역의 비상구와 대피 경로를 확인하고 안전 체크리스트를 점검합니다.',
 };
 
 function roleTone(roleName: string) {
@@ -372,7 +374,7 @@ function SystemManagementPage() {
       </div>
 
       {isInviteOpen && (
-        <div className="modal-backdrop" onMouseDown={closeInviteModal}>
+        <div className="app-modal-backdrop modal-backdrop" onMouseDown={closeInviteModal}>
           <section
             ref={inviteModalRef}
             className="invite-modal"

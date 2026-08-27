@@ -1,13 +1,31 @@
 .layout-canvas-wrap {
   position: absolute;
   inset: 0;
-  background: var(--color-background);
+  background: var(--color-canvas-surround);
   user-select: none;
   -webkit-user-select: none;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .layout-workspace--entering {
+    animation: layout-workspace-fade-in 420ms ease-out both;
+  }
+}
+
+@keyframes layout-workspace-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 .layout-cursor-default {
-  cursor: default;
+  cursor:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 32 32'%3E%3Cpath d='M3 3 L3 24 L9 17.5 L12.2 25.8 L15 24.7 L11.8 16.4 L19.5 16.4 Z' fill='%230a0a0a' stroke='%230a0a0a' stroke-width='2.2' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E")
+      3 3,
+    default;
 }
 
 .layout-cursor-wall {
@@ -83,7 +101,6 @@
 }
 
 .layout-workspace-title button:focus-visible,
-.layout-workspace-title-input:focus-visible,
 .layout-panel-actions button:focus-visible,
 .layout-tool-button:focus-visible,
 .layout-zoom-control button:focus-visible {
@@ -94,18 +111,6 @@
 .layout-workspace-title button svg {
   width: 14px;
   height: 14px;
-}
-
-.layout-workspace-title-input {
-  width: 100%;
-  min-width: 0;
-  border: 1px solid var(--color-line-strong);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.86);
-  padding: 4px 8px;
-  color: var(--color-ink);
-  font: inherit;
-  outline: 0;
 }
 
 .layout-panel-actions {
@@ -122,17 +127,17 @@
 
 .layout-panel-actions__header small {
   display: block;
-  color: #9cb2ad;
-  font-size: 8px;
+  color: var(--color-workspace-muted);
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.08em;
 }
 
 .layout-panel-actions__header h2 {
   margin: 3px 0 0;
-  color: var(--color-white);
+  color: var(--color-workspace-text);
   font-size: 18px;
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: -0.04em;
   line-height: 1.08;
 }
@@ -145,13 +150,14 @@
   align-items: center;
   justify-content: center;
   border: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--color-white);
+  border-radius: 8px;
+  background: var(--color-workspace-raised);
+  color: var(--color-workspace-text);
 }
 
 .layout-panel-actions__collapse:hover {
-  background: rgba(255, 255, 255, 0.16);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
 }
 
 .layout-panel-actions__collapse svg {
@@ -166,7 +172,30 @@
 }
 
 .layout-settings-content {
-  padding: 0 18px 18px;
+  padding: 0 18px;
+}
+
+.layout-primary-actions {
+  display: grid;
+  gap: 8px;
+  margin: 0 18px;
+  border-top: 1px solid var(--color-panel-divider);
+  padding: 16px 0 18px;
+}
+
+/* 계층 패널은 같은 패널 컴포넌트를 쓰되 캔버스 왼쪽에 붙인다. */
+.layout-workspace-layers {
+  right: auto;
+  left: var(--canvas-workspace-panel-right);
+  bottom: 76px;
+  width: 268px;
+  max-height: none;
+  transform-origin: 17px 17px;
+}
+
+.layout-workspace-layers-restore {
+  right: auto;
+  left: var(--canvas-workspace-panel-right);
 }
 
 .layout-workspace-tool-dock {
@@ -177,6 +206,175 @@
   transform: translateX(-50%);
 }
 
+.layout-layers-panel {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.layout-layers-panel::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.layout-layer-row {
+  position: relative;
+}
+
+.layout-layer-group__toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  padding: 3px 4px;
+  color: var(--color-panel-muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.layout-layer-group__toggle:hover {
+  background: color-mix(in srgb, var(--color-panel-soft) 72%, transparent);
+  color: var(--color-panel-text);
+}
+
+.layout-layer-group__toggle:focus-visible,
+.layout-layer-row__toggle:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 1px;
+}
+
+.layout-layer-group__toggle svg,
+.layout-layer-row__toggle svg {
+  width: 14px;
+  height: 14px;
+  transition: transform 140ms ease;
+}
+
+/* 종류 아이콘은 이름을 읽기 전에 종류가 먼저 보이도록 고정 폭으로 둔다. */
+.layout-layer-row__icon {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  color: var(--color-panel-muted);
+}
+
+.layout-layer-row__button.is-selected .layout-layer-row__icon {
+  color: var(--color-panel-accent);
+}
+
+.layout-layer-group__toggle svg.is-expanded,
+.layout-layer-row__toggle svg.is-expanded {
+  transform: rotate(90deg);
+}
+
+.layout-layer-row__toggle {
+  position: absolute;
+  top: 50%;
+  left: 4px;
+  z-index: 3;
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--color-panel-muted);
+  transform: translateY(-50%);
+}
+
+.layout-layer-row__toggle:hover {
+  background: var(--color-panel-soft);
+  color: var(--color-panel-text);
+}
+
+.layout-layer-row__button--toggleable {
+  padding-left: 32px;
+}
+
+.layout-layer-row__button.is-selected {
+  background: color-mix(in srgb, var(--color-panel-accent) 18%, var(--color-panel-soft));
+  box-shadow:
+    inset 3px 0 0 var(--color-panel-accent),
+    inset 0 0 0 1px color-mix(in srgb, var(--color-panel-accent) 46%, transparent);
+  color: var(--color-panel-accent);
+}
+
+.layout-layer-row__button.is-selected:hover {
+  background: color-mix(in srgb, var(--color-panel-accent) 24%, var(--color-panel-soft));
+}
+
+.layout-layer-empty-drop {
+  position: relative;
+  margin-top: 4px;
+  border: 1px dashed var(--color-panel-divider);
+  border-radius: 7px;
+  padding: 9px 8px;
+  color: var(--color-panel-muted);
+  font-size: 11px;
+  text-align: center;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.layout-layer-empty-drop.is-active {
+  border-color: var(--color-panel-accent);
+  background: color-mix(in srgb, var(--color-panel-accent) 12%, transparent);
+  color: var(--color-panel-accent);
+}
+
+.layout-layer-insertion {
+  position: absolute;
+  right: 8px;
+  left: 8px;
+  z-index: 5;
+  height: 3px;
+  background: var(--color-panel-accent);
+  box-shadow:
+    0 0 0 1px var(--color-panel),
+    0 0 8px color-mix(in srgb, var(--color-panel-accent) 72%, transparent);
+  pointer-events: none;
+}
+
+.layout-layer-insertion::before,
+.layout-layer-insertion::after {
+  position: absolute;
+  top: -4px;
+  width: 9px;
+  height: 9px;
+  border-top: 3px solid var(--color-panel-accent);
+  border-right: 3px solid var(--color-panel-accent);
+  filter: drop-shadow(0 0 1px var(--color-panel));
+  content: '';
+}
+
+.layout-layer-insertion::before {
+  left: -1px;
+  transform: rotate(45deg);
+}
+
+.layout-layer-insertion::after {
+  right: -1px;
+  transform: rotate(-135deg);
+}
+
+.layout-layer-insertion--before {
+  top: -1px;
+}
+
+.layout-layer-insertion--after {
+  bottom: -1px;
+}
+
 .layout-tool-toolbar {
   display: flex;
   max-width: calc(100vw - 420px);
@@ -184,13 +382,12 @@
   justify-content: center;
   gap: 6px;
   overflow-x: auto;
-  border: 1px solid rgba(151, 177, 170, 0.16);
-  border-radius: 999px;
-  background: rgba(15, 48, 42, 0.92);
+  border: 1px solid var(--color-workspace-line);
+  border-radius: 12px;
+  background: var(--color-workspace-panel);
   padding: 7px 10px;
-  box-shadow: 0 18px 40px rgba(10, 39, 34, 0.25);
+  box-shadow: var(--shadow-raised);
   scrollbar-width: none;
-  backdrop-filter: blur(16px) saturate(115%);
 }
 
 .layout-tool-toolbar::-webkit-scrollbar {
@@ -202,8 +399,8 @@
   min-width: 52px;
   flex: 0 0 auto;
   border: 0;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: var(--color-workspace-raised);
   padding: 0 10px;
   color: var(--color-panel-text);
   font-size: 12px;
@@ -215,14 +412,14 @@
 }
 
 .layout-tool-button:not(.is-active):not(:disabled):hover {
-  background: rgba(255, 255, 255, 0.14);
-  transform: translateY(-1px);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
 }
 
 .layout-tool-button.is-active {
-  background: var(--color-lime);
-  color: var(--color-ink-deep);
-  font-weight: 900;
+  background: var(--color-primary);
+  color: white;
+  font-weight: 700;
 }
 
 .layout-tool-button:disabled {
@@ -241,18 +438,17 @@
   display: flex;
   align-items: center;
   gap: 2px;
-  border: 1px solid rgba(151, 177, 170, 0.4);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--color-workspace-line);
+  border-radius: 10px;
+  background: var(--color-workspace-panel);
   padding: 5px;
-  box-shadow: 0 12px 30px rgba(22, 55, 49, 0.12);
-  color: var(--color-text-strong);
-  backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-raised);
+  color: var(--color-workspace-text);
 }
 
 .layout-zoom-control button {
   border: 0;
-  border-radius: 999px;
+  border-radius: 6px;
   background: transparent;
   color: inherit;
   font-weight: 700;
@@ -298,6 +494,19 @@
     bottom: 76px;
   }
 
+  /* 계층 패널은 같은 패널 컴포넌트를 쓰되 캔버스 왼쪽에 붙인다. */
+  .layout-workspace-layers {
+    right: auto;
+    left: var(--canvas-workspace-panel-right);
+    bottom: 128px;
+    width: 268px;
+  }
+
+  .layout-workspace-layers-restore {
+    right: auto;
+    left: var(--canvas-workspace-panel-right);
+  }
+
   .layout-workspace-tool-dock {
     bottom: 12px;
     max-width: calc(100vw - 24px);
@@ -316,7 +525,6 @@
   }
 
   .layout-zoom-control {
-    background: var(--color-white);
-    backdrop-filter: none;
+    background: var(--color-workspace-panel);
   }
 }

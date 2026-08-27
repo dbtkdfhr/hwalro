@@ -99,9 +99,11 @@ public class AiReportDraftService {
             List<Long> resultIds = resultIds(request);
             List<Context> contexts = simulationClient.findAll(resultIds, authorization);
             validateContexts(resultIds, contexts);
-            List<Risk> risks = riskMapper.findBySimulationResultIds(resultIds).stream()
-                    .map(risk -> new Risk(
-                            risk.getSimulationResultId(), risk.getTitle(), risk.getDescription(), risk.getSeverity()))
+            List<Long> layoutIds =
+                    contexts.stream().map(Context::layoutId).distinct().toList();
+            List<Risk> risks = riskMapper.findByLayoutIds(layoutIds).stream()
+                    .map(risk ->
+                            new Risk(risk.getLayoutId(), risk.getTitle(), risk.getDescription(), risk.getSeverity()))
                     .toList();
             Context source = contexts.get(0);
             ReportDraftInput input = new ReportDraftInput(source, contexts.subList(1, contexts.size()), risks);
@@ -154,7 +156,8 @@ public class AiReportDraftService {
     private void validateContexts(List<Long> requestedIds, List<Context> contexts) {
         if (contexts == null
                 || contexts.size() != requestedIds.size()
-                || !contexts.stream().map(Context::simulationResultId).toList().equals(requestedIds)) {
+                || !contexts.stream().map(Context::simulationResultId).toList().equals(requestedIds)
+                || contexts.stream().anyMatch(context -> context.layoutId() == null || context.layoutId() <= 0)) {
             throw new SimulationServiceException("시뮬레이션 결과를 완전하게 조회하지 못했습니다.");
         }
     }

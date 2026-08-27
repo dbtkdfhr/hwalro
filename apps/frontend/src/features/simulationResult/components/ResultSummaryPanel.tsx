@@ -101,7 +101,11 @@ export function ResultSummaryPanel({
         {!bottlenecksVisible ? (
           <div className="bottleneck-analysis-locked" role="status">
             <strong>병목 상세 분석 대기</strong>
-            <span>시뮬레이션을 끝까지 재생하거나 하단의 결과 보기를 눌러 확인하세요.</span>
+            <span>
+              시뮬레이션을 끝까지 재생하거나
+              <br />
+              하단의 결과 보기를 눌러 확인하세요.
+            </span>
           </div>
         ) : totalBottleneckCount === 0 ? (
           <div className="bottleneck-analysis-empty" role="status">
@@ -153,18 +157,18 @@ export function ResultSummaryPanel({
         )}
         {riskZones.length > 0 && (
           <section className="risk-zone-summary" aria-labelledby="risk-zone-summary-title">
-            <h2 id="risk-zone-summary-title">위험 예상 항목</h2>
+            <h2 id="risk-zone-summary-title">주의 항목</h2>
             <div className="risk-zone-list">
               {riskZones.map((zone) => (
                 <button
                   type="button"
                   className="risk-zone-summary-card cursor-pointer"
                   key={zone.id}
-                  aria-label={`${zone.name} 위험 예상 항목 관리로 이동`}
+                  aria-label={`${zone.name} 주의 항목 관리로 이동`}
                   onClick={() => onOpenRisk(Number(zone.id))}
                 >
                   <strong>{zone.name}</strong>
-                  <span>사용자 지정 위험 예상 항목</span>
+                  <span>사용자 지정 주의 항목</span>
                 </button>
               ))}
             </div>

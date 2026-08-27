@@ -1,5 +1,5 @@
+import { orderedElements, withAssignedOrder } from './elementOrder';
 import type {
-  BackgroundImage,
   DrawingDocument,
   Exit,
   Fabric,
@@ -22,14 +22,30 @@ function toFiniteNumber(value: unknown, key: string): number {
   return num;
 }
 
+/**
+ * 서버가 준 식별자만 신뢰한다. 저장 시 이 값으로 기존 행을 갱신하므로, 숫자가 아니거나
+ * 양수가 아니면 "새 요소"로 취급해 서버가 새 ID를 발급하게 한다.
+ */
+function toDisplayOrder(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+}
+
+function toBackendId(value: unknown): number | null {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0 ? value : null;
+}
+
 function wallNameIndex(name: string): number | null {
   const match = /^벽 (\d+)$/.exec(name);
   return match ? Number(match[1]) : null;
 }
 
 function outsideWallNameIndex(name: string): number | null {
-  const match = /^외각벽 (\d+)$/.exec(name);
+  const match = /^외(?:곽|각)벽 (\d+)$/.exec(name);
   return match ? Number(match[1]) : null;
+}
+
+function normalizeOutsideWallName(name: string): string {
+  return name.replace(/^외각벽(?=\s|$)/, '외곽벽');
 }
 
 function exitNameIndex(name: string): number | null {
@@ -39,12 +55,14 @@ function exitNameIndex(name: string): number | null {
 
 interface SerializedRect {
   id: string;
+  backendId: number | null;
   name: string;
   startX: number;
   startY: number;
   endX: number;
   endY: number;
   rotation: number;
+  displayOrder?: number;
 }
 
 function elementNameIndex(pattern: RegExp, name: string): number | null {
@@ -80,12 +98,14 @@ function parseRects(
     }
     const rect: SerializedRect = {
       id: `${idPrefix}-${i}`,
+      backendId: toBackendId(entry.id),
       name: parsedName ?? '',
       startX: toFiniteNumber(entry.startX ?? entry.start_x, `${key}[${i}].startX`),
       startY: toFiniteNumber(entry.startY ?? entry.start_y, `${key}[${i}].startY`),
       endX: toFiniteNumber(entry.endX ?? entry.end_x, `${key}[${i}].endX`),
       endY: toFiniteNumber(entry.endY ?? entry.end_y, `${key}[${i}].endY`),
       rotation: toFiniteNumber(entry.rotation ?? 0, `${key}[${i}].rotation`),
+      displayOrder: toDisplayOrder(entry.displayOrder ?? entry.display_order),
     };
     if (parsedName) {
       result.push(rect);
@@ -106,16 +126,27 @@ export function parseElementName(name: unknown): string | null {
 }
 
 export function toSerialized(doc: DrawingDocument): SerializedDocument {
+  // 아직 순서 값이 없는 새 요소까지 확정해 보낸다. 일부만 비워 보내면 서버가 종류별 인덱스로
+  // 폴백해 다른 종류의 순서 값과 충돌한다.
+  const ordered = withAssignedOrder(orderedElements(doc.walls, doc.pillars, doc.fabrics));
+  const orderById = new Map<string, number>(
+    [...ordered.walls, ...ordered.pillars, ...ordered.fabrics].map((element) => [
+      element.id,
+      element.displayOrder ?? 0,
+    ]),
+  );
   return {
     name: doc.name,
     width: doc.width,
     height: doc.height,
     walls: doc.walls.map((wall) => ({
+      id: wall.backendId,
       name: wall.name,
       startX: wall.startX,
       startY: wall.startY,
       endX: wall.endX,
       endY: wall.endY,
+      displayOrder: orderById.get(wall.id),
     })),
     outsideWalls: doc.outsideWalls.map((wall) => ({
       name: wall.name,
@@ -125,6 +156,7 @@ export function toSerialized(doc: DrawingDocument): SerializedDocument {
       endY: wall.endY,
     })),
     exits: doc.exits.map((exit) => ({
+      id: exit.backendId,
       name: exit.name,
       startX: exit.startX,
       startY: exit.startY,
@@ -132,33 +164,26 @@ export function toSerialized(doc: DrawingDocument): SerializedDocument {
       endY: exit.endY,
     })),
     pillars: doc.pillars.map((pillar) => ({
+      id: pillar.backendId,
       name: pillar.name,
       startX: pillar.startX,
       startY: pillar.startY,
       endX: pillar.endX,
       endY: pillar.endY,
       rotation: pillar.rotation,
+      displayOrder: orderById.get(pillar.id),
     })),
     fabrics: doc.fabrics.map((fabric) => ({
+      id: fabric.backendId,
       name: fabric.name,
       startX: fabric.startX,
       startY: fabric.startY,
       endX: fabric.endX,
       endY: fabric.endY,
       rotation: fabric.rotation,
+      displayOrder: orderById.get(fabric.id),
     })),
     layoutTexts: doc.layoutTexts.map((text) => ({ text: text.text, x: text.x, y: text.y })),
-    background: doc.background
-      ? {
-          image: doc.background.image,
-          x: doc.background.x,
-          y: doc.background.y,
-          width: doc.background.width,
-          height: doc.background.height,
-          opacity: doc.background.opacity,
-          aspect: doc.background.aspect,
-        }
-      : null,
   };
 }
 
@@ -212,11 +237,13 @@ export function fromSerialized(data: unknown): DrawingDocument {
     }
     const wall: Wall = {
       id: `loaded-wall-${i}`,
+      backendId: toBackendId(entry.id),
       name: parsedName ?? '',
       startX: toFiniteNumber(entry.startX ?? entry.start_x, `walls[${i}].startX`),
       startY: toFiniteNumber(entry.startY ?? entry.start_y, `walls[${i}].startY`),
       endX: toFiniteNumber(entry.endX ?? entry.end_x, `walls[${i}].endX`),
       endY: toFiniteNumber(entry.endY ?? entry.end_y, `walls[${i}].endY`),
+      displayOrder: toDisplayOrder(entry.displayOrder ?? entry.display_order),
     };
     if (parsedName) {
       walls.push(wall);
@@ -248,7 +275,7 @@ export function fromSerialized(data: unknown): DrawingDocument {
     }
     const wall: OutsideWall = {
       id: `loaded-outside-wall-${i}`,
-      name: parsedName ?? '',
+      name: parsedName ? normalizeOutsideWallName(parsedName) : '',
       startX: toFiniteNumber(entry.startX ?? entry.start_x, `outsideWalls[${i}].startX`),
       startY: toFiniteNumber(entry.startY ?? entry.start_y, `outsideWalls[${i}].startY`),
       endX: toFiniteNumber(entry.endX ?? entry.end_x, `outsideWalls[${i}].endX`),
@@ -263,7 +290,7 @@ export function fromSerialized(data: unknown): DrawingDocument {
 
   for (const { wall, order } of unnamedOutsideWalls) {
     maxOutsideWallIndex += 1;
-    outsideWalls.splice(order, 0, { ...wall, name: `외각벽 ${maxOutsideWallIndex}` });
+    outsideWalls.splice(order, 0, { ...wall, name: `외곽벽 ${maxOutsideWallIndex}` });
   }
 
   const rawExits = (data.exits ?? []) as unknown[];
@@ -284,6 +311,7 @@ export function fromSerialized(data: unknown): DrawingDocument {
     }
     const exit: Exit = {
       id: `loaded-exit-${i}`,
+      backendId: toBackendId(entry.id),
       name: parsedName ?? '',
       startX: toFiniteNumber(entry.startX ?? entry.start_x, `exits[${i}].startX`),
       startY: toFiniteNumber(entry.startY ?? entry.start_y, `exits[${i}].startY`),
@@ -330,34 +358,6 @@ export function fromSerialized(data: unknown): DrawingDocument {
     };
   });
 
-  let background: BackgroundImage | null = null;
-  if (data.background !== undefined && data.background !== null) {
-    if (!isRecord(data.background)) {
-      throw new Error('background는 객체이거나 null이어야 합니다');
-    }
-    const bg = data.background;
-    const image = typeof bg.image === 'string' ? bg.image : '';
-    if (image === '') {
-      throw new Error('background.image가 빈 값입니다');
-    }
-    const width = toFiniteNumber(bg.width, 'background.width');
-    const height = toFiniteNumber(bg.height, 'background.height');
-    if (width <= 0 || height <= 0) {
-      throw new Error('background.width/height는 0보다 커야 합니다');
-    }
-    const rawAspect = toFiniteNumber(bg.aspect ?? width / height, 'background.aspect');
-    background = {
-      id: 'loaded-background',
-      image,
-      x: toFiniteNumber(bg.x, 'background.x'),
-      y: toFiniteNumber(bg.y, 'background.y'),
-      width,
-      height,
-      opacity: Math.min(1, Math.max(0.1, toFiniteNumber(bg.opacity, 'background.opacity'))),
-      aspect: rawAspect > 0 ? rawAspect : width / height,
-    };
-  }
-
   return {
     name,
     width,
@@ -368,7 +368,6 @@ export function fromSerialized(data: unknown): DrawingDocument {
     pillars,
     fabrics,
     layoutTexts,
-    background,
   };
 }
 

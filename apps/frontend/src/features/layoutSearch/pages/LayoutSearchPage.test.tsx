@@ -1,4 +1,4 @@
-// @vitest-environment happy-dom
+﻿// @vitest-environment happy-dom
 
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
@@ -170,6 +170,11 @@ async function renderPage() {
       <MemoryRouter initialEntries={['/simulations/42/layout-search']}>
         <Routes>
           <Route path="/simulations/:simulationId/layout-search" element={<LayoutSearchPage />} />
+          <Route
+            path="/simulations/:simulationId/results"
+            element={<div>시뮬레이션 결과 화면</div>}
+          />
+          <Route path="/simulations" element={<div>시뮬레이션 목록 화면</div>} />
         </Routes>
       </MemoryRouter>,
     );
@@ -266,7 +271,7 @@ describe('배치 개선안 페이지 interaction', () => {
       });
 
     await renderPage();
-    const prepare = button('이 개선안으로 시뮬레이션 준비');
+    const prepare = button('이 개선안으로 시뮬레이션 진행');
     await act(async () => {
       prepare.click();
       prepare.click();
@@ -281,7 +286,7 @@ describe('배치 개선안 페이지 interaction', () => {
       element.textContent?.includes('혼잡 완화'),
     );
     await act(async () => secondCandidate?.click());
-    expect((button('이 개선안으로 시뮬레이션 준비') as HTMLButtonElement).disabled).toBe(false);
+    expect((button('이 개선안으로 시뮬레이션 진행') as HTMLButtonElement).disabled).toBe(false);
     expect(container.querySelector('a[href="/simulations/112/setup"]')).toBeNull();
   });
 
@@ -298,7 +303,7 @@ describe('배치 개선안 페이지 interaction', () => {
 
     await renderPage();
     await act(async () => {
-      button('이 개선안으로 시뮬레이션 준비').click();
+      button('이 개선안으로 시뮬레이션 진행').click();
       await Promise.resolve();
     });
     const secondCandidate = [...container.querySelectorAll('button')].find((element) =>
@@ -306,9 +311,9 @@ describe('배치 개선안 페이지 interaction', () => {
     );
     await act(async () => secondCandidate?.click());
 
-    expect((button('이 개선안으로 시뮬레이션 준비') as HTMLButtonElement).disabled).toBe(false);
+    expect((button('이 개선안으로 시뮬레이션 진행') as HTMLButtonElement).disabled).toBe(false);
     await act(async () => {
-      button('이 개선안으로 시뮬레이션 준비').click();
+      button('이 개선안으로 시뮬레이션 진행').click();
       await Promise.resolve();
     });
     expect(preparation).toHaveBeenCalledTimes(2);
@@ -320,95 +325,42 @@ describe('배치 개선안 페이지 interaction', () => {
     });
   });
 
-  it('terminal 상태에서 제약 설정 화면으로 돌아가 다시 탐색한다', async () => {
+  it('terminal 상태에서 다시 탐색하면 결과 화면의 시작 모달로 돌아간다', async () => {
     vi.spyOn(simulationApi, 'getSetup').mockResolvedValue(setup());
     vi.spyOn(layoutSearchApi, 'latest').mockResolvedValue(search('COMPLETED'));
-    const start = vi
-      .spyOn(layoutSearchApi, 'start')
-      .mockResolvedValue({ searchId: 2, status: 'PENDING' });
 
     await renderPage();
-    await act(async () => button('제약 설정 다시 열기').click());
-    await act(async () => button('배치 개선안 탐색 시작').click());
+    await act(async () => button('탐색 다시 시작').click());
 
-    expect(start).toHaveBeenCalledWith(42, expect.anything(), false);
+    expect(container.textContent).toContain('시뮬레이션 결과 화면');
   });
 
-  it('제약 설정 화면에서 배치 개선안 탐색을 시작한다', async () => {
+  it('아직 탐색하지 않았다면 빈 시작 화면 대신 결과 화면으로 돌아간다', async () => {
     vi.spyOn(simulationApi, 'getSetup').mockResolvedValue(setup());
     vi.spyOn(layoutSearchApi, 'latest').mockRejectedValue(
       new AxiosError('not found', undefined, undefined, undefined, { status: 404 } as never),
     );
-    const start = vi
-      .spyOn(layoutSearchApi, 'start')
-      .mockResolvedValue({ searchId: 2, status: 'PENDING' });
 
     await renderPage();
-    expect(container.textContent).toContain('구조물 제약 설정');
-    await act(async () => {
-      button('배치 개선안 탐색 시작').click();
-      await Promise.resolve();
-    });
-    expect(start).toHaveBeenCalledWith(42, expect.anything(), false);
+    expect(container.textContent).toContain('시뮬레이션 결과 화면');
+    expect(container.textContent).not.toContain('배치 개선안 탐색 시작');
   });
 
-  it('확인 옵션을 켜고 시작하면 실측 검증을 요청한다', async () => {
-    vi.spyOn(simulationApi, 'getSetup').mockResolvedValue(setup());
-    vi.spyOn(layoutSearchApi, 'latest').mockRejectedValue(
-      new AxiosError('not found', undefined, undefined, undefined, { status: 404 } as never),
-    );
-    const start = vi
-      .spyOn(layoutSearchApi, 'start')
-      .mockResolvedValue({ searchId: 2, status: 'PENDING' });
-
-    await renderPage();
-    const checkboxes = container.querySelectorAll('input[type="checkbox"]');
-    const toggle = checkboxes[checkboxes.length - 1] as HTMLInputElement;
-    await act(async () => {
-      toggle.click();
-      await Promise.resolve();
-    });
-    await act(async () => {
-      button('배치 개선안 탐색 시작').click();
-      await Promise.resolve();
-    });
-
-    expect(start).toHaveBeenCalledWith(42, expect.anything(), true);
-  });
-
-  it('원본 setup 오류에서 다시 시도하면 실제 setup을 재요청한다', async () => {
-    vi.spyOn(simulationApi, 'getSetup')
-      .mockRejectedValueOnce(new Error('setup error'))
-      .mockResolvedValueOnce(setup());
-    vi.spyOn(layoutSearchApi, 'latest').mockRejectedValue(
-      new AxiosError('not found', undefined, undefined, undefined, { status: 404 } as never),
-    );
-
-    await renderPage();
-    expect(button('다시 시도')).toBeTruthy();
-    await act(async () => {
-      button('다시 시도').click();
-      await Promise.resolve();
-    });
-
-    expect(simulationApi.getSetup).toHaveBeenCalledTimes(2);
-    expect(container.textContent).toContain('구조물 제약 설정');
-  });
-
-  it('active 상태에서만 poll하고 unmount 뒤 timer를 정리한다', async () => {
+  it('진행 중인 탐색 페이지에 접근하면 대기 화면 없이 시뮬레이션 목록으로 이동한다', async () => {
     vi.useFakeTimers();
     vi.spyOn(simulationApi, 'getSetup').mockResolvedValue(setup());
     const latest = vi.spyOn(layoutSearchApi, 'latest').mockResolvedValue(search('GENERATING', []));
 
     await renderPage();
-    expect(container.textContent).toContain('검증 중인 배치');
-    expect(container.textContent).toContain('전체 후보 계산 중');
+    expect(container.textContent).toContain('시뮬레이션 목록 화면');
+    expect(container.textContent).not.toContain('검증 중인 배치');
+    expect(container.textContent).not.toContain('개선안이 검증되면 배치를 표시합니다.');
     await act(async () => vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS));
-    expect(latest).toHaveBeenCalledTimes(2);
+    expect(latest).toHaveBeenCalledTimes(1);
 
     await act(async () => root.unmount());
     await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 2);
-    expect(latest).toHaveBeenCalledTimes(2);
+    expect(latest).toHaveBeenCalledTimes(1);
     root = createRoot(container);
   });
 });
@@ -429,6 +381,6 @@ describe('종료 상태 렌더', () => {
         />,
       ),
     );
-    expect(container.textContent).toContain('제약 설정 다시 열기');
+    expect(container.textContent).toContain('탐색 다시 시작');
   });
 });

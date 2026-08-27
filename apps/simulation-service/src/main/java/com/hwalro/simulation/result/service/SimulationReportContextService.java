@@ -63,6 +63,7 @@ public class SimulationReportContextService {
                     return new SimulationReportContextResponse(
                             id,
                             summary.simulationId(),
+                            summary.layoutId(),
                             summary.layoutTitle(),
                             metrics.getOrDefault(id, List.of()),
                             bottlenecks.getOrDefault(id, List.of()));

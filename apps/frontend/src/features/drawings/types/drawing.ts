@@ -1,4 +1,6 @@
 export interface DrawingWall {
+  id: number | null;
+  displayOrder?: number;
   name: string;
   startX: number;
   startY: number;
@@ -15,6 +17,7 @@ export interface DrawingOutsideWall {
 }
 
 export interface DrawingExit {
+  id: number | null;
   name: string;
   startX: number;
   startY: number;
@@ -23,6 +26,8 @@ export interface DrawingExit {
 }
 
 export interface DrawingPillar {
+  id: number | null;
+  displayOrder?: number;
   name: string;
   startX: number;
   startY: number;
@@ -32,6 +37,8 @@ export interface DrawingPillar {
 }
 
 export interface DrawingFabric {
+  id: number | null;
+  displayOrder?: number;
   name: string;
   startX: number;
   startY: number;
@@ -56,6 +63,13 @@ export interface DrawingSummary {
 }
 
 export type DrawingLayoutVersionStatus = '초안' | '잠금';
+
+export interface DrawingVersionSummary {
+  layoutVersionId: number;
+  version: number;
+  status: DrawingLayoutVersionStatus;
+  createdAt: string;
+}
 
 export interface Drawing extends Omit<DrawingSummary, 'simulationCount'> {
   layoutVersionId: number;

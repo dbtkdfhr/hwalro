@@ -36,6 +36,11 @@ regulation-service:
   connect-timeout: ${REGULATION_SERVICE_CONNECT_TIMEOUT:2s}
   read-timeout: ${REGULATION_SERVICE_READ_TIMEOUT:5s}
 
+auth-service:
+  base-url: ${AUTH_SERVICE_URL:http://localhost:8080}
+  connect-timeout: ${AUTH_SERVICE_CONNECT_TIMEOUT:2s}
+  read-timeout: ${AUTH_SERVICE_READ_TIMEOUT:5s}
+
 simulation:
   engine:
     python: ${SIMULATION_ENGINE_PYTHON:python}

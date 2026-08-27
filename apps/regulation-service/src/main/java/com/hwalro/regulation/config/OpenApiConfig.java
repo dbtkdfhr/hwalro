@@ -17,7 +17,7 @@ public class OpenApiConfig {
         return new OpenAPI()
                 .info(new Info()
                         .title("HWALRO Regulation Service API")
-                        .description("안전 법령, 위험 예상 항목, 안전 점검 및 보고서 관리 API입니다.")
+                        .description("안전 법령, 주의 항목, 안전 점검 및 보고서 관리 API입니다.")
                         .version("v1.0.0"))
                 .components(new Components()
                         .addSecuritySchemes(

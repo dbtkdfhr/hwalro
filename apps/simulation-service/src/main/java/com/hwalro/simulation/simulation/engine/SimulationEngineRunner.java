@@ -15,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -34,6 +35,7 @@ public class SimulationEngineRunner {
     private static final int ROUTING_ERROR_EXIT_CODE = 3;
     public static final String ROUTING_ERROR_CODE = "AGENT_ROUTE_UNREACHABLE";
     public static final String NO_REACHABLE_EXIT_CODE = "NO_REACHABLE_SELECTED_EXIT";
+    public static final String NO_WALKABLE_ORIGIN_CODE = "NO_WALKABLE_ORIGIN_IN_ZONE";
     private static final BigDecimal MAX_COORDINATE = BigDecimal.valueOf(1_000_000);
 
     private final ObjectMapper objectMapper;
@@ -155,6 +157,257 @@ public class SimulationEngineRunner {
             deleteJobDirectory(jobDirectory);
         }
     }
+
+    /**
+     * 시뮬레이션을 돌리지 않고 계획된 경로만 받아온다. {@link #validateRouting}과 같은 실패 계약(종료 코드 3, {@code error.json})을 쓰며,
+     * 다른 점은 {@code --route-preview} 인자와 {@code routes.json}을 읽는다는 것뿐이다.
+     *
+     * @return 에이전트별 경로. 도달 불가 등 엔진이 거부한 경우 {@link EngineRunException}을 던진다.
+     */
+    public List<PreviewedRoute> previewRoutes(String jobLabel, SimulationSetupResponse setup)
+            throws EngineRunException {
+        return previewRoutes(jobLabel, setup, null);
+    }
+
+    public List<PreviewedRoute> previewRoutes(
+            String jobLabel, SimulationSetupResponse setup, RouteOriginBounds routeOriginBounds)
+            throws EngineRunException {
+        return previewRouteResult(jobLabel, setup, routeOriginBounds).routes();
+    }
+
+    public RoutePreviewResult previewRouteResult(
+            String jobLabel, SimulationSetupResponse setup, RouteOriginBounds routeOriginBounds)
+            throws EngineRunException {
+        return previewRouteResult(jobLabel, setup, routeOriginBounds, List.of());
+    }
+
+    public RoutePreviewResult previewZoneRoutes(
+            String jobLabel, SimulationSetupResponse setup, List<RoutePreviewZone> zones) throws EngineRunException {
+        return previewRouteResult(jobLabel, setup, null, zones);
+    }
+
+    private RoutePreviewResult previewRouteResult(
+            String jobLabel,
+            SimulationSetupResponse setup,
+            RouteOriginBounds routeOriginBounds,
+            List<RoutePreviewZone> zones)
+            throws EngineRunException {
+        Path jobDirectory = null;
+        Process process = null;
+        try {
+            Files.createDirectories(workRoot);
+            jobDirectory = Files.createTempDirectory(workRoot, "route-preview-" + jobLabel + "-")
+                    .toAbsolutePath()
+                    .normalize();
+            Path inputPath = jobDirectory.resolve("input.json");
+            Path outputDirectory = jobDirectory.resolve("output");
+            Map<String, Object> input = createInput(setup);
+            if (routeOriginBounds != null) {
+                input.put("routeOriginBounds", routeOriginBounds);
+            }
+            if (!zones.isEmpty()) {
+                input.put("routePreviewZones", zones);
+            }
+            objectMapper.writeValue(inputPath.toFile(), input);
+
+            process = new ProcessBuilder(
+                            pythonCommand,
+                            scriptPath.toString(),
+                            "--route-preview",
+                            inputPath.toString(),
+                            outputDirectory.toString())
+                    .redirectErrorStream(true)
+                    .start();
+            ProcessOutputCapture output = new ProcessOutputCapture(process.getInputStream());
+            if (!process.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS)) {
+                stop(process);
+                throw new EngineRunException("ENGINE_TIMEOUT: 대피 경로 계산 시간 제한을 초과했습니다.", true);
+            }
+            String diagnostic = output.await();
+            if (process.exitValue() != 0) {
+                if (process.exitValue() == ROUTING_ERROR_EXIT_CODE) {
+                    SimulationFailureDetailResponse failureDetail = readFailureDetail(outputDirectory, setup);
+                    if (failureDetail != null) {
+                        throw new EngineRunException("ENGINE_ROUTING_ERROR: 대피 경로를 계산하지 못했습니다.", false, failureDetail);
+                    }
+                }
+                log.warn("Route preview {} failed with exit code {}: {}", jobLabel, process.exitValue(), diagnostic);
+                throw new EngineRunException("ENGINE_ERROR: 대피 경로를 계산하지 못했습니다.", false);
+            }
+            return readRoutePreviewResult(outputDirectory);
+        } catch (IOException exception) {
+            log.warn("Route preview {} I/O failed", jobLabel, exception);
+            throw new EngineRunException("ENGINE_ERROR: 대피 경로 입출력 처리에 실패했습니다.", false, exception);
+        } catch (InterruptedException exception) {
+            if (process != null) {
+                stop(process);
+            }
+            Thread.currentThread().interrupt();
+            throw new EngineRunException("대피 경로 계산이 중단되었습니다.", false, exception);
+        } finally {
+            deleteJobDirectory(jobDirectory);
+        }
+    }
+
+    RoutePreviewResult readRoutePreviewResult(Path outputDirectory) throws IOException {
+        Path routesPath = outputDirectory.resolve("routes.json");
+        if (!Files.exists(routesPath)) {
+            throw new IOException("엔진이 대피 경로를 내놓지 않았습니다.");
+        }
+        JsonNode root = objectMapper.readTree(routesPath.toFile());
+        JsonNode routes = root.get("routes");
+        if (routes == null || !routes.isArray()) {
+            throw new IOException("대피 경로 응답 형식이 올바르지 않습니다.");
+        }
+        List<PreviewedRoute> parsed = readPreviewRoutes(routes, false);
+        JsonNode zoneRoutes = root.get("zoneRoutes");
+        List<PreviewedRoute> parsedZoneRoutes = zoneRoutes == null ? List.of() : readPreviewRoutes(zoneRoutes, true);
+        return new RoutePreviewResult(
+                List.copyOf(parsed), readRouteCoverage(root.get("coverage")), List.copyOf(parsedZoneRoutes));
+    }
+
+    private List<PreviewedRoute> readPreviewRoutes(JsonNode routes, boolean zoneRoute) throws IOException {
+        if (!routes.isArray()) {
+            throw new IOException("대피 경로 응답 형식이 올바르지 않습니다.");
+        }
+        List<PreviewedRoute> parsed = new ArrayList<>();
+        for (JsonNode route : routes) {
+            List<PointDto> waypoints = new ArrayList<>();
+            JsonNode waypointNodes = route.get("waypoints");
+            if (waypointNodes != null) {
+                for (JsonNode waypoint : waypointNodes) {
+                    waypoints.add(new PointDto(
+                            waypoint.get("x").decimalValue(), waypoint.get("y").decimalValue()));
+                }
+            }
+            JsonNode exitId = route.get("exitId");
+            PointDto routeOrigin = readPoint(route.get("routeOrigin"));
+            JsonNode adjusted = route.get("originAdjusted");
+            JsonNode distance = route.get("distanceMeters");
+            JsonNode zoneId = route.get("zoneId");
+            if (routeOrigin == null
+                    || adjusted == null
+                    || !adjusted.isBoolean()
+                    || distance == null
+                    || !distance.isNumber()
+                    || !Double.isFinite(distance.doubleValue())
+                    || distance.doubleValue() < 0
+                    || (zoneRoute && (zoneId == null || !zoneId.isIntegralNumber() || !zoneId.canConvertToLong()))) {
+                throw new IOException("대피 경로 응답 값이 올바르지 않습니다.");
+            }
+            parsed.add(new PreviewedRoute(
+                    zoneRoute ? zoneId.longValue() : null,
+                    exitId == null || exitId.isNull() ? null : exitId.asLong(),
+                    routeOrigin,
+                    adjusted.booleanValue(),
+                    distance.doubleValue(),
+                    waypoints));
+        }
+        return parsed;
+    }
+
+    private RouteCoverage readRouteCoverage(JsonNode coverage) throws IOException {
+        if (coverage == null || !coverage.isObject()) {
+            throw new IOException("대피 경로 커버리지 응답 형식이 올바르지 않습니다.");
+        }
+        JsonNode originX = coverage.get("originX");
+        JsonNode originY = coverage.get("originY");
+        JsonNode step = coverage.get("step");
+        JsonNode columns = coverage.get("columns");
+        JsonNode rows = coverage.get("rows");
+        JsonNode labels = coverage.get("labels");
+        JsonNode exitIds = coverage.get("exitIds");
+        if (originX == null
+                || !originX.isNumber()
+                || !Double.isFinite(originX.doubleValue())
+                || originY == null
+                || !originY.isNumber()
+                || !Double.isFinite(originY.doubleValue())
+                || step == null
+                || !step.isNumber()
+                || !Double.isFinite(step.doubleValue())
+                || step.doubleValue() <= 0
+                || columns == null
+                || !columns.isIntegralNumber()
+                || !columns.canConvertToInt()
+                || columns.intValue() <= 0
+                || rows == null
+                || !rows.isIntegralNumber()
+                || !rows.canConvertToInt()
+                || rows.intValue() <= 0
+                || labels == null
+                || !labels.isArray()
+                || exitIds == null
+                || !exitIds.isArray()
+                || exitIds.isEmpty()
+                || (long) columns.intValue() * rows.intValue() != labels.size()) {
+            throw new IOException("대피 경로 커버리지 응답 값이 올바르지 않습니다.");
+        }
+        List<Long> parsedExitIds = new ArrayList<>();
+        for (JsonNode exitId : exitIds) {
+            if (!exitId.isIntegralNumber() || !exitId.canConvertToLong()) {
+                throw new IOException("대피 경로 커버리지 비상구 값이 올바르지 않습니다.");
+            }
+            parsedExitIds.add(exitId.longValue());
+        }
+        List<Integer> parsedLabels = new ArrayList<>();
+        for (JsonNode label : labels) {
+            if (!label.isIntegralNumber()
+                    || !label.canConvertToInt()
+                    || label.intValue() < -1
+                    || label.intValue() >= parsedExitIds.size()) {
+                throw new IOException("대피 경로 커버리지 라벨 값이 올바르지 않습니다.");
+            }
+            parsedLabels.add(label.intValue());
+        }
+        return new RouteCoverage(
+                originX.decimalValue(),
+                originY.decimalValue(),
+                step.decimalValue(),
+                columns.intValue(),
+                rows.intValue(),
+                List.copyOf(parsedLabels),
+                List.copyOf(parsedExitIds));
+    }
+
+    /** 대피 경로 미리보기 결과 한 건. 시뮬레이션 식별자나 지표는 담지 않는다. */
+    public record PreviewedRoute(
+            Long zoneId,
+            Long exitId,
+            PointDto routeOrigin,
+            boolean originAdjusted,
+            double distanceMeters,
+            List<PointDto> waypoints) {
+        public PreviewedRoute(
+                Long exitId,
+                PointDto routeOrigin,
+                boolean originAdjusted,
+                double distanceMeters,
+                List<PointDto> waypoints) {
+            this(null, exitId, routeOrigin, originAdjusted, distanceMeters, waypoints);
+        }
+    }
+
+    public record RoutePreviewResult(
+            List<PreviewedRoute> routes, RouteCoverage coverage, List<PreviewedRoute> zoneRoutes) {
+        public RoutePreviewResult(List<PreviewedRoute> routes, RouteCoverage coverage) {
+            this(routes, coverage, List.of());
+        }
+    }
+
+    public record RouteCoverage(
+            BigDecimal originX,
+            BigDecimal originY,
+            BigDecimal step,
+            int columns,
+            int rows,
+            List<Integer> labels,
+            List<Long> exitIds) {}
+
+    public record RouteOriginBounds(BigDecimal x, BigDecimal y, BigDecimal width, BigDecimal height) {}
+
+    public record RoutePreviewZone(
+            Long zoneId, BigDecimal x, BigDecimal y, BigDecimal width, BigDecimal height, Long defaultExitId) {}
 
     public EngineRun run(Long simulationId, SimulationSetupResponse setup) throws EngineRunException {
         return run(simulationId, setup, maxSimulationTimeSeconds);
@@ -377,10 +630,37 @@ public class SimulationEngineRunner {
             if (NO_REACHABLE_EXIT_CODE.equals(codeValue)) {
                 return readNoReachableExitDetail(root, setup);
             }
+            if (NO_WALKABLE_ORIGIN_CODE.equals(codeValue)) {
+                return readNoWalkableOriginDetail(root, setup);
+            }
             return null;
         } catch (IOException | RuntimeException exception) {
             return null;
         }
+    }
+
+    private SimulationFailureDetailResponse readNoWalkableOriginDetail(JsonNode root, SimulationSetupResponse setup) {
+        if (root.size() != 3
+                || !root.has("agentId")
+                || !NO_WALKABLE_ORIGIN_CODE.equals(root.get("code").textValue())) {
+            return null;
+        }
+        JsonNode agentId = root.get("agentId");
+        if (!agentId.isIntegralNumber()
+                || !agentId.canConvertToInt()
+                || agentId.intValue() < 1
+                || agentId.intValue() > setup.agentPositions().size()) {
+            return null;
+        }
+        return new SimulationFailureDetailResponse(
+                NO_WALKABLE_ORIGIN_CODE,
+                agentId.longValue(),
+                setup.agentPositions().get(agentId.intValue() - 1),
+                null,
+                null,
+                null,
+                setup.selectedExitIds(),
+                null);
     }
 
     private SimulationFailureDetailResponse readAgentRouteUnreachableDetail(
@@ -504,7 +784,7 @@ public class SimulationEngineRunner {
     }
 
     private static PointDto readPoint(JsonNode node) {
-        if (!node.isObject() || node.size() != 2 || !node.has("x") || !node.has("y")) {
+        if (node == null || !node.isObject() || node.size() != 2 || !node.has("x") || !node.has("y")) {
             return null;
         }
         JsonNode xNode = node.get("x");

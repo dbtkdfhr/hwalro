@@ -94,6 +94,7 @@ class SimulationServiceTest {
         assertThat(response.simulationId()).isEqualTo(21L);
         assertThat(response.totalPeople()).isEqualTo(2);
         assertThat(response.parentSimulationId()).isEqualTo(20L);
+        assertThat(response.isImprovement()).isFalse();
         verify(simulationMapper).lockLayoutVersion(11L);
         ArgumentCaptor<SimulationOption> optionCaptor = ArgumentCaptor.forClass(SimulationOption.class);
         verify(simulationMapper).insertSimulationOption(optionCaptor.capture());
@@ -431,6 +432,37 @@ class SimulationServiceTest {
         verify(simulationMapper).countCompletedThisWeek(eq(7L), any(LocalDateTime.class));
     }
 
+    @Test
+    void deletesCompletedImprovementSimulationWhenItIsNotUsedAsAnotherImprovementSource() {
+        Simulation improvement = simulation();
+        improvement.setStatus("COMPLETED");
+        improvement.setIsImprovement(true);
+        when(simulationMapper.findSimulationById(21L)).thenReturn(improvement);
+        when(simulationMapper.findSimulationByIdForUpdate(21L)).thenReturn(improvement);
+        when(simulationMapper.countBlockingImprovementReferences(21L)).thenReturn(0);
+        when(simulationMapper.countChildSimulations(21L)).thenReturn(0);
+
+        service.delete(21L, user, "Bearer test");
+
+        verify(simulationMapper).deleteSimulation(21L);
+        verify(simulationMapper).unlockLayoutVersionIfNoSimulations(11L);
+    }
+
+    @Test
+    void rejectsDeletionWhenSimulationIsUsedAsAnImprovementSource() {
+        Simulation baseline = simulation();
+        baseline.setStatus("COMPLETED");
+        when(simulationMapper.findSimulationById(21L)).thenReturn(baseline);
+        when(simulationMapper.findSimulationByIdForUpdate(21L)).thenReturn(baseline);
+        when(simulationMapper.countBlockingImprovementReferences(21L)).thenReturn(1);
+
+        assertThatThrownBy(() -> service.delete(21L, user, "Bearer test"))
+                .isInstanceOf(SimulationConflictException.class)
+                .hasMessageContaining("개선안");
+
+        verify(simulationMapper, never()).deleteSimulation(21L);
+    }
+
     private void stubDrawing() {
         when(drawingMapper.findWallsByVersionId(11L)).thenReturn(List.of());
         when(drawingMapper.findOutsideWallsByVersionId(11L))
@@ -462,6 +494,7 @@ class SimulationServiceTest {
         simulation.setTitle("test simulation");
         simulation.setStatus("DRAFT");
         simulation.setCreatedAt(LocalDateTime.now());
+        simulation.setIsImprovement(false);
         return simulation;
     }
 

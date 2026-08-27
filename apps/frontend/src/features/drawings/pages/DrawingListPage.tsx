@@ -15,6 +15,8 @@ import {
   Pagination,
 } from '../../../components/ui';
 import { useDebounce } from '../../../hooks/useDebounce';
+import { can } from '../../auth/capabilities';
+import { useAuth } from '../../auth/context/AuthContext';
 import { getDrawingErrorMessage } from '../utils/getDrawingErrorMessage';
 import type { DrawingSummary } from '../types/drawing';
 
@@ -22,12 +24,14 @@ const PAGE_SIZE = 5;
 
 function DrawingListPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const canManage = can(user?.roles, 'drawings.manage');
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebounce(query, 300);
   const [drawingToDelete, setDrawingToDelete] = useState<DrawingSummary | null>(null);
   const [drawingToBlock, setDrawingToBlock] = useState<DrawingSummary | null>(null);
-  const { items, totalCount, isPending, isError, error } = useDrawingList(
+  const { items, totalCount, isPending, isError, error, nameById } = useDrawingList(
     page,
     PAGE_SIZE,
     debouncedQuery,
@@ -79,14 +83,20 @@ function DrawingListPage() {
           <PageHeader
             eyebrow="도면"
             title="도면 목록"
-            description="등록된 도면을 확인하고 관리합니다. 도면명을 선택하면 수정 화면으로 이동합니다."
+            description={
+              canManage
+                ? '등록된 도면을 확인하고 관리합니다. 도면명을 선택하면 수정 화면으로 이동합니다.'
+                : '담당 구역이 있는 도면입니다. 도면명을 선택하면 배치와 담당 구역을 확인할 수 있습니다.'
+            }
             actions={
-              <Link
-                to="/drawings/new"
-                className={buttonClassName({ variant: 'primary', size: 'lg' })}
-              >
-                도면 등록
-              </Link>
+              canManage ? (
+                <Link
+                  to="/drawings/new"
+                  className={buttonClassName({ variant: 'primary', size: 'lg' })}
+                >
+                  도면 등록
+                </Link>
+              ) : null
             }
           />
         </div>
@@ -125,6 +135,8 @@ function DrawingListPage() {
                 items={items}
                 onDelete={handleDelete}
                 onDuplicate={handleDuplicate}
+                nameById={nameById}
+                canManage={canManage}
               />
               <div className="flex flex-col items-center justify-between gap-3 border-t border-line px-5 py-3 sm:flex-row">
                 <p className="text-sm tabular-nums text-text-muted">

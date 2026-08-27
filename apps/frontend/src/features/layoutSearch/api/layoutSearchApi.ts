@@ -137,31 +137,23 @@ export interface StartSearchResult {
   status: string;
 }
 
-export interface ForbiddenZone {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-export interface SearchConstraints {
-  moveRadii: Record<number, number>;
-  forbiddenZones: ForbiddenZone[];
-  rotationAllowed: Record<number, boolean>;
-  wallAnchored: Record<number, boolean>;
-}
-
-export function emptyConstraints(): SearchConstraints {
-  return { moveRadii: {}, forbiddenZones: [], rotationAllowed: {}, wallAnchored: {} };
+export interface LayoutSearchMonitorItem {
+  searchId: number;
+  baselineSimulationId: number;
+  title: string;
+  status: SearchStatus;
 }
 
 export const layoutSearchApi = {
-  start: (simulationId: number, constraints?: SearchConstraints, verify = false) =>
+  listMonitor: () =>
     apiClient
-      .post<StartSearchResult>(`/api/simulations/${simulationId}/layout-searches`, {
-        constraints: constraints ?? null,
-        verify,
-      })
+      .get<LayoutSearchMonitorItem[]>('/api/layout-searches/monitor')
+      .then((response) => response.data),
+
+  // 제약은 도면에 저장된 값을 서버가 읽는다. 실행마다 달라지는 값은 verify뿐이다.
+  start: (simulationId: number, verify = false) =>
+    apiClient
+      .post<StartSearchResult>(`/api/simulations/${simulationId}/layout-searches`, { verify })
       .then((response) => response.data),
 
   latest: (simulationId: number) =>

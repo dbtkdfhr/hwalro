@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hwalro.simulation.zone.mapper.LayoutZoneMapper">
+
+    <sql id="zoneColumns">
+        id,
+        layout_version_id,
+        name,
+        zone_type,
+        x,
+        y,
+        width,
+        height,
+        assigned_user_id,
+        default_exit_id,
+        display_order,
+        created_at
+    </sql>
+
+    <select id="findZonesByVersionId" resultType="com.hwalro.simulation.zone.domain.LayoutZone">
+        SELECT <include refid="zoneColumns"/>
+        FROM layout_zones
+        WHERE layout_version_id = #{layoutVersionId}
+        ORDER BY display_order ASC, id ASC
+    </select>
+
+    <select id="findZoneById" resultType="com.hwalro.simulation.zone.domain.LayoutZone">
+        SELECT <include refid="zoneColumns"/>
+        FROM layout_zones
+        WHERE id = #{id}
+    </select>
+
+    <!-- 배정 구역은 도면의 현재 버전에 있는 것만 의미가 있다. 과거 버전의 구역은 노출하지 않는다. -->
+    <select id="findAssignedZonesByUserId" resultType="com.hwalro.simulation.zone.dto.AssignedZoneRow">
+        SELECT z.id                AS zoneId,
+               z.name              AS zoneName,
+               z.zone_type         AS zoneType,
+               l.id                AS layoutId,
+               l.title             AS layoutTitle,
+               z.layout_version_id AS layoutVersionId,
+               z.default_exit_id   AS defaultExitId,
+               de.name             AS defaultExitName
+        FROM layout_zones z
+        JOIN layouts l ON l.current_version_id = z.layout_version_id
+        LEFT JOIN layout_exits de ON de.id = z.default_exit_id
+        WHERE z.assigned_user_id = #{userId}
+        ORDER BY l.id ASC, z.id ASC
+    </select>
+
+    <select id="countZonesAssignedToUserInVersion" resultType="int">
+        SELECT COUNT(*)
+        FROM layout_zones
+        WHERE layout_version_id = #{layoutVersionId}
+          AND assigned_user_id = #{userId}
+    </select>
+
+    <insert id="insertZone" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO layout_zones (layout_version_id, name, zone_type, x, y, width, height,
+                                  assigned_user_id, default_exit_id, display_order)
+        VALUES (#{layoutVersionId}, #{name}, #{zoneType}, #{x}, #{y}, #{width}, #{height},
+                #{assignedUserId}, #{defaultExitId}, COALESCE(#{displayOrder}, 0))
+    </insert>
+
+    <update id="updateZone">
+        UPDATE layout_zones
+        SET name = #{name},
+            zone_type = #{zoneType},
+            x = #{x},
+            y = #{y},
+            width = #{width},
+            height = #{height},
+            assigned_user_id = #{assignedUserId},
+            default_exit_id = #{defaultExitId},
+            display_order = COALESCE(#{displayOrder}, 0)
+        WHERE id = #{id} AND layout_version_id = #{layoutVersionId}
+    </update>
+
+    <delete id="deleteZoneById">
+        DELETE FROM layout_zones WHERE id = #{id}
+    </delete>
+
+    <select id="findZoneMembersByVersionId" resultType="com.hwalro.simulation.zone.domain.LayoutZoneMember">
+        SELECT id,
+               layout_version_id,
+               zone_id,
+               wall_id,
+               pillar_id,
+               fabric_id
+        FROM layout_zone_members
+        WHERE layout_version_id = #{layoutVersionId}
+        ORDER BY zone_id ASC, id ASC
+    </select>
+
+    <select id="findZoneIdByFabricId" resultType="java.lang.Long">
+        SELECT zone_id
+        FROM layout_zone_members
+        WHERE layout_version_id = #{layoutVersionId} AND fabric_id = #{fabricId}
+    </select>
+
+    <delete id="deleteZoneMembersByZoneId">
+        DELETE FROM layout_zone_members WHERE zone_id = #{zoneId}
+    </delete>
+
+    <insert id="insertZoneMembers">
+        INSERT INTO layout_zone_members (layout_version_id, zone_id, wall_id, pillar_id, fabric_id)
+        VALUES
+        <foreach collection="members" item="member" separator=",">
+            (#{member.layoutVersionId}, #{member.zoneId}, #{member.wallId}, #{member.pillarId}, #{member.fabricId})
+        </foreach>
+    </insert>
+
+</mapper>

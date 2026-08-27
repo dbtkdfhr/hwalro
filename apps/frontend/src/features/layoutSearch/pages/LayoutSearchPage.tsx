@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import {
   CanvasWorkspace,
   CanvasWorkspaceBackButton,
-  CanvasWorkspaceHeader,
   CanvasWorkspacePanel,
   CanvasWorkspaceState,
   useCollapsibleWorkspacePanel,
@@ -14,7 +13,6 @@ import { getSimulationErrorMessage } from '../../simulations/utils/getSimulation
 
 import { CandidateDetailPanel } from '../components/CandidateDetailPanel';
 import { CandidateTabs } from '../components/NoImprovementPanel';
-import { ConstraintInspector } from '../components/ConstraintInspector';
 import { HoldToCompare } from '../components/HoldToCompare';
 import { SearchProgressHeader } from '../components/SearchProgressHeader';
 import { useLayoutSearch } from '../hooks/useLayoutSearch';
@@ -54,19 +52,13 @@ export default function LayoutSearchPage() {
     search,
     hasSearch,
     loading,
-    starting,
     cancelling,
     preparingCandidateIds,
     errorMessage,
     active,
-    constraints,
     initialize,
-    start,
     cancel,
     prepareSimulation,
-    updateConstraints,
-    resetToSetup,
-    rejectCandidate,
   } = useLayoutSearch(id);
 
   const loadSourceSetup = useCallback(async () => {
@@ -126,25 +118,18 @@ export default function LayoutSearchPage() {
     return changedFabricIds(sourceSetup.drawing, preview.drawing);
   }, [sourceSetup, preview.drawing]);
 
-  const runSearch = useCallback(
-    async (verify: boolean) => {
-      if (await start(undefined, verify)) {
-        setSelectedTabKey(null);
-      }
-    },
-    [start],
-  );
-
   const retry = useCallback(() => {
     void Promise.all([loadSourceSetup(), initialize()]);
   }, [initialize, loadSourceSetup]);
 
-  const focusComparison = useCallback(() => {
-    document.getElementById('compare-improved-button')?.focus();
-  }, []);
-
   if (loading || sourceLoading) {
     return <CanvasWorkspaceState message="배치 개선안 탐색을 준비하고 있습니다." role="status" />;
+  }
+
+  if (!hasSearch && !errorMessage) {
+    return (
+      <Navigate to={`/simulations/${id}/results`} replace state={{ openLayoutSearchStart: true }} />
+    );
   }
 
   if (sourceError || (!hasSearch && errorMessage)) {
@@ -169,30 +154,10 @@ export default function LayoutSearchPage() {
     );
   }
 
-  if (!hasSearch || !search) {
-    return (
-      <CanvasWorkspace className="layout-search-workspace">
-        <CanvasWorkspaceBackButton
-          label="시뮬레이션 결과"
-          onClick={() => navigate(`/simulations/${id}/results`)}
-        />
-        <CanvasWorkspaceHeader
-          title={sourceSetup?.drawing.title || '도면'}
-          subtitle="구조물 제약 설정"
-          status="제약 설정"
-          statusTone="editing"
-        />
-        {sourceSetup && (
-          <ConstraintInspector
-            drawing={sourceSetup.drawing}
-            constraints={constraints}
-            onChange={updateConstraints}
-            onStart={(verify) => void runSearch(verify)}
-            starting={starting}
-          />
-        )}
-      </CanvasWorkspace>
-    );
+  if (!search) return null;
+
+  if (active) {
+    return <Navigate to="/simulations" replace state={{ layoutSearchSimulationId: id }} />;
   }
 
   return (
@@ -239,11 +204,9 @@ export default function LayoutSearchPage() {
           </div>
         ) : (
           <div className="proposal-layout-loading" role="status">
-            {active
-              ? '개선안이 검증되면 배치를 표시합니다.'
-              : search.status === 'NO_IMPROVEMENT'
-                ? '현재 탐색 범위에서 개선안을 찾지 못했습니다'
-                : '검증 중인 배치'}
+            {search.status === 'NO_IMPROVEMENT'
+              ? '현재 탐색 범위에서 개선안을 찾지 못했습니다'
+              : '표시할 개선안이 없습니다.'}
           </div>
         )}
       </div>
@@ -268,10 +231,7 @@ export default function LayoutSearchPage() {
               candidate={selectedCandidate}
               onPrepareSimulation={() => void prepareSimulation(selectedCandidate.candidateId)}
               preparing={preparingCandidateIds.has(selectedCandidate.candidateId)}
-              onContinueComparing={focusComparison}
               previewAvailable={preview.drawing !== null}
-              onReject={() => void rejectCandidate(selectedCandidate.candidateId)}
-              rejecting={starting}
               onMinimize={detailPanel.minimize}
             />
           ) : (
@@ -280,11 +240,11 @@ export default function LayoutSearchPage() {
                 <h2>
                   {search.status === 'NO_IMPROVEMENT'
                     ? '현재 탐색 범위에서 개선안을 찾지 못했습니다'
-                    : '검증 중인 배치'}
+                    : '표시할 개선안이 없습니다'}
                 </h2>
                 <p>
                   {search.status === 'NO_IMPROVEMENT'
-                    ? '구조물 제약을 조정한 뒤 다시 탐색하면 다른 배치안을 찾을 수 있습니다.'
+                    ? '도면 편집기에서 구조물 제약을 조정한 뒤 다시 탐색하면 다른 배치안을 찾을 수 있습니다.'
                     : '개선안이 검증되면 상세 비교를 볼 수 있습니다.'}
                 </p>
               </div>
@@ -298,7 +258,11 @@ export default function LayoutSearchPage() {
         search={search}
         onCancel={() => void cancel()}
         cancelling={cancelling}
-        onRerun={resetToSetup}
+        onRerun={() =>
+          navigate(`/simulations/${id}/results`, {
+            state: { openLayoutSearchStart: true },
+          })
+        }
         rerunning={false}
       />
     </CanvasWorkspace>

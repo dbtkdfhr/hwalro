@@ -76,6 +76,25 @@ class SystemManagementServiceTest {
     }
 
     @Test
+    void createsUserWithGeneralEmployeeRole() {
+        when(mapper.existsByLoginId("employee")).thenReturn(false);
+        when(mapper.findAllRoles()).thenReturn(List.of(new RoleRow(4L, "GENERAL_EMPLOYEE", "일반 직원")));
+        when(passwordEncoder.encode("password123")).thenReturn("encoded-password");
+        when(mapper.insertUser(any(NewUserRow.class))).thenAnswer(invocation -> {
+            invocation.<NewUserRow>getArgument(0).setUserId(11L);
+            return 1;
+        });
+        LocalDateTime createdAt = LocalDateTime.of(2026, 8, 22, 9, 0);
+        when(mapper.findUserById(11L)).thenReturn(new UserRow(11L, "employee", "일반 직원", true, createdAt));
+
+        SystemManagementResponse.UserSummary created =
+                service.createUser(new CreateUserRequest("employee", "password123", "일반 직원", List.of(4L)));
+
+        assertThat(created.roles()).containsExactly("GENERAL_EMPLOYEE");
+        verify(mapper).insertUserRoles(eq(11L), eq(List.of(4L)));
+    }
+
+    @Test
     void updatesUserEnabledState() {
         when(mapper.updateUserEnabled(1L, false)).thenReturn(1);
 

@@ -148,6 +148,7 @@ class ChangeSetApplierTest {
                 agents,
                 List.of(),
                 List.of(2L),
-                drawing);
+                drawing,
+                false);
     }
 }

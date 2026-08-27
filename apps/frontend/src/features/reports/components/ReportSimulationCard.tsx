@@ -41,7 +41,7 @@ export function ReportSimulationCard({
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="font-black text-ink">결과 #{resultId}</p>
+          <p className="font-bold text-ink">결과 #{resultId}</p>
           <p className="mt-1 text-xs text-text-muted">{context?.layoutTitle ?? label}</p>
         </div>
         <span className="shrink-0 rounded-full bg-white/80 px-2 py-1 text-[11px] font-bold text-text-muted">

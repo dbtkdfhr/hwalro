@@ -231,14 +231,14 @@ function ReportDetailPage() {
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             aria-label="보고서 제목"
-            className="w-full border-0 bg-transparent p-0 text-2xl font-black tracking-tight text-ink outline-none focus:ring-0 sm:text-3xl"
+            className="w-full border-0 bg-transparent p-0 text-2xl font-bold tracking-tight text-ink outline-none focus:ring-0 sm:text-3xl"
           />
           <p className="mt-4 text-sm tabular-nums text-text-muted">
             작성일 {formatDate(createdAt)} · 보고서 #{reportId}
           </p>
 
           <section className="mt-6 border-t border-line pt-6">
-            <h2 className="text-lg font-black text-ink">1. 검토 개요</h2>
+            <h2 className="text-lg font-bold text-ink">1. 검토 개요</h2>
             <AutoResizeTextarea
               value={summary}
               onChange={(event) => setSummary(event.target.value)}
@@ -249,7 +249,7 @@ function ReportDetailPage() {
           </section>
 
           <section className="mt-7">
-            <h2 className="text-lg font-black text-ink">2. 핵심 분석 결과</h2>
+            <h2 className="text-lg font-bold text-ink">2. 핵심 분석 결과</h2>
             <AutoResizeTextarea
               value={analysis}
               onChange={(event) => setAnalysis(event.target.value)}
@@ -260,14 +260,14 @@ function ReportDetailPage() {
           </section>
 
           <section className="mt-7">
-            <h2 className="text-lg font-black text-ink">3. 첨부 시뮬레이션</h2>
+            <h2 className="text-lg font-bold text-ink">3. 첨부 시뮬레이션</h2>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
               {renderSimulationCards('document')}
             </div>
           </section>
 
           <section className="mt-7">
-            <h2 className="text-lg font-black text-ink">4. 개선 조치</h2>
+            <h2 className="text-lg font-bold text-ink">4. 개선 조치</h2>
             <AutoResizeTextarea
               value={improvements}
               onChange={(event) => setImprovements(event.target.value)}
@@ -280,7 +280,7 @@ function ReportDetailPage() {
 
         <aside className="min-w-0">
           <Card padded={false} className="flex min-h-[500px] flex-col p-6">
-            <h2 className="text-xl font-black text-ink">보고서 설정</h2>
+            <h2 className="text-xl font-bold text-ink">보고서 설정</h2>
             <div className="mt-5">
               <Field label="상태" htmlFor="report-status">
                 <Select
@@ -329,30 +329,30 @@ function ReportDetailPage() {
           size="lg"
         >
           <div className="px-2 py-4 sm:px-8">
-            <h1 className="text-3xl font-black tracking-tight text-ink">{title}</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-ink">{title}</h1>
             <p className="mt-4 text-sm tabular-nums text-text-muted">
               작성일 {formatDate(createdAt)} · 보고서 #{reportId}
             </p>
             <section className="mt-8 border-t border-line pt-6">
-              <h3 className="text-lg font-black text-ink">1. 검토 개요</h3>
+              <h3 className="text-lg font-bold text-ink">1. 검토 개요</h3>
               <p className="mt-3 whitespace-pre-line text-sm leading-7 text-text-strong">
                 {summary}
               </p>
             </section>
             <section className="mt-7">
-              <h3 className="text-lg font-black text-ink">2. 핵심 분석 결과</h3>
+              <h3 className="text-lg font-bold text-ink">2. 핵심 분석 결과</h3>
               <p className="mt-3 whitespace-pre-line text-sm leading-7 text-text-strong">
                 {analysis}
               </p>
             </section>
             <section className="mt-7">
-              <h3 className="text-lg font-black text-ink">3. 첨부 시뮬레이션</h3>
+              <h3 className="text-lg font-bold text-ink">3. 첨부 시뮬레이션</h3>
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {renderSimulationCards('preview')}
               </div>
             </section>
             <section className="mt-7">
-              <h3 className="text-lg font-black text-ink">4. 개선 조치</h3>
+              <h3 className="text-lg font-bold text-ink">4. 개선 조치</h3>
               <p className="mt-3 whitespace-pre-line text-sm leading-7 text-text-strong">
                 {improvements}
               </p>

@@ -29,8 +29,11 @@ import com.hwalro.simulation.search.dto.LayoutSearchDtos.PreparedSimulationDto;
 import com.hwalro.simulation.search.dto.LayoutSearchDtos.ProgressDto;
 import com.hwalro.simulation.search.dto.LayoutSearchDtos.RationaleDto;
 import com.hwalro.simulation.search.dto.LayoutSearchDtos.RegionDto;
+import com.hwalro.simulation.search.dto.LayoutSearchMonitorItem;
 import com.hwalro.simulation.search.mapper.LayoutSearchMapper;
 import com.hwalro.simulation.simulation.domain.Simulation;
+import com.hwalro.simulation.simulation.domain.SimulationMetric;
+import com.hwalro.simulation.simulation.domain.SimulationResult;
 import com.hwalro.simulation.simulation.exception.SimulationNotFoundException;
 import com.hwalro.simulation.simulation.mapper.SimulationMapper;
 import com.hwalro.simulation.simulation.service.SimulationService;
@@ -77,6 +80,10 @@ public class LayoutSearchQueryService {
         LayoutSearchEntity search = requireSearch(searchId);
         simulationService.getSetup(search.getBaselineSimulationId(), user);
         return toResponse(search, user);
+    }
+
+    public List<LayoutSearchMonitorItem> getMonitor(JwtUser user) {
+        return layoutSearchMapper.findMonitorItems(user.userId());
     }
 
     private LayoutSearchResponse toResponse(LayoutSearchEntity search, JwtUser user) {
@@ -177,6 +184,27 @@ public class LayoutSearchQueryService {
             LayoutSearchCandidateEntity candidate, LayoutSearchTrialEntity trial, List<Metric> baselineMetrics) {
         List<Metric> measuredMetrics =
                 trial == null || trial.getMetrics() == null ? null : readMetrics(trial.getMetrics());
+        List<MetricDelta> deltas = readDeltas(candidate.getMetricDelta());
+
+        if ((measuredMetrics == null || deltas.isEmpty()) && candidate.getPreparedSimulationId() != null) {
+            SimulationResult preparedResult =
+                    simulationMapper.findSimulationResult(candidate.getPreparedSimulationId());
+            if (preparedResult != null) {
+                List<SimulationMetric> simMetrics = simulationMapper.findSimulationMetrics(preparedResult.getId());
+                if (simMetrics != null && !simMetrics.isEmpty()) {
+                    List<Metric> preparedMetrics = simMetrics.stream()
+                            .map(m -> new Metric(m.getMetricType(), m.getUnit(), m.getMetricValue()))
+                            .toList();
+                    if (measuredMetrics == null) {
+                        measuredMetrics = preparedMetrics;
+                    }
+                    if (deltas.isEmpty()) {
+                        deltas = CandidateSelector.deltas(preparedMetrics, baselineMetrics);
+                    }
+                }
+            }
+        }
+
         return new CandidateDto(
                 candidate.getId(),
                 candidate.getRoundIndex(),
@@ -190,9 +218,7 @@ public class LayoutSearchQueryService {
                         : measuredMetrics.stream()
                                 .map(LayoutSearchQueryService::toMetricDto)
                                 .toList(),
-                readDeltas(candidate.getMetricDelta()).stream()
-                        .map(LayoutSearchQueryService::toDeltaDto)
-                        .toList(),
+                deltas.stream().map(LayoutSearchQueryService::toDeltaDto).toList(),
                 candidate.getRejectReason(),
                 candidate.getPreparedSimulationId() == null
                         ? null

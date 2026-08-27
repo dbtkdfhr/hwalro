@@ -16,6 +16,10 @@ from route_planner import (
     build_walkable_geometry,
     edge_cost,
     hazard_multiplier,
+    naturalize_exit_approach,
+    orthogonalize_display_path,
+    simplify_orthogonal_display_path,
+    relocate_agent_within_bounds,
     select_accessible_component,
     select_agent_component,
     split_agent_components,
@@ -108,6 +112,22 @@ class PlanCostTest(unittest.TestCase):
 
 
 class GeometryTest(unittest.TestCase):
+    def test_relocates_a_blocked_origin_without_leaving_zone_bounds(self):
+        routing = box(0, 0, 6, 6).difference(box(2, 2, 4, 4))
+
+        relocated = relocate_agent_within_bounds(routing, (3, 3), (1, 1, 4, 4))
+
+        self.assertIsNotNone(relocated)
+        self.assertTrue(box(1, 1, 5, 5).covers(Point(relocated)))
+        self.assertTrue(routing.covers(Point(relocated)))
+
+    def test_returns_none_instead_of_relocating_outside_a_fully_blocked_zone(self):
+        routing = box(0, 0, 6, 6).difference(box(2, 2, 4, 4))
+
+        relocated = relocate_agent_within_bounds(routing, (3, 3), (2.2, 2.2, 1.6, 1.6))
+
+        self.assertIsNone(relocated)
+
     def test_exit_parser_repairs_only_small_outside_rounding_error(self):
         drawing = {
             "outsideBoundary": [
@@ -334,6 +354,132 @@ class GeometryTest(unittest.TestCase):
 
 
 class GridRoutingTest(unittest.TestCase):
+    def test_display_path_removes_a_walkable_rectangular_backtrack(self):
+        path = [
+            (8.0, 6.0),
+            (7.0, 6.0),
+            (7.0, 5.0),
+            (6.0, 5.0),
+            (6.0, 6.0),
+            (4.0, 6.0),
+        ]
+
+        result = simplify_orthogonal_display_path(
+            path,
+            lambda _start, _end: True,
+        )
+
+        self.assertEqual(result, [(8.0, 6.0), (4.0, 6.0)])
+
+    def test_display_path_keeps_a_rectangular_detour_when_the_shortcut_is_blocked(self):
+        path = [
+            (8.0, 6.0),
+            (7.0, 6.0),
+            (7.0, 5.0),
+            (6.0, 5.0),
+            (6.0, 6.0),
+            (4.0, 6.0),
+        ]
+        safe_edges = {
+            frozenset((start, end)) for start, end in zip(path, path[1:])
+        }
+
+        result = simplify_orthogonal_display_path(
+            path,
+            lambda start, end: frozenset((start, end)) in safe_edges,
+        )
+
+        self.assertEqual(result, path)
+
+    def test_display_path_shortcut_search_has_bounded_lookahead(self):
+        path = [(0.0, 0.0)]
+        for index in range(1, 200):
+            previous_x, previous_y = path[-1]
+            if index % 2 == 1:
+                path.append((previous_x + 1.0, previous_y))
+            else:
+                path.append((previous_x, previous_y + 1.0))
+        safe_edges = {frozenset((start, end)) for start, end in zip(path, path[1:])}
+        connection_checks = 0
+
+        def can_connect(start, end):
+            nonlocal connection_checks
+            connection_checks += 1
+            return frozenset((start, end)) in safe_edges
+
+        self.assertEqual(simplify_orthogonal_display_path(path, can_connect), path)
+        self.assertLess(connection_checks, len(path) * 80)
+
+    def test_natural_exit_approach_turns_one_meter_before_vertical_exit(self):
+        path = [(7.0, 4.0), (9.75, 4.5), (9.75, 5.0), (10.0, 5.0)]
+
+        result = naturalize_exit_approach(path, lambda _start, _end: True)
+
+        self.assertEqual(result[-3:], [(9.0, 4.5), (9.0, 5.0), (10.0, 5.0)])
+
+    def test_natural_exit_approach_turns_one_meter_before_horizontal_exit(self):
+        path = [(4.0, 7.0), (4.5, 9.75), (5.0, 9.75), (5.0, 10.0)]
+
+        result = naturalize_exit_approach(path, lambda _start, _end: True)
+
+        self.assertEqual(result[-3:], [(4.0, 9.0), (5.0, 9.0), (5.0, 10.0)])
+
+    def test_natural_exit_approach_uses_shorter_safe_setback_when_space_is_tight(self):
+        path = [(9.6, 4.0), (9.75, 5.0), (10.0, 5.0)]
+
+        def can_connect(start, end):
+            return min(start[0], end[0]) >= 9.5
+
+        result = naturalize_exit_approach(path, can_connect)
+
+        self.assertEqual(result[-3:], [(9.6, 4.0), (9.6, 5.0), (10.0, 5.0)])
+
+    def test_natural_exit_approach_never_backtracks_to_create_a_longer_runway(self):
+        path = [(9.5, 4.0), (9.75, 5.0), (10.0, 5.0)]
+
+        result = naturalize_exit_approach(path, lambda _start, _end: True)
+
+        self.assertEqual(
+            result,
+            [(9.5, 4.0), (9.6, 4.0), (9.6, 5.0), (10.0, 5.0)],
+        )
+
+    def test_display_path_inserts_a_right_angle_bend_for_diagonal_steps(self):
+        from shapely.geometry import LineString as _LineString, box
+
+        hall = box(-50.0, -50.0, 50.0, 50.0)
+
+        class _Router:
+            walkable = hall
+
+            def can_connect(self, start, end):
+                return hall.covers(_LineString((start, end)))
+
+        diagonal = [(0.0, 0.0), (10.0, 6.0)]
+
+        router = _Router()
+        result = orthogonalize_display_path(diagonal, router.can_connect)
+
+        self.assertEqual(result[0], diagonal[0])
+        self.assertEqual(result[-1], diagonal[-1])
+        for start, end in zip(result, result[1:]):
+            self.assertTrue(
+                abs(start[0] - end[0]) < 1e-9 or abs(start[1] - end[1]) < 1e-9,
+                f"segment must be axis-aligned: {start} -> {end}",
+            )
+
+    def test_display_path_keeps_axis_aligned_paths_unchanged(self):
+        path = [(0.0, 0.0), (5.0, 0.0), (5.0, 4.0)]
+
+        self.assertEqual(orthogonalize_display_path(path, lambda _s, _e: True), path)
+
+    def test_display_path_keeps_the_original_point_when_no_bend_is_walkable(self):
+        diagonal = [(0.0, 0.0), (3.0, 3.0)]
+
+        result = orthogonalize_display_path(diagonal, lambda _start, _end: False)
+
+        self.assertEqual(result, diagonal)
+
     def test_path_simplification_keeps_bends_and_blocked_shortcuts(self):
         bent = [(0.0, 0.0), (1.0, 0.6), (2.0, 1.0)]
         self.assertEqual(_simplify_collinear(bent, lambda _start, _end: True), bent)
@@ -1203,6 +1349,31 @@ class DeriveEquivalenceTest(unittest.TestCase):
         for hazards in ((), self.HAZARDS):
             with self.subTest(hazards=bool(hazards)):
                 self._check([self.LEFT], [], hazards, self._bounds(self.LEFT))
+
+    def test_grid_graph_cache_evicts_the_least_recently_used_entry(self):
+        route_planner._GRID_GRAPH_CACHE.clear()
+        walkables = [box(0, 0, 8 + index, 6) for index in range(10)]
+
+        for walkable in walkables:
+            GridRouter(walkable, (), [self.EXIT])
+
+        self.assertEqual(
+            len(route_planner._GRID_GRAPH_CACHE),
+            route_planner._GRID_GRAPH_CACHE_MAX_ENTRIES,
+        )
+        self.assertNotIn(
+            ("grid-graph", walkables[0].wkb, route_planner.GRID_STEP_METERS),
+            route_planner._GRID_GRAPH_CACHE,
+        )
+
+    def test_grid_graph_cache_does_not_share_mutable_router_state(self):
+        route_planner._GRID_GRAPH_CACHE.clear()
+        first = GridRouter(box(0, 0, 8, 6), (), [self.EXIT])
+        first.valid.fill(False)
+
+        second = GridRouter(box(0, 0, 8, 6), (), [self.EXIT])
+
+        self.assertTrue(second.valid.any())
 
     def test_adding_an_obstacle_matches_a_fresh_router(self):
         for hazards in ((), self.HAZARDS):

@@ -1,16 +1,24 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { ReactNode } from 'react';
+import type { MouseEvent as ReactMouseEvent, ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
-import { Check, X } from 'lucide-react';
+import { Check, MapPin, X } from 'lucide-react';
 import { useAuth } from '../features/auth/context/AuthContext';
 import { safetyCheckApi } from '../features/safetyChecks/api/safetyCheckApi';
+import {
+  fetchLayoutDrawingContext,
+  renderDrawingSnapshot,
+} from '../features/safetyChecks/utils/drawingSnapshot';
 import type {
   InspectionDetail,
   InspectionItem,
   InspectionResult,
   InspectionStatus,
 } from '../features/safetyChecks/types';
-import { getSafetyCheckError, RESULT_LABELS } from '../features/safetyChecks/utils';
+import {
+  getSafetyCheckError,
+  getMarkerBadgeClass,
+  RESULT_LABELS,
+} from '../features/safetyChecks/utils';
 import { Badge, Button, Card, ErrorState, Input, Skeleton, Textarea } from '../components/ui';
 import SafetyCheckHeader from './safetyChecks/SafetyCheckHeader';
 
@@ -41,7 +49,7 @@ function getResultIndicatorIcon(result: InspectionResult, displayOrder: number):
     case 'FAIL':
       return <X aria-hidden="true" className="h-4 w-4" />;
     default:
-      return <span className="text-xs font-black tabular-nums">{displayOrder}</span>;
+      return <span className="text-xs font-bold tabular-nums">{displayOrder}</span>;
   }
 }
 
@@ -69,6 +77,11 @@ function SafetyCheckDetailPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [snapshotUrl, setSnapshotUrl] = useState<string | null>(null);
+  const [snapshotState, setSnapshotState] = useState<'idle' | 'loading' | 'ready' | 'error'>(
+    'idle',
+  );
+  const [pinItemId, setPinItemId] = useState<number | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -109,7 +122,61 @@ function SafetyCheckDetailPage() {
   const inspectorName =
     inspection?.inspectorId === user?.id && user ? user.name : `점검자 #${inspection?.inspectorId}`;
 
-  function updateItem(id: number, values: Partial<Pick<InspectionItem, 'result' | 'comment'>>) {
+  useEffect(() => {
+    const layoutId = inspection?.layoutId ?? inspection?.areaLayoutId ?? null;
+    if (!inspection || layoutId === null) {
+      setSnapshotState('idle');
+      return;
+    }
+    let active = true;
+    let createdUrl: string | null = null;
+    setSnapshotState('loading');
+    void (async () => {
+      try {
+        const context = await fetchLayoutDrawingContext(layoutId);
+        if (!active) return;
+        let blob: Blob | null = null;
+        try {
+          blob = await safetyCheckApi.getSnapshot(inspection.id);
+        } catch {
+          blob = null;
+        }
+        if (!blob && canEdit) {
+          blob = await renderDrawingSnapshot(context.drawing);
+          await safetyCheckApi.saveSnapshot(
+            inspection.id,
+            blob,
+            context.layoutVersionId ?? undefined,
+            layoutId,
+          );
+        }
+        if (!blob || !active) return;
+        createdUrl = URL.createObjectURL(blob);
+        setSnapshotUrl(createdUrl);
+        setSnapshotState('ready');
+      } catch {
+        if (active) setSnapshotState('error');
+      }
+    })();
+    return () => {
+      active = false;
+      if (createdUrl) URL.revokeObjectURL(createdUrl);
+    };
+  }, [inspection, canEdit]);
+
+  function handleSnapshotClick(event: ReactMouseEvent<HTMLDivElement>) {
+    if (!canEdit || pinItemId === null) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const markerX = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+    const markerY = Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height));
+    updateItem(pinItemId, { markerX, markerY });
+    setPinItemId(null);
+  }
+
+  function updateItem(
+    id: number,
+    values: Partial<Pick<InspectionItem, 'result' | 'comment' | 'markerX' | 'markerY'>>,
+  ) {
     setItems((current) => current.map((item) => (item.id === id ? { ...item, ...values } : item)));
     setNotice(null);
   }
@@ -127,6 +194,8 @@ function SafetyCheckDetailPage() {
           id: item.id,
           result: item.result,
           comment: item.comment?.trim() || null,
+          markerX: item.markerX,
+          markerY: item.markerY,
         })),
       });
       setInspection(updated);
@@ -220,7 +289,7 @@ function SafetyCheckDetailPage() {
 
       <div className="mt-5 grid gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
         <Card padded={false} className="p-6">
-          <h2 className="text-lg font-black text-ink">점검 정보</h2>
+          <h2 className="text-lg font-bold text-ink">점검 정보</h2>
           <dl className="mt-6 space-y-5">
             <div>
               <dt className="text-xs font-bold text-text-muted">점검 구역</dt>
@@ -256,7 +325,7 @@ function SafetyCheckDetailPage() {
           <div
             className={`mt-8 rounded-xl border border-line p-5 ${getSummaryPanelClass(counts.fail, counts.review)}`}
           >
-            <p className="text-sm font-black text-ink">
+            <p className="text-sm font-bold text-ink">
               {getSummaryTitle(counts.fail, counts.review, counts.pending)}
             </p>
             <p className="mt-3 text-xs font-bold tabular-nums text-text-strong">
@@ -276,7 +345,7 @@ function SafetyCheckDetailPage() {
         <Card padded={false} className="p-5 sm:p-7">
           <div className="flex items-end justify-between gap-4">
             <div>
-              <h2 className="text-xl font-black text-ink">점검 항목</h2>
+              <h2 className="text-xl font-bold text-ink">점검 항목</h2>
               <p className="mt-2 text-sm text-text-muted">
                 각 항목의 판정과 현장 확인 내용을 기록하세요.
               </p>
@@ -287,6 +356,70 @@ function SafetyCheckDetailPage() {
               </Badge>
             )}
           </div>
+
+          {snapshotState === 'loading' && (
+            <p className="mt-5 text-xs font-medium text-text-muted">
+              도면 이미지를 준비하고 있습니다...
+            </p>
+          )}
+          {snapshotState === 'error' && (
+            <p className="mt-5 rounded-lg border border-line bg-surface px-4 py-3 text-xs font-medium text-text-muted">
+              도면 이미지를 준비하지 못했습니다. 네트워크 상태와 점검 구역에 연결된 도면을 확인해
+              주세요.
+            </p>
+          )}
+
+          {snapshotUrl && (
+            <section className="mt-5" aria-label="도면 체크 현황">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm font-black text-ink">도면 체크 현황</span>
+                <span className="text-xs text-text-muted">
+                  {pinItemId !== null
+                    ? '도면을 클릭해 해당 항목의 위치를 지정하세요.'
+                    : canEdit
+                      ? '항목의 핀 버튼을 누른 뒤 도면을 클릭하면 위치가 기록됩니다.'
+                      : null}
+                </span>
+              </div>
+              <div
+                onClick={handleSnapshotClick}
+                role={canEdit ? 'button' : undefined}
+                tabIndex={canEdit && pinItemId !== null ? 0 : undefined}
+                aria-label={
+                  pinItemId !== null ? '도면 위를 클릭해 항목 위치를 지정' : '점검 도면 스냅샷'
+                }
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    setPinItemId(null);
+                  }
+                }}
+                className={`relative mt-3 overflow-hidden rounded-xl border border-line bg-white ${pinItemId !== null && canEdit ? 'cursor-crosshair ring-2 ring-focus-ring' : ''}`}
+              >
+                <img
+                  src={snapshotUrl}
+                  alt={`${inspection.areaName} 점검 도면 스냅샷`}
+                  className="block w-full select-none"
+                  draggable={false}
+                />
+                {items
+                  .filter((item) => item.markerX !== null && item.markerY !== null)
+                  .map((item) => (
+                    <span
+                      key={`marker-${item.id}`}
+                      style={{
+                        left: `${(item.markerX as number) * 100}%`,
+                        top: `${(item.markerY as number) * 100}%`,
+                      }}
+                      className={`pointer-events-none absolute flex h-6 w-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-[10px] font-black tabular-nums shadow-raised ${getMarkerBadgeClass(item.result)}`}
+                      title={`${item.title} (${RESULT_LABELS[item.result]})`}
+                    >
+                      {item.displayOrder}
+                    </span>
+                  ))}
+              </div>
+            </section>
+          )}
 
           <div className="mt-6 space-y-3">
             {items.map((item) => (
@@ -303,29 +436,47 @@ function SafetyCheckDetailPage() {
                       {getResultIndicatorIcon(item.result, item.displayOrder)}
                     </div>
                     <div className="min-w-0">
-                      <h3 className="text-sm font-black text-ink">{item.title}</h3>
+                      <h3 className="text-sm font-bold text-ink">{item.title}</h3>
                       <p className="mt-2 text-xs leading-5 text-text-muted">
                         {item.criterion ?? '별도 판정 기준 없음'}
                       </p>
                     </div>
                   </div>
-                  <label className="shrink-0">
-                    <span className="sr-only">{item.title} 판정</span>
-                    <select
-                      value={item.result}
-                      onChange={(event) =>
-                        updateItem(item.id, { result: event.target.value as InspectionResult })
-                      }
-                      disabled={!canEdit}
-                      className={`h-9 min-w-28 rounded-full border px-3 text-xs font-bold outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:appearance-none ${RESULT_SELECT_STYLES[item.result]}`}
-                    >
-                      {RESULT_OPTIONS.map((result) => (
-                        <option key={result} value={result}>
-                          {RESULT_LABELS[result]}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  <div className="flex shrink-0 items-center gap-2">
+                    {snapshotUrl && canEdit && (
+                      <button
+                        type="button"
+                        onClick={() => setPinItemId(pinItemId === item.id ? null : item.id)}
+                        aria-pressed={pinItemId === item.id}
+                        title="도면 위 위치 지정"
+                        className={`flex h-9 items-center gap-1 rounded-full border px-3 text-xs font-bold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-focus-ring ${
+                          pinItemId === item.id
+                            ? 'border-primary bg-primary-soft text-primary'
+                            : 'border-line bg-surface text-text-strong hover:bg-white'
+                        }`}
+                      >
+                        <MapPin aria-hidden="true" className="h-3.5 w-3.5" />
+                        위치
+                      </button>
+                    )}
+                    <label className="shrink-0">
+                      <span className="sr-only">{item.title} 판정</span>
+                      <select
+                        value={item.result}
+                        onChange={(event) =>
+                          updateItem(item.id, { result: event.target.value as InspectionResult })
+                        }
+                        disabled={!canEdit}
+                        className={`h-9 min-w-28 rounded-full border px-3 text-xs font-bold outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:appearance-none ${RESULT_SELECT_STYLES[item.result]}`}
+                      >
+                        {RESULT_OPTIONS.map((result) => (
+                          <option key={result} value={result}>
+                            {RESULT_LABELS[result]}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
                 </div>
                 <Input
                   type="text"

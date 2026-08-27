@@ -120,6 +120,57 @@ class SimulationEngineRunnerTest {
     }
 
     @Test
+    void readsRoutePreviewCoverageContract(@TempDir Path temporaryDirectory) throws Exception {
+        Path output = temporaryDirectory.resolve("output");
+        Files.createDirectories(output);
+        Files.writeString(
+                output.resolve("routes.json"),
+                """
+                {"schemaVersion":1,
+                 "routes":[{"agentId":1,"exitId":501,"routeOrigin":{"x":1,"y":1},
+                   "originAdjusted":false,"distanceMeters":2.5,
+                   "waypoints":[{"x":1,"y":1},{"x":3,"y":1}]}],
+                 "zoneRoutes":[{"zoneId":30,"exitId":502,"routeOrigin":{"x":2,"y":1},
+                   "originAdjusted":false,"distanceMeters":1.5,
+                   "waypoints":[{"x":2,"y":1},{"x":0,"y":1}]}],
+                 "coverage":{"originX":0,"originY":0,"step":1,"columns":3,"rows":2,
+                   "labels":[0,0,-1,1,1,-1],"exitIds":[501,502]}}
+                """);
+
+        var result = runner(temporaryDirectory).readRoutePreviewResult(output);
+
+        assertThat(result.routes()).singleElement().satisfies(route -> assertThat(route.exitId())
+                .isEqualTo(501L));
+        assertThat(result.zoneRoutes()).singleElement().satisfies(route -> {
+            assertThat(route.zoneId()).isEqualTo(30L);
+            assertThat(route.exitId()).isEqualTo(502L);
+        });
+        assertThat(result.coverage().originX()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(result.coverage().step()).isEqualByComparingTo(BigDecimal.ONE);
+        assertThat(result.coverage().columns()).isEqualTo(3);
+        assertThat(result.coverage().rows()).isEqualTo(2);
+        assertThat(result.coverage().labels()).containsExactly(0, 0, -1, 1, 1, -1);
+        assertThat(result.coverage().exitIds()).containsExactly(501L, 502L);
+    }
+
+    @Test
+    void rejectsRoutePreviewCoverageWithWrongLabelCount(@TempDir Path temporaryDirectory) throws Exception {
+        Path output = temporaryDirectory.resolve("output");
+        Files.createDirectories(output);
+        Files.writeString(
+                output.resolve("routes.json"),
+                """
+                {"schemaVersion":1,"routes":[],
+                 "coverage":{"originX":0,"originY":0,"step":1,"columns":2,"rows":2,
+                   "labels":[0,0,0],"exitIds":[501]}}
+                """);
+
+        assertThatThrownBy(() -> runner(temporaryDirectory).readRoutePreviewResult(output))
+                .isInstanceOf(java.io.IOException.class)
+                .hasMessageContaining("커버리지");
+    }
+
+    @Test
     void readsStrictRoutingFailureAndReconstructsCurrentPosition(@TempDir Path temporaryDirectory) throws Exception {
         Path output = temporaryDirectory.resolve("output");
         Files.createDirectories(output);
@@ -202,6 +253,25 @@ class SimulationEngineRunnerTest {
         assertThat(detail.agentId()).isNull();
         assertThat(detail.currentPosition()).isNull();
         assertThat(detail.recommendedPosition()).isNull();
+    }
+
+    @Test
+    void readsStrictNoWalkableOriginFailure(@TempDir Path temporaryDirectory) throws Exception {
+        Path output = temporaryDirectory.resolve("output");
+        Files.createDirectories(output);
+        Files.writeString(
+                output.resolve("error.json"),
+                """
+                {"schemaVersion":1,"code":"NO_WALKABLE_ORIGIN_IN_ZONE","agentId":1}
+                """);
+
+        var detail = runner(temporaryDirectory).readFailureDetail(output, setup());
+
+        assertThat(detail).isNotNull();
+        assertThat(detail.code()).isEqualTo(SimulationEngineRunner.NO_WALKABLE_ORIGIN_CODE);
+        assertThat(detail.agentId()).isEqualTo(1L);
+        assertThat(detail.currentPosition()).isEqualTo(new PointDto(BigDecimal.ONE, BigDecimal.ONE));
+        assertThat(detail.selectedExitIds()).containsExactly(501L);
     }
 
     @Test
@@ -371,6 +441,7 @@ class SimulationEngineRunnerTest {
                         new PointDto(BigDecimal.valueOf(2), BigDecimal.valueOf(3))),
                 List.of(),
                 List.of(501L),
-                drawing);
+                drawing,
+                false);
     }
 }

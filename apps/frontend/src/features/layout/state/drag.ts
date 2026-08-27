@@ -9,7 +9,7 @@ type RotateDrag = Extract<DragState, { kind: 'rotate' }>;
 
 const MIN_LINE_LENGTH = 0.1;
 
-function clampToDocBounds(doc: { width: number; height: number }, point: Vec2): Vec2 {
+export function clampToDocBounds(doc: { width: number; height: number }, point: Vec2): Vec2 {
   return {
     x: Math.max(0, Math.min(doc.width, point.x)),
     y: Math.max(0, Math.min(doc.height, point.y)),
@@ -28,20 +28,6 @@ export function applyDragUpdate(state: EditorState, point: Vec2): EditorState {
   }
   if (drag.kind === 'erase') {
     return state;
-  }
-  if (drag.kind === 'backgroundMove') {
-    if (!state.doc.background) {
-      return state;
-    }
-    const dx = point.x - drag.origin.x;
-    const dy = point.y - drag.origin.y;
-    const moved = { ...drag.originBg, x: drag.originBg.x + dx, y: drag.originBg.y + dy };
-    return { ...state, doc: { ...state.doc, background: moved } };
-  }
-  if (drag.kind === 'backgroundResize') {
-    const width = Math.max(1, point.x - drag.originBg.x);
-    const resized = { ...drag.originBg, width, height: width / drag.originBg.aspect };
-    return { ...state, doc: { ...state.doc, background: resized } };
   }
   if (drag.kind === 'rotate') {
     return applyRotateUpdate(state, drag, point);
@@ -74,19 +60,27 @@ function applyLineReshapeUpdate(state: EditorState, drag: ReshapeDrag, point: Ve
   if (distance(clamped, other) < MIN_LINE_LENGTH) {
     return { ...state, snapHint: null };
   }
-  const nextWall =
-    drag.handle === 'start'
-      ? { ...wall, startX: round1(clamped.x), startY: round1(clamped.y) }
-      : { ...wall, endX: round1(clamped.x), endY: round1(clamped.y) };
   const doc =
     drag.elementKind === 'wall'
       ? {
           ...state.doc,
-          walls: state.doc.walls.map((w) => (w.id === wall.id ? nextWall : w)),
+          walls: state.doc.walls.map((w) =>
+            w.id === wall.id
+              ? drag.handle === 'start'
+                ? { ...w, startX: round1(clamped.x), startY: round1(clamped.y) }
+                : { ...w, endX: round1(clamped.x), endY: round1(clamped.y) }
+              : w,
+          ),
         }
       : {
           ...state.doc,
-          outsideWalls: state.doc.outsideWalls.map((w) => (w.id === wall.id ? nextWall : w)),
+          outsideWalls: state.doc.outsideWalls.map((w) =>
+            w.id === wall.id
+              ? drag.handle === 'start'
+                ? { ...w, startX: round1(clamped.x), startY: round1(clamped.y) }
+                : { ...w, endX: round1(clamped.x), endY: round1(clamped.y) }
+              : w,
+          ),
         };
   return {
     ...state,

@@ -15,6 +15,19 @@ export const RESULT_STYLES: Record<InspectionResult, string> = {
   FAIL: 'border-red-200 bg-danger-soft text-danger',
 };
 
+export function getMarkerBadgeClass(result: InspectionResult): string {
+  switch (result) {
+    case 'PASS':
+      return 'bg-success-strong text-white';
+    case 'FAIL':
+      return 'bg-danger-strong text-white';
+    case 'REVIEW_REQUIRED':
+      return 'bg-warning-strong text-white';
+    default:
+      return 'bg-text-muted text-white';
+  }
+}
+
 export function formatInspectionDate(value: string | null): string {
   if (!value) return '점검 이력 없음';
   const date = new Date(value);

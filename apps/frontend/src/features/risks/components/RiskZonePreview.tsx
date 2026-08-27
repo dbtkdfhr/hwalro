@@ -27,7 +27,7 @@ export function RiskZonePreview({ drawing, zone, width = 240, height = 160 }: Pr
           height: Math.abs(zone.endY - zone.startY),
         },
       ]}
-      ariaLabel="위험 예상 항목이 표시된 시뮬레이션 도면 구역 미리보기"
+      ariaLabel="주의 항목이 표시된 도면 구역 미리보기"
       width={width}
       height={height}
       className="block"

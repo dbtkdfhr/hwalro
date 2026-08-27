@@ -27,6 +27,8 @@ public interface SafetyCheckMapper {
 
     boolean areaExists(@Param("areaId") Long areaId);
 
+    Long findAreaLayoutId(@Param("areaId") Long areaId);
+
     Long lockInspectionArea(@Param("areaId") Long areaId);
 
     List<InspectionHistoryResponse> findInspectionHistory(
@@ -66,7 +68,17 @@ public interface SafetyCheckMapper {
             @Param("itemId") Long itemId,
             @Param("result") String result,
             @Param("comment") String comment,
+            @Param("markerX") Double markerX,
+            @Param("markerY") Double markerY,
             @Param("checkedAt") LocalDateTime checkedAt);
+
+    int updateSnapshotImage(
+            @Param("inspectionId") Long inspectionId,
+            @Param("image") byte[] image,
+            @Param("layoutId") Long layoutId,
+            @Param("layoutVersionId") Long layoutVersionId);
+
+    byte[] findSnapshotImage(@Param("inspectionId") Long inspectionId);
 
     int countInspectionItems(@Param("inspectionId") Long inspectionId);
 

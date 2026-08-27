@@ -40,6 +40,7 @@ import com.hwalro.simulation.search.service.LayoutSearchRunner.SearchInput;
 import com.hwalro.simulation.simulation.dto.SimulationDtos.SimulationSetupResponse;
 import com.hwalro.simulation.simulation.exception.SimulationConflictException;
 import com.hwalro.simulation.simulation.service.SimulationService;
+import com.hwalro.simulation.zone.service.SearchConstraintProjector;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -69,6 +70,7 @@ public class LayoutSearchOrchestrator {
     private final CandidateTrialService candidateTrialService;
     private final SimulationService simulationService;
     private final DrawingMapper drawingMapper;
+    private final SearchConstraintProjector searchConstraintProjector;
     private final ObjectMapper objectMapper;
     private final TransactionTemplate transactionTemplate;
     private final LayoutSearchProperties properties;
@@ -88,6 +90,7 @@ public class LayoutSearchOrchestrator {
             CandidateTrialService candidateTrialService,
             SimulationService simulationService,
             DrawingMapper drawingMapper,
+            SearchConstraintProjector searchConstraintProjector,
             ObjectMapper objectMapper,
             TransactionTemplate transactionTemplate,
             LayoutSearchProperties properties,
@@ -100,6 +103,7 @@ public class LayoutSearchOrchestrator {
         this.candidateTrialService = candidateTrialService;
         this.simulationService = simulationService;
         this.drawingMapper = drawingMapper;
+        this.searchConstraintProjector = searchConstraintProjector;
         this.objectMapper = objectMapper;
         this.transactionTemplate = transactionTemplate;
         this.properties = properties;
@@ -111,13 +115,12 @@ public class LayoutSearchOrchestrator {
         this.evacuationTailExtractor = new EvacuationTailFindingExtractor(objectMapper);
     }
 
-    public LayoutSearchEntity start(
-            long simulationId, JwtUser user, String budgetPreset, SearchConstraints constraints, boolean verify) {
+    public LayoutSearchEntity start(long simulationId, JwtUser user, String budgetPreset, boolean verify) {
         SimulationSetupResponse setup = simulationService.getSetup(simulationId, user);
         if (!COMPLETED_STATUS.equals(setup.status())) {
             throw new SimulationConflictException("완료된 시뮬레이션에서만 배치 개선안을 탐색할 수 있습니다.");
         }
-        List<Metric> baselineMetrics = readBaselineMetrics(simulationId);
+        List<Metric> baselineMetrics = readBaselineMetrics(simulationId, setup.layoutVersionId());
         LayoutSearchProperties.Budget budget = properties.budget(budgetPreset);
         double trialCap = TrialBudgetCalculator.trialCapSeconds(baselineMetrics, properties.getAbortMargin());
 
@@ -128,9 +131,12 @@ public class LayoutSearchOrchestrator {
         search.setStatus(SearchStatus.PENDING.name());
         search.setBaselineMetrics(writeJson(baselineMetrics));
         search.setBudget(writeJson(new SearchBudget(budgetPreset, budget.trials(), budget.rounds(), trialCap, verify)));
-        search.setConstraints(constraints == null ? null : constraints.toJson(objectMapper));
         search.setRequestedBy(user.userId());
         transactionTemplate.executeWithoutResult(status -> {
+            // 제약 스냅샷은 insertSearch와 같은 트랜잭션에서 잡는다. 밖에서 투영하면 탐색 시작과
+            // 제약 수정이 경쟁할 때 기록된 스냅샷과 실제 실행 제약이 어긋난다.
+            search.setConstraints(
+                    searchConstraintProjector.project(setup.layoutVersionId()).toJson(objectMapper));
             if (layoutSearchMapper.lockBaselineSimulation(simulationId) == null) {
                 throw new IllegalStateException("기준 시뮬레이션을 찾을 수 없습니다: " + simulationId);
             }
@@ -187,6 +193,7 @@ public class LayoutSearchOrchestrator {
             SearchBudget budget = readBudget(search.getBudget());
             SearchConstraints constraints = SearchConstraints.fromJson(objectMapper, search.getConstraints());
             SearchSource source = layoutSearchSourceLoader.load(search.getBaselineSimulationId());
+            List<LayoutExit> exits = drawingMapper.findLayoutExitsByVersionId(search.getBaselineLayoutVersionId());
             List<LayoutSearchCandidateEntity> existing =
                     SearchStatus.PENDING.name().equals(search.getStatus())
                             ? List.of()
@@ -229,7 +236,8 @@ public class LayoutSearchOrchestrator {
                         baselineMetrics,
                         trialCap,
                         List.of(),
-                        constraints)) {
+                        constraints,
+                        exits)) {
                     return;
                 }
             } else if (verify) {
@@ -241,7 +249,8 @@ public class LayoutSearchOrchestrator {
                                 .toList(),
                         baselineSetup,
                         baselineMetrics,
-                        trialCap)) {
+                        trialCap,
+                        exits)) {
                     return;
                 }
             }
@@ -277,7 +286,8 @@ public class LayoutSearchOrchestrator {
                             baselineMetrics,
                             trialCap,
                             List.of(),
-                            constraints)) {
+                            constraints,
+                            exits)) {
                         return;
                     }
                     finish(searchId, hasUsableCandidate(searchId, verify));
@@ -300,7 +310,8 @@ public class LayoutSearchOrchestrator {
                         baselineMetrics,
                         trialCap,
                         parentInputs,
-                        constraints)) {
+                        constraints,
+                        exits)) {
                     return;
                 }
                 if (isCancelled(searchId)) {
@@ -342,7 +353,8 @@ public class LayoutSearchOrchestrator {
             List<Metric> baselineMetrics,
             double trialCap,
             List<Map<String, Object>> parents,
-            SearchConstraints constraints) {
+            SearchConstraints constraints,
+            List<LayoutExit> exits) {
         transactionTemplate.executeWithoutResult(
                 status -> layoutSearchMapper.updateSearchStatus(searchId, SearchStatus.GENERATING.name()));
         SearchInput input = new SearchInput(
@@ -372,7 +384,7 @@ public class LayoutSearchOrchestrator {
         }
         transactionTemplate.executeWithoutResult(
                 status -> layoutSearchMapper.updateSearchStatus(searchId, SearchStatus.VERIFYING.name()));
-        return verifyCandidates(searchId, queued, baselineSetup, baselineMetrics, trialCap);
+        return verifyCandidates(searchId, queued, baselineSetup, baselineMetrics, trialCap, exits);
     }
 
     private void persistCandidates(
@@ -431,7 +443,8 @@ public class LayoutSearchOrchestrator {
             List<LayoutSearchCandidateEntity> queued,
             SimulationSetupResponse baselineSetup,
             List<Metric> baselineMetrics,
-            double trialCap) {
+            double trialCap,
+            List<LayoutExit> exits) {
         for (int start = 0; start < queued.size(); start += properties.getTrialConcurrency()) {
             if (isCancelled(searchId)) {
                 return false;
@@ -441,7 +454,12 @@ public class LayoutSearchOrchestrator {
                     queued.subList(start, Math.min(queued.size(), start + properties.getTrialConcurrency()))) {
                 if (!isCancelled(searchId)) {
                     futures.add(trialExecutor.submit(() -> candidateTrialService.run(
-                            candidate, baselineSetup, baselineMetrics, trialCap, properties.getImprovementMargin())));
+                            candidate,
+                            baselineSetup,
+                            baselineMetrics,
+                            trialCap,
+                            properties.getImprovementMargin(),
+                            exits)));
                 }
             }
             for (Future<TrialOutcome> future : futures) {
@@ -535,15 +553,37 @@ public class LayoutSearchOrchestrator {
         };
     }
 
-    private List<Metric> readBaselineMetrics(long simulationId) {
+    private List<Metric> readBaselineMetrics(long simulationId, Long layoutVersionId) {
         List<BaselineMetric> rows = layoutSearchSourceMapper.findBaselineMetricsBySimulationId(simulationId);
         if (rows.isEmpty()) {
             throw new IllegalStateException("기준 시뮬레이션의 저장된 지표가 없습니다.");
         }
-        return rows.stream()
-                .map(row -> new Metric(
-                        row.getMetricType(), row.getUnit(), row.getMetricValue() == null ? 0.0 : row.getMetricValue()))
-                .toList();
+        List<Metric> metrics = new ArrayList<>();
+        for (BaselineMetric row : rows) {
+            metrics.add(new Metric(
+                    row.getMetricType(), row.getUnit(), row.getMetricValue() == null ? 0.0 : row.getMetricValue()));
+        }
+        appendExitImbalance(metrics, simulationId, layoutVersionId);
+        return List.copyOf(metrics);
+    }
+
+    private void appendExitImbalance(List<Metric> metrics, long simulationId, Long layoutVersionId) {
+        if (layoutVersionId == null
+                || metrics.stream().anyMatch(metric -> CandidateSelector.EXIT_IMBALANCE.equals(metric.metricType()))) {
+            return;
+        }
+        List<LayoutExit> exits = drawingMapper.findLayoutExitsByVersionId(layoutVersionId);
+        if (exits.isEmpty()) {
+            return;
+        }
+        Double severity = exitBalanceExtractor.worstExitSeverity(
+                layoutSearchSourceMapper.findTimelineChunksBySimulationId(simulationId).stream()
+                        .map(TimelineChunk::getFrameData)
+                        .toList(),
+                exits);
+        if (severity != null) {
+            metrics.add(new Metric(CandidateSelector.EXIT_IMBALANCE, "RATIO", severity));
+        }
     }
 
     private SearchBudget readBudget(String json) {

@@ -14,6 +14,7 @@ import com.hwalro.simulation.drawing.domain.Fabric;
 import com.hwalro.simulation.drawing.domain.LayoutVersion;
 import com.hwalro.simulation.drawing.domain.OutsideWall;
 import com.hwalro.simulation.drawing.mapper.DrawingMapper;
+import com.hwalro.simulation.drawing.service.LayoutMetadataCopier;
 import com.hwalro.simulation.search.domain.CandidateStatus;
 import com.hwalro.simulation.search.domain.LayoutSearchCandidateEntity;
 import com.hwalro.simulation.search.domain.LayoutSearchEntity;
@@ -25,8 +26,10 @@ import com.hwalro.simulation.simulation.domain.SimulationOption;
 import com.hwalro.simulation.simulation.exception.InvalidSimulationGeometryException;
 import com.hwalro.simulation.simulation.mapper.SimulationMapper;
 import com.hwalro.simulation.simulation.service.SimulationService;
+import com.hwalro.simulation.zone.domain.ZoneElementKind;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -68,6 +71,9 @@ class CandidateAdoptionServiceTest {
     @Mock
     private SimulationService simulationService;
 
+    @Mock
+    private LayoutMetadataCopier layoutMetadataCopier;
+
     private CandidateAdoptionService service;
     private JwtUser user;
 
@@ -78,6 +84,7 @@ class CandidateAdoptionServiceTest {
                 drawingMapper,
                 simulationMapper,
                 simulationService,
+                layoutMetadataCopier,
                 new ObjectMapper(),
                 new TransactionTemplate(new NoOpTransactionManager()));
         user = new JwtUser(7L, Set.of("OPERATOR"));
@@ -159,6 +166,68 @@ class CandidateAdoptionServiceTest {
         assertThat(prepared.simulationId()).isEqualTo(99L);
         verify(simulationMapper, never()).insertInitialState(any(), any());
         verify(drawingMapper, never()).insertLayoutVersion(any());
+    }
+
+    @Test
+    void mapsSelectedExitsByIdentityEvenWhenTwoExitsShareAName() {
+        // 이름·좌표 매칭 시절에는 이름이 같은 비상구 둘 중 아무거나 골릴 수 있었다.
+        // 순서 기반 ID 맵은 두 번째 비상구를 정확히 두 번째로 잇는다.
+        stubAdoption("[[2,2],[3,2]]", movedFabric(), List.of());
+        when(drawingMapper.findLayoutExitIdsByVersionId(BASELINE_VERSION_ID)).thenReturn(List.of(910L, 911L));
+        when(drawingMapper.findLayoutExitIdsByVersionId(TARGET_VERSION_ID)).thenReturn(List.of(950L, 951L));
+        when(simulationMapper.findSelectedExitIds(BASELINE_SIMULATION_ID)).thenReturn(List.of(911L));
+
+        service.prepare(STUDY_ID, CANDIDATE_ID, user);
+
+        verify(simulationMapper).insertSimulationExits(21L, TARGET_VERSION_ID, List.of(951L));
+    }
+
+    @Test
+    void failsWhenCopiedExitCountDoesNotMatchTheSource() {
+        stubAdoption("[[2,2],[3,2]]", movedFabric(), List.of());
+        when(drawingMapper.findLayoutExitIdsByVersionId(BASELINE_VERSION_ID)).thenReturn(List.of(910L, 911L));
+        when(drawingMapper.findLayoutExitIdsByVersionId(TARGET_VERSION_ID)).thenReturn(List.of(950L));
+
+        assertThatThrownBy(() -> service.prepare(STUDY_ID, CANDIDATE_ID, user))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("개수가 다릅니다");
+    }
+
+    @Test
+    void copiesZoneMetadataWithExplicitSourceToTargetIdMaps() {
+        stubAdoption("[[2,2],[3,2]]", movedFabric(), List.of());
+        when(drawingMapper.findLayoutExitIdsByVersionId(BASELINE_VERSION_ID)).thenReturn(List.of(910L));
+        when(drawingMapper.findLayoutExitIdsByVersionId(TARGET_VERSION_ID)).thenReturn(List.of(950L));
+        when(drawingMapper.findFabricIdsByVersionId(BASELINE_VERSION_ID)).thenReturn(List.of(FABRIC_ID));
+        when(drawingMapper.findFabricIdsByVersionId(TARGET_VERSION_ID)).thenReturn(List.of(70L));
+
+        service.prepare(STUDY_ID, CANDIDATE_ID, user);
+
+        Map<ZoneElementKind, Map<Long, Long>> elementIdMaps = new java.util.EnumMap<>(ZoneElementKind.class);
+        elementIdMaps.put(ZoneElementKind.WALL, Map.of());
+        elementIdMaps.put(ZoneElementKind.PILLAR, Map.of());
+        elementIdMaps.put(ZoneElementKind.FABRIC, Map.of(FABRIC_ID, 70L));
+
+        verify(layoutMetadataCopier).copy(BASELINE_VERSION_ID, TARGET_VERSION_ID, Map.of(910L, 950L), elementIdMaps);
+    }
+
+    @Test
+    void keepsStructureConstraintsInTheAdoptedLayout() {
+        Fabric source = fabric(1, 1, 2, 2);
+        source.setId(FABRIC_ID);
+        source.setMovable(true);
+        source.setMaxMovementDistance(BigDecimal.valueOf(3));
+        source.setRotationLocked(true);
+        source.setKeepAgainstWall(true);
+        when(drawingMapper.findFabricsByVersionId(BASELINE_VERSION_ID)).thenReturn(List.of(source));
+
+        Fabric copied = service.changedFabrics(candidate(), BASELINE_VERSION_ID, TARGET_VERSION_ID)
+                .get(0);
+
+        assertThat(copied.getMovable()).isTrue();
+        assertThat(copied.getMaxMovementDistance()).isEqualByComparingTo("3");
+        assertThat(copied.getRotationLocked()).isTrue();
+        assertThat(copied.getKeepAgainstWall()).isTrue();
     }
 
     private List<List<BigDecimal>> capturedAgents() {

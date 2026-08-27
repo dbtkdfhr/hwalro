@@ -4,6 +4,15 @@ export interface FramePair<T> {
   ratio: number;
 }
 
+const INACTIVE_POSITION_THRESHOLD = -1000;
+
+export function isAgentPositionActive(positions: Float32Array, offset: number) {
+  return (
+    positions[offset] >= INACTIVE_POSITION_THRESHOLD &&
+    positions[offset + 1] >= INACTIVE_POSITION_THRESHOLD
+  );
+}
+
 export function selectFramePair<T extends { timeSeconds: number }>(
   frames: readonly T[],
   timeSeconds: number,
@@ -38,8 +47,8 @@ export function interpolatePositions(
 ) {
   const length = Math.min(previous.length, next.length, destination.length);
   for (let index = 0; index < length; index += 2) {
-    const previousInactive = previous[index] < -1000 || previous[index + 1] < -1000;
-    const nextInactive = next[index] < -1000 || next[index + 1] < -1000;
+    const previousInactive = !isAgentPositionActive(previous, index);
+    const nextInactive = !isAgentPositionActive(next, index);
     if (previousInactive) {
       destination[index] = -10_000;
       destination[index + 1] = -10_000;

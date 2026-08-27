@@ -1,0 +1,92 @@
+.simulation-view-control {
+  position: absolute;
+  top: 82px;
+  left: 22px;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.simulation-result-page .risk-zone-control {
+  position: absolute;
+  top: 132px;
+  left: 22px;
+  z-index: 8;
+}
+
+.simulation-view-toggle {
+  display: inline-flex;
+  gap: 3px;
+  border: 1px solid var(--color-workspace-line, var(--color-line-strong));
+  border-radius: 10px;
+  background: var(--color-workspace-panel, var(--color-surface));
+  padding: 3px;
+  box-shadow: var(--shadow-raised);
+}
+
+.simulation-view-toggle button {
+  min-width: 48px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  padding: 7px 10px;
+  color: var(--color-workspace-muted, var(--color-text-muted));
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.simulation-view-toggle button[aria-pressed='true'] {
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+
+.simulation-view-toggle button:focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
+.simulation-view-control > span {
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.94);
+  padding: 7px 9px;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  box-shadow: 0 8px 24px rgba(22, 55, 49, 0.1);
+}
+
+.three-risk-edit-note {
+  width: 210px;
+  margin: 7px 0 0;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.risk-zone-button:disabled {
+  border-color: var(--color-line);
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+  opacity: 0.72;
+  transform: none;
+}
+
+@media (max-width: 760px) {
+  .simulation-view-control {
+    top: 70px;
+    left: 12px;
+  }
+
+  .simulation-result-page .risk-zone-control {
+    top: 116px;
+    left: 12px;
+  }
+
+  .simulation-view-control > span {
+    display: none;
+  }
+}

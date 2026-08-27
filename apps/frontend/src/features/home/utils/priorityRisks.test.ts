@@ -4,7 +4,8 @@ import type { Risk } from '../../risks/types/risks';
 
 function risk(overrides: Partial<Risk> & Pick<Risk, 'id'>): Risk {
   return {
-    simulationResultId: null,
+    layoutId: 1,
+    layoutVersionId: null,
     assigneeId: null,
     assigneeName: null,
     title: `위험 ${overrides.id}`,
@@ -17,7 +18,7 @@ function risk(overrides: Partial<Risk> & Pick<Risk, 'id'>): Risk {
     status: '조치 중',
     attachedLaws: [],
     createdAt: '2026-08-01T09:00:00',
-    simulationTitle: null,
+    layoutTitle: null,
     ...overrides,
   };
 }
@@ -69,7 +70,7 @@ describe('selectPriorityRisks and countPriorityRisks', () => {
     expect(input.map((item) => item.id)).toEqual([1, 2]);
   });
 
-  it('countPriorityRisks는 완료되지 않은 모든 심각도의 위험 항목 전체 개수를 반환한다', () => {
+  it('countPriorityRisks는 완료되지 않은 모든 심각도의 주의 항목 전체 개수를 반환한다', () => {
     const list = [
       risk({ id: 1, severity: '높음' }),
       risk({ id: 2, severity: '보통' }),

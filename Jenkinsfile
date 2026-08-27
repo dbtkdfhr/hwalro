@@ -23,6 +23,12 @@ pipeline {
             }
         }
 
+        stage('Verify Deployment Contract') {
+            steps {
+                sh 'pnpm check:deploy'
+            }
+        }
+
         stage('Detect Changes') {
             steps {
                 script {
@@ -187,34 +193,6 @@ pipeline {
             }
         }
 
-        stage('CD: Deploy Frontend') {
-            when {
-                anyOf {
-                    branch 'main'
-                    expression { return env.GIT_BRANCH == 'origin/main' || env.GIT_BRANCH == 'main' }
-                }
-            }
-            steps {
-                sh '''
-                    aws s3 sync apps/frontend/dist/assets/ "s3://$S3_BUCKET/assets/" \
-                        --delete \
-                        --cache-control "public,max-age=31536000,immutable" \
-                        --no-progress
-
-                    aws s3 sync apps/frontend/dist/ "s3://$S3_BUCKET/" \
-                        --delete \
-                        --exclude "assets/*" \
-                        --cache-control "no-cache,no-store,must-revalidate" \
-                        --no-progress
-
-                    aws cloudfront create-invalidation \
-                        --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
-                        --paths "/*" \
-                        --no-cli-pager
-                '''
-            }
-        }
-
         stage('CD: Deploy Backend with SSM') {
             when {
                 anyOf {
@@ -226,16 +204,21 @@ pipeline {
                 script {
                     def composeBase64 = readFile(file: 'deploy/docker-compose.prod.yml', encoding: 'Base64').trim()
                     def nginxBase64 = readFile(file: 'deploy/nginx/api-gateway.conf.template', encoding: 'Base64').trim()
+                    def preflightBase64 = readFile(file: 'deploy/preflight-rds-schema.sh', encoding: 'Base64').trim()
                     def commands = [
                         'set -eu',
                         'install -d -m 0755 /opt/hwalro/deploy/nginx',
                         "printf '%s' '${composeBase64}' | base64 -d > /opt/hwalro/deploy/docker-compose.prod.yml.tmp",
                         "printf '%s' '${nginxBase64}' | base64 -d > /opt/hwalro/deploy/nginx/api-gateway.conf.template.tmp",
+                        "printf '%s' '${preflightBase64}' | base64 -d > /opt/hwalro/deploy/preflight-rds-schema.sh.tmp",
                         'test -s /opt/hwalro/deploy/docker-compose.prod.yml.tmp',
                         'test -s /opt/hwalro/deploy/nginx/api-gateway.conf.template.tmp',
+                        'test -s /opt/hwalro/deploy/preflight-rds-schema.sh.tmp',
                         'mv /opt/hwalro/deploy/docker-compose.prod.yml.tmp /opt/hwalro/deploy/docker-compose.prod.yml',
                         'mv /opt/hwalro/deploy/nginx/api-gateway.conf.template.tmp /opt/hwalro/deploy/nginx/api-gateway.conf.template',
+                        'mv /opt/hwalro/deploy/preflight-rds-schema.sh.tmp /opt/hwalro/deploy/preflight-rds-schema.sh',
                         'test -f /opt/hwalro/deploy/.env.prod',
+                        'docker run --rm --pull=missing --env-file /opt/hwalro/deploy/.env.prod --volume /opt/hwalro/deploy/preflight-rds-schema.sh:/preflight-rds-schema.sh:ro mysql:8.4 bash /preflight-rds-schema.sh',
                         "export REGISTRY_URL='${env.REGISTRY_URL}'",
                         "export AWS_REGION='${env.AWS_REGION}'",
                         'export AUTH_TAG=latest SIMULATION_TAG=latest REGULATION_TAG=latest',
@@ -300,6 +283,34 @@ pipeline {
                         error "SSM deployment failed with status ${deploymentStatus}. Command ID: ${commandId}"
                     }
                 }
+            }
+        }
+
+        stage('CD: Deploy Frontend') {
+            when {
+                anyOf {
+                    branch 'main'
+                    expression { return env.GIT_BRANCH == 'origin/main' || env.GIT_BRANCH == 'main' }
+                }
+            }
+            steps {
+                sh '''
+                    aws s3 sync apps/frontend/dist/assets/ "s3://$S3_BUCKET/assets/" \
+                        --delete \
+                        --cache-control "public,max-age=31536000,immutable" \
+                        --no-progress
+
+                    aws s3 sync apps/frontend/dist/ "s3://$S3_BUCKET/" \
+                        --delete \
+                        --exclude "assets/*" \
+                        --cache-control "no-cache,no-store,must-revalidate" \
+                        --no-progress
+
+                    aws cloudfront create-invalidation \
+                        --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
+                        --paths "/*" \
+                        --no-cli-pager
+                '''
             }
         }
     }

@@ -3,9 +3,11 @@ package com.hwalro.simulation.search.mapper;
 import com.hwalro.simulation.search.domain.LayoutSearchCandidateEntity;
 import com.hwalro.simulation.search.domain.LayoutSearchEntity;
 import com.hwalro.simulation.search.domain.LayoutSearchTrialEntity;
+import com.hwalro.simulation.search.dto.LayoutSearchMonitorItem;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 @Mapper
 public interface LayoutSearchMapper {
@@ -20,6 +22,8 @@ public interface LayoutSearchMapper {
     LayoutSearchEntity findActiveSearchByBaselineSimulationId(Long simulationId);
 
     List<LayoutSearchEntity> findActiveStudies();
+
+    List<LayoutSearchMonitorItem> findMonitorItems(@Param("requestedBy") Long requestedBy);
 
     void updateStudyStarted(Long id, LocalDateTime startedAt);
 

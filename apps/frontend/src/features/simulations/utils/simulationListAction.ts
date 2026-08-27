@@ -39,10 +39,16 @@ export function getSimulationListNavigationState({
   return { openStatusFor: id };
 }
 
-export function readStatusDialogSimulationId(state: unknown): number | null {
+function readPositiveId(state: unknown, key: string): number | null {
   if (typeof state !== 'object' || state === null) return null;
-  const simulationId = (state as Record<string, unknown>).openStatusFor;
-  return typeof simulationId === 'number' && Number.isSafeInteger(simulationId) && simulationId > 0
-    ? simulationId
-    : null;
+  const value = (state as Record<string, unknown>)[key];
+  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0 ? value : null;
+}
+
+export function readStatusDialogSimulationId(state: unknown): number | null {
+  return readPositiveId(state, 'openStatusFor');
+}
+
+export function readLayoutSearchSimulationId(state: unknown): number | null {
+  return readPositiveId(state, 'layoutSearchSimulationId');
 }

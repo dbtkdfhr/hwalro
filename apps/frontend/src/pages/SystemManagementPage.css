@@ -24,7 +24,7 @@
   border: 1px solid var(--color-line);
   border-radius: 12px;
   background: var(--color-white);
-  box-shadow: var(--shadow-card);
+  box-shadow: none;
 }
 
 .system-management-page .card-heading {
@@ -39,7 +39,7 @@
   margin: 0;
   color: var(--color-ink);
   font-size: 20px;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .system-management-page .card-heading span {
@@ -208,7 +208,7 @@
   margin: 0;
   color: var(--color-ink);
   font-size: 16px;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .system-management-page .role-section-heading p {
@@ -347,7 +347,6 @@
   display: grid;
   padding: 24px;
   place-items: center;
-  background: color-mix(in srgb, var(--color-ink) 45%, transparent);
 }
 
 .system-management-page .invite-modal {

@@ -17,9 +17,15 @@ interface SegmentResponse {
   rotation?: number;
 }
 
+interface ExitResponse extends SegmentResponse {
+  id: number;
+  active: boolean;
+}
+
 interface SimulationResultSummaryResponse {
   simulationId: number;
   simulationResultId: number;
+  layoutId: number;
   title: string;
   subtitle: string;
   durationSeconds: number;
@@ -32,10 +38,11 @@ interface SimulationResultSummaryResponse {
     height: number;
     outsideBoundary: Array<{ x: number; y: number }>;
     walls: SegmentResponse[];
-    exits: SegmentResponse[];
+    exits: ExitResponse[];
     pillars: SegmentResponse[];
     fabrics: SegmentResponse[];
     layoutTexts: Array<{ text: string; x: number; y: number }>;
+    zones: Array<{ name: string; x: number; y: number; width: number; height: number }>;
   };
   hazardZones: Array<{
     id: number;
@@ -53,6 +60,8 @@ interface SimulationResultSummaryResponse {
     thresholdValue: number;
     geometry: { x: number; y: number; width: number; height: number };
   }>;
+  isImprovement?: boolean;
+  sourceSimulationId?: number;
 }
 
 function toSummaryViewModel(
@@ -66,10 +75,11 @@ function toSummaryViewModel(
 }
 
 export const simulationResultProvider: SimulationResultProvider = {
-  async getSummary(simulationId) {
+  async getSummary(simulationId, signal) {
     try {
       const response = await apiClient.get<SimulationResultSummaryResponse>(
         `/api/simulations/${simulationId}/result`,
+        { signal },
       );
       return toSummaryViewModel(response.data);
     } catch (error) {
@@ -86,10 +96,10 @@ export const simulationResultProvider: SimulationResultProvider = {
     return response.data;
   },
 
-  async getPlaybackChunk(simulationId, sequence, totalPeople, maxDensity) {
+  async getPlaybackChunk(simulationId, sequence, totalPeople, maxDensity, signal) {
     const [timeline, heatmap] = await Promise.all([
-      simulationApi.getTimelineChunk(simulationId, sequence),
-      simulationApi.getHeatmapChunk(simulationId, sequence),
+      simulationApi.getTimelineChunk(simulationId, sequence, signal),
+      simulationApi.getHeatmapChunk(simulationId, sequence, signal),
     ]);
     return convertPlaybackChunks(timeline, heatmap, totalPeople, maxDensity);
   },

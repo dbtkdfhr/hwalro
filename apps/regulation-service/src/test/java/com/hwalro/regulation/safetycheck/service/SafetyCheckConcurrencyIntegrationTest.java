@@ -126,7 +126,8 @@ class SafetyCheckConcurrencyIntegrationTest {
                         .isEqualTo("DRAFT");
                 bothReadDraft.countDown();
                 await(startUpdates);
-                assertThat(safetyCheckMapper.updateInspectionItem(930L, 940L, "PASS", "완료 요청", LocalDateTime.now()))
+                assertThat(safetyCheckMapper.updateInspectionItem(
+                                930L, 940L, "PASS", "완료 요청", null, null, LocalDateTime.now()))
                         .isEqualTo(1);
                 return safetyCheckMapper.updateInspection(930L, "COMPLETED", "완료 요청", LocalDateTime.now());
             }));
@@ -136,7 +137,8 @@ class SafetyCheckConcurrencyIntegrationTest {
                 bothReadDraft.countDown();
                 await(startUpdates);
                 sleep(300);
-                return safetyCheckMapper.updateInspectionItem(930L, 940L, "FAIL", "뒤늦은 임시 저장", LocalDateTime.now());
+                return safetyCheckMapper.updateInspectionItem(
+                        930L, 940L, "FAIL", "뒤늦은 임시 저장", null, null, LocalDateTime.now());
             }));
 
             assertThat(bothReadDraft.await(5, TimeUnit.SECONDS)).isTrue();

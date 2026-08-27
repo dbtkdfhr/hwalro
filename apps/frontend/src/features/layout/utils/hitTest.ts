@@ -9,6 +9,8 @@ import type {
   Wall,
   WallHandle,
 } from '../types';
+import type { LayoutZone } from '../api/layoutMetadataApi';
+import { orderedElements } from './elementOrder';
 import {
   distanceToSegment,
   estimateTextWidthPx,
@@ -16,6 +18,7 @@ import {
   rectCenter,
   rotatePoint,
 } from './geometry';
+import { zoneAsRect } from './zoneGeometry';
 
 export const HIT_RADIUS_PX = 6;
 export const HANDLE_RADIUS_PX = 8;
@@ -47,7 +50,7 @@ export function textWorldBox(text: LayoutText): WorldBox {
   };
 }
 
-export function hitTestWall(point: Vec2, wall: Wall, zoom: number): boolean {
+export function hitTestWall(point: Vec2, wall: Wall | OutsideWall, zoom: number): boolean {
   const radius = pxToWorld(HIT_RADIUS_PX, zoom);
   const start = { x: wall.startX, y: wall.startY };
   const end = { x: wall.endX, y: wall.endY };
@@ -112,6 +115,7 @@ export interface ElementHit {
   textId: string | null;
   pillarId: string | null;
   fabricId: string | null;
+  zoneId: number | null;
 }
 
 export function hitTestElements(
@@ -123,81 +127,47 @@ export function hitTestElements(
   fabrics: Fabric[],
   exits: Exit[],
   zoom: number,
+  zones: LayoutZone[] = [],
 ): ElementHit {
   for (const text of texts) {
     if (hitTestText(point, text, zoom)) {
-      return {
-        wallId: null,
-        outsideWallId: null,
-        exitId: null,
-        textId: text.id,
-        pillarId: null,
-        fabricId: null,
-      };
+      return emptyHit({ textId: text.id });
     }
   }
-  for (let i = fabrics.length - 1; i >= 0; i--) {
-    const fabric = fabrics[i];
-    if (hitTestFabric(point, fabric, zoom)) {
-      return {
-        wallId: null,
-        outsideWallId: null,
-        exitId: null,
-        textId: null,
-        pillarId: null,
-        fabricId: fabric.id,
-      };
-    }
-  }
-  for (let i = pillars.length - 1; i >= 0; i--) {
-    const pillar = pillars[i];
-    if (hitTestPillar(point, pillar, zoom)) {
-      return {
-        wallId: null,
-        outsideWallId: null,
-        exitId: null,
-        textId: null,
-        pillarId: pillar.id,
-        fabricId: null,
-      };
-    }
-  }
+  // 비상구는 항상 맨 위에 그리므로 먼저 검사한다.
   for (const exit of exits) {
     if (hitTestExit(point, exit, zoom)) {
-      return {
-        wallId: null,
-        outsideWallId: null,
-        exitId: exit.id,
-        textId: null,
-        pillarId: null,
-        fabricId: null,
-      };
+      return emptyHit({ exitId: exit.id });
     }
   }
-  for (const wall of walls) {
-    if (hitTestWall(point, wall, zoom)) {
-      return {
-        wallId: wall.id,
-        outsideWallId: null,
-        exitId: null,
-        textId: null,
-        pillarId: null,
-        fabricId: null,
-      };
+  // 벽·기둥·구조물은 단일 순서 축을 공유한다. 위에 그려진 것부터 검사해야 화면과 일치한다.
+  const merged = orderedElements(walls, pillars, fabrics);
+  for (let i = merged.length - 1; i >= 0; i--) {
+    const { kind, element } = merged[i];
+    if (kind === 'fabric' && hitTestFabric(point, element as Fabric, zoom)) {
+      return emptyHit({ fabricId: element.id });
+    }
+    if (kind === 'pillar' && hitTestPillar(point, element as Pillar, zoom)) {
+      return emptyHit({ pillarId: element.id });
+    }
+    if (kind === 'wall' && hitTestWall(point, element as Wall, zoom)) {
+      return emptyHit({ wallId: element.id });
     }
   }
   for (const wall of outsideWalls) {
     if (hitTestOutsideWall(point, wall, zoom)) {
-      return {
-        wallId: null,
-        outsideWallId: wall.id,
-        exitId: null,
-        textId: null,
-        pillarId: null,
-        fabricId: null,
-      };
+      return emptyHit({ outsideWallId: wall.id });
     }
   }
+  for (const zone of zones) {
+    if (hitTestRect(zoneAsRect(zone), point, pxToWorld(HIT_RADIUS_PX, zoom))) {
+      return emptyHit({ zoneId: zone.zoneId });
+    }
+  }
+  return emptyHit({});
+}
+
+function emptyHit(partial: Partial<ElementHit>): ElementHit {
   return {
     wallId: null,
     outsideWallId: null,
@@ -205,6 +175,8 @@ export function hitTestElements(
     textId: null,
     pillarId: null,
     fabricId: null,
+    zoneId: null,
+    ...partial,
   };
 }
 

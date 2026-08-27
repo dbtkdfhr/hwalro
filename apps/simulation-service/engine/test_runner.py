@@ -11,6 +11,7 @@ from unittest.mock import patch
 import numpy as np
 from shapely.geometry import LineString, box
 
+import route_planner
 from runner import (
     AGENT_RADIUS_METERS,
     DT_SECONDS,
@@ -534,6 +535,250 @@ class RoutingValidationModeTest(unittest.TestCase):
                 json.loads((output_dir / "error.json").read_text("utf-8"))["code"],
                 "NO_REACHABLE_SELECTED_EXIT",
             )
+
+
+class RoutePreviewModeTest(unittest.TestCase):
+    """--route-preview writes the planned routes and stops before JuPedSim setup."""
+
+    def test_writes_routes_json_for_every_agent_without_running_the_simulation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            input_path = root / "input.json"
+            output_dir = root / "output"
+            input_path.write_text(
+                json.dumps(AgentRouteErrorContractTest._payload()), encoding="utf-8"
+            )
+            with (
+                patch("runner._load_dependencies", return_value=(None, None, None, "test")),
+                patch("runner._create_context") as create_context,
+            ):
+                exit_code = main(["--route-preview", str(input_path), str(output_dir)])
+
+            self.assertEqual(exit_code, 0)
+            create_context.assert_not_called()
+            self.assertFalse((output_dir / "result.json").exists())
+            self.assertFalse((output_dir / "timeline").exists())
+            self.assertFalse((output_dir / "heatmap").exists())
+
+            payload = json.loads((output_dir / "routes.json").read_text("utf-8"))
+            self.assertEqual(payload["schemaVersion"], 1)
+            self.assertEqual([route["agentId"] for route in payload["routes"]], [1, 2])
+            for route in payload["routes"]:
+                # Only selected exits may be recommended.
+                self.assertEqual(route["exitId"], 1)
+                self.assertGreaterEqual(len(route["waypoints"]), 1)
+                for waypoint in route["waypoints"]:
+                    self.assertIsInstance(waypoint["x"], float)
+                    self.assertIsInstance(waypoint["y"], float)
+                self.assertIn("x", route["terminalPoint"])
+                self.assertIn("y", route["terminalPoint"])
+                self.assertEqual(route["waypoints"][-1], route["terminalPoint"])
+                self.assertEqual(route["routeOrigin"], route["waypoints"][0])
+                self.assertFalse(route["originAdjusted"])
+                self.assertGreater(route["distanceMeters"], 0)
+
+    def test_writes_one_meter_exit_coverage_for_multiple_exits(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            input_path = root / "input.json"
+            output_dir = root / "output"
+            payload = AgentRouteErrorContractTest._payload()
+            payload["selectedExitIds"] = [1, 2]
+            input_path.write_text(json.dumps(payload), encoding="utf-8")
+
+            with patch("runner._load_dependencies", return_value=(None, None, None, "test")):
+                exit_code = main(["--route-preview", str(input_path), str(output_dir)])
+
+            self.assertEqual(exit_code, 0)
+            coverage = json.loads((output_dir / "routes.json").read_text("utf-8"))["coverage"]
+            self.assertEqual(coverage["step"], 1.0)
+            self.assertEqual(coverage["exitIds"], [1, 2])
+            left = 2 * coverage["columns"] + 1
+            right = 2 * coverage["columns"] + 3
+            self.assertEqual(coverage["labels"][left], 1)
+            self.assertEqual(coverage["labels"][right], 0)
+
+    def test_writes_each_zone_branch_route_in_the_same_preview_run(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            input_path = root / "input.json"
+            output_dir = root / "output"
+            payload = AgentRouteErrorContractTest._payload()
+            payload["selectedExitIds"] = [1, 2]
+            payload["routePreviewZones"] = [
+                {
+                    "zoneId": 30,
+                    "x": 0.5,
+                    "y": 0.5,
+                    "width": 3,
+                    "height": 3,
+                    "defaultExitId": None,
+                }
+            ]
+            input_path.write_text(json.dumps(payload), encoding="utf-8")
+
+            with (
+                patch("runner._load_dependencies", return_value=(None, None, None, "test")),
+                patch(
+                    "route_planner.naturalize_exit_approach",
+                    wraps=route_planner.naturalize_exit_approach,
+                ) as naturalize_exit_approach,
+            ):
+                exit_code = main(["--route-preview", str(input_path), str(output_dir)])
+
+            self.assertEqual(exit_code, 0)
+            zone_routes = json.loads((output_dir / "routes.json").read_text("utf-8"))[
+                "zoneRoutes"
+            ]
+            self.assertEqual({route["zoneId"] for route in zone_routes}, {30})
+            self.assertEqual({route["exitId"] for route in zone_routes}, {1, 2})
+            self.assertTrue(all(route["waypoints"] for route in zone_routes))
+            self.assertEqual(naturalize_exit_approach.call_count, len(zone_routes))
+
+    def test_zone_preview_keeps_reachable_zones_when_another_component_is_isolated(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            input_path = root / "input.json"
+            output_dir = root / "output"
+            payload = AgentRouteErrorContractTest._payload()
+            payload["agents"] = [{"x": 1, "y": 2}, {"x": 3, "y": 2}]
+            payload["drawing"]["fabrics"] = [
+                {"startX": 1.8, "startY": 0, "endX": 2.2, "endY": 4, "rotation": 0}
+            ]
+            payload["routePreviewZones"] = [
+                {
+                    "zoneId": 30,
+                    "x": 0.5,
+                    "y": 1.5,
+                    "width": 1,
+                    "height": 1,
+                    "defaultExitId": None,
+                },
+                {
+                    "zoneId": 31,
+                    "x": 2.5,
+                    "y": 1.5,
+                    "width": 1,
+                    "height": 1,
+                    "defaultExitId": None,
+                },
+            ]
+            input_path.write_text(json.dumps(payload), encoding="utf-8")
+
+            with (
+                patch("runner._load_dependencies", return_value=(None, None, None, "test")),
+                redirect_stderr(io.StringIO()),
+            ):
+                exit_code = main(["--route-preview", str(input_path), str(output_dir)])
+
+            self.assertEqual(exit_code, 0)
+            zone_routes = json.loads((output_dir / "routes.json").read_text("utf-8"))[
+                "zoneRoutes"
+            ]
+            self.assertEqual({route["zoneId"] for route in zone_routes}, {31})
+
+    def test_zone_preview_routes_an_assigned_zone_to_its_default_exit(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            input_path = root / "input.json"
+            output_dir = root / "output"
+            payload = AgentRouteErrorContractTest._payload()
+            payload["selectedExitIds"] = [1, 2]
+            payload["routePreviewZones"] = [
+                {
+                    "zoneId": 30,
+                    "x": 2.5,
+                    "y": 1.5,
+                    "width": 1,
+                    "height": 1,
+                    "defaultExitId": 2,
+                }
+            ]
+            input_path.write_text(json.dumps(payload), encoding="utf-8")
+
+            with patch("runner._load_dependencies", return_value=(None, None, None, "test")):
+                exit_code = main(["--route-preview", str(input_path), str(output_dir)])
+
+            self.assertEqual(exit_code, 0)
+            zone_routes = json.loads((output_dir / "routes.json").read_text("utf-8"))[
+                "zoneRoutes"
+            ]
+            self.assertEqual([route["exitId"] for route in zone_routes], [2])
+
+    def test_blocked_zone_does_not_move_the_route_origin_outside_the_zone(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            input_path = root / "input.json"
+            output_dir = root / "output"
+            payload = AgentRouteErrorContractTest._payload()
+            payload["agents"] = [{"x": 1, "y": 1}]
+            payload["routeOriginBounds"] = {"x": 0.5, "y": 0.5, "width": 1, "height": 1}
+            payload["drawing"]["fabrics"] = [
+                {"startX": 0, "startY": 0, "endX": 2, "endY": 2, "rotation": 0}
+            ]
+            input_path.write_text(json.dumps(payload), encoding="utf-8")
+
+            with (
+                patch("runner._load_dependencies", return_value=(None, None, None, "test")),
+                redirect_stderr(io.StringIO()),
+            ):
+                exit_code = main(["--route-preview", str(input_path), str(output_dir)])
+
+            self.assertEqual(exit_code, 3)
+            self.assertEqual(
+                json.loads((output_dir / "error.json").read_text("utf-8")),
+                {
+                    "schemaVersion": 1,
+                    "code": "NO_WALKABLE_ORIGIN_IN_ZONE",
+                    "agentId": 1,
+                },
+            )
+            self.assertFalse((output_dir / "routes.json").exists())
+
+    def test_route_preview_wins_over_validate_only(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            input_path = root / "input.json"
+            output_dir = root / "output"
+            input_path.write_text(
+                json.dumps(AgentRouteErrorContractTest._payload()), encoding="utf-8"
+            )
+            with (
+                patch("runner._load_dependencies", return_value=(None, None, None, "test")),
+                patch("runner._create_context"),
+            ):
+                exit_code = main(
+                    ["--validate-only", "--route-preview", str(input_path), str(output_dir)]
+                )
+
+            self.assertEqual(exit_code, 0)
+            self.assertTrue((output_dir / "routes.json").exists())
+
+    def test_unreachable_agent_keeps_the_existing_typed_contract(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            input_path = root / "input.json"
+            output_dir = root / "output"
+            input_path.write_text(
+                json.dumps(AgentRouteErrorContractTest._payload()), encoding="utf-8"
+            )
+            with (
+                patch("runner._load_dependencies", return_value=(None, None, None, "test")),
+                patch(
+                    "route_planner.GridRouter.plan",
+                    side_effect=AgentRouteUnreachableError("hidden position"),
+                ),
+                patch("route_planner.GridRouter.recommended_position", return_value=None),
+                redirect_stderr(io.StringIO()),
+            ):
+                exit_code = main(["--route-preview", str(input_path), str(output_dir)])
+
+            self.assertEqual(exit_code, 3)
+            self.assertEqual(
+                json.loads((output_dir / "error.json").read_text("utf-8"))["code"],
+                "AGENT_ROUTE_UNREACHABLE",
+            )
+            self.assertFalse((output_dir / "routes.json").exists())
 
 
 class TerminationDetailTest(unittest.TestCase):

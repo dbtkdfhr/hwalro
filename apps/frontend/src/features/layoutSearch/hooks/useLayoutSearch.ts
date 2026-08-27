@@ -3,10 +3,8 @@ import { AxiosError } from 'axios';
 import { getSimulationErrorMessage } from '../../simulations/utils/getSimulationErrorMessage';
 import {
   layoutSearchApi,
-  emptyConstraints,
   type LayoutSearch,
   type PreparedSimulation,
-  type SearchConstraints,
   type SearchStatus,
 } from '../api/layoutSearchApi';
 
@@ -38,7 +36,6 @@ export function useLayoutSearch(simulationId: number) {
   );
   const preparingCandidateIdsRef = useRef(new Set<number>());
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [constraints, setConstraints] = useState<SearchConstraints>(() => emptyConstraints());
 
   const refresh = useCallback(async () => {
     try {
@@ -98,12 +95,11 @@ export function useLayoutSearch(simulationId: number) {
   }, [active, refresh]);
 
   const start = useCallback(
-    async (nextConstraints?: SearchConstraints, verify = false): Promise<boolean> => {
+    async (verify = false): Promise<boolean> => {
       setStarting(true);
       setErrorMessage(null);
       try {
-        const applied = nextConstraints ?? constraints;
-        await layoutSearchApi.start(simulationId, applied, verify);
+        await layoutSearchApi.start(simulationId, verify);
         await refresh();
         return true;
       } catch (error) {
@@ -113,14 +109,7 @@ export function useLayoutSearch(simulationId: number) {
         setStarting(false);
       }
     },
-    [simulationId, constraints, refresh],
-  );
-
-  const updateConstraints = useCallback(
-    (updater: (current: SearchConstraints) => SearchConstraints) => {
-      setConstraints((current) => updater(current));
-    },
-    [],
+    [simulationId, refresh],
   );
 
   const resetToSetup = useCallback(() => {
@@ -129,31 +118,6 @@ export function useLayoutSearch(simulationId: number) {
     setErrorMessage(null);
     setCancelling(false);
   }, []);
-
-  const rejectCandidate = useCallback(
-    async (candidateId: number): Promise<boolean> => {
-      if (!search) {
-        return false;
-      }
-      const candidate = search.improvedCandidates.find(
-        (entry) => entry.candidateId === candidateId,
-      );
-      if (!candidate) {
-        return false;
-      }
-      const fabricIds = candidate.changeSet.ops.map((op) => op.fabricId);
-      const next: SearchConstraints = {
-        ...constraints,
-        moveRadii: { ...constraints.moveRadii },
-      };
-      fabricIds.forEach((fabricId) => {
-        next.moveRadii[fabricId] = 0;
-      });
-      setConstraints(next);
-      return start(next);
-    },
-    [constraints, search, start],
-  );
 
   const cancel = useCallback(async () => {
     if (!search) {
@@ -218,13 +182,10 @@ export function useLayoutSearch(simulationId: number) {
     preparingCandidateIds,
     errorMessage,
     active,
-    constraints,
     initialize,
     start,
     cancel,
     prepareSimulation,
-    updateConstraints,
     resetToSetup,
-    rejectCandidate,
   };
 }

@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 
 export type ModalSize = 'sm' | 'md' | 'lg';
+export type ModalLayer = 'default' | 'nested';
 
 export interface ModalProps {
   open: boolean;
@@ -10,6 +11,7 @@ export interface ModalProps {
   title?: string;
   description?: string;
   size?: ModalSize;
+  layer?: ModalLayer;
   children: ReactNode;
   footer?: ReactNode;
 }
@@ -20,12 +22,26 @@ const sizeClasses: Record<ModalSize, string> = {
   lg: 'max-w-3xl',
 };
 
+const layerClasses: Record<ModalLayer, string> = {
+  default: 'z-50',
+  nested: 'z-[110]',
+};
+
 const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
 
 let modalDepth = 0;
 
-function Modal({ open, onClose, title, description, size = 'md', children, footer }: ModalProps) {
+function Modal({
+  open,
+  onClose,
+  title,
+  description,
+  size = 'md',
+  layer = 'default',
+  children,
+  footer,
+}: ModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
@@ -77,7 +93,7 @@ function Modal({ open, onClose, title, description, size = 'md', children, foote
   return (
     <div
       role="presentation"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/45 p-4 backdrop-blur-sm"
+      className={`app-modal-backdrop fixed inset-0 flex items-center justify-center p-4 ${layerClasses[layer]}`}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -88,11 +104,11 @@ function Modal({ open, onClose, title, description, size = 'md', children, foote
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className={`max-h-[calc(100dvh-2.5rem)] w-full overflow-y-auto rounded-2xl bg-white shadow-overlay outline-none ${sizeClasses[size]}`}
+        className={`max-h-[calc(100dvh-2.5rem)] w-full overflow-y-auto rounded-2xl border border-line bg-surface shadow-overlay outline-none ${sizeClasses[size]}`}
       >
         <div className="flex items-start justify-between gap-4 border-b border-line-subtle px-6 py-5">
           <div className="min-w-0">
-            {title ? <h2 className="text-lg font-black tracking-tight text-ink">{title}</h2> : null}
+            {title ? <h2 className="text-lg font-bold tracking-tight text-ink">{title}</h2> : null}
             {description ? <p className="mt-1 text-sm text-text-muted">{description}</p> : null}
           </div>
           <button

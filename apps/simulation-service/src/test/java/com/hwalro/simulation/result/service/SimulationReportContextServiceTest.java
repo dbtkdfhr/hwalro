@@ -25,8 +25,8 @@ class SimulationReportContextServiceTest {
     void returnsContextsInRequestedOrderWithMetricsAndBottlenecks() {
         when(mapper.findSummaries(List.of(20L, 10L), 7L))
                 .thenReturn(List.of(
-                        new SimulationReportContextMapper.SummaryRow(10L, 100L, 7L, "현재 배치안", "현재 시뮬레이션"),
-                        new SimulationReportContextMapper.SummaryRow(20L, 200L, 7L, "비교 배치안", "비교 시뮬레이션")));
+                        new SimulationReportContextMapper.SummaryRow(10L, 100L, 7L, 300L, 400L, "현재 배치안", "현재 시뮬레이션"),
+                        new SimulationReportContextMapper.SummaryRow(20L, 200L, 7L, 300L, 400L, "비교 배치안", "비교 시뮬레이션")));
         when(mapper.findMetrics(List.of(20L, 10L)))
                 .thenReturn(List.of(
                         new SimulationReportContextMapper.MetricRow(10L, "TOTAL_EVACUATION_TIME_SECONDS", 264, "s"),
@@ -40,6 +40,9 @@ class SimulationReportContextServiceTest {
         assertThat(contexts)
                 .extracting(SimulationReportContextResponse::simulationResultId)
                 .containsExactly(20L, 10L);
+        assertThat(contexts)
+                .extracting(SimulationReportContextResponse::layoutId)
+                .containsExactly(300L, 300L);
         assertThat(contexts.get(0).metrics())
                 .containsExactly(new SimulationReportContextResponse.Metric("MAX_DENSITY", 5.2, "persons/m2"));
         assertThat(contexts.get(1).bottlenecks())
@@ -62,7 +65,8 @@ class SimulationReportContextServiceTest {
     @Test
     void rejectsMissingSimulationResult() {
         when(mapper.findSummaries(List.of(10L, 20L), 7L))
-                .thenReturn(List.of(new SimulationReportContextMapper.SummaryRow(10L, 100L, 7L, "현재 배치안", "현재 시뮬레이션")));
+                .thenReturn(List.of(
+                        new SimulationReportContextMapper.SummaryRow(10L, 100L, 7L, 300L, 400L, "현재 배치안", "현재 시뮬레이션")));
 
         assertThatThrownBy(() -> new SimulationReportContextService(mapper)
                         .findAll(List.of(10L, 20L), new JwtUser(7L, Set.of("OPERATOR"))))

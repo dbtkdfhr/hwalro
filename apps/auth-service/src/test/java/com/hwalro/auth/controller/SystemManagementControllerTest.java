@@ -60,6 +60,15 @@ class SystemManagementControllerTest {
     }
 
     @Test
+    void rejectsGeneralEmployee() throws Exception {
+        mockMvc.perform(get("/api/admin/system-management")
+                        .with(user("employee").authorities(() -> "ROLE_GENERAL_EMPLOYEE")))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(service);
+    }
+
+    @Test
     void rejectsNonPositiveUserId() throws Exception {
         mockMvc.perform(patch("/api/admin/system-management/users/-1/enabled")
                         .with(user("admin").authorities(() -> "ROLE_ADMIN"))

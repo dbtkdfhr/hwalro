@@ -14,8 +14,10 @@ function Card({
 }: CardProps) {
   return (
     <div
-      className={`rounded-xl border border-line bg-white shadow-card ${
-        interactive ? 'transition duration-150 hover:border-line-strong hover:shadow-raised' : ''
+      className={`rounded-xl border border-line bg-surface ${
+        interactive
+          ? 'transition-colors duration-150 hover:border-line-strong hover:bg-primary-faint'
+          : ''
       } ${padded ? 'p-5' : ''} ${className}`}
       {...rest}
     >

@@ -29,6 +29,39 @@ import SafetyCheckHeader from './safetyChecks/SafetyCheckHeader';
 
 const PAGE_SIZE = 5;
 
+function SnapshotThumb({ inspectionId }: { inspectionId: number }) {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    let objectUrl: string | null = null;
+    safetyCheckApi
+      .getSnapshot(inspectionId)
+      .then((blob) => {
+        if (!active) return;
+        objectUrl = URL.createObjectURL(blob);
+        setUrl(objectUrl);
+      })
+      .catch(() => {
+        // 스냅샷이 없는 점검은 썸네일 없이 표시한다.
+      });
+    return () => {
+      active = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [inspectionId]);
+
+  if (!url) return null;
+  return (
+    <img
+      src={url}
+      alt={`점검 #${inspectionId} 도면 스냅샷`}
+      className="h-16 w-24 rounded-lg border border-line bg-white object-cover"
+      loading="lazy"
+    />
+  );
+}
+
 function getSummaryTone(needsAttention: boolean, status: InspectionStatus): BadgeTone {
   if (needsAttention) return 'danger';
   if (status === 'COMPLETED') return 'success';
@@ -176,7 +209,7 @@ function SafetyCheckHistoryPage() {
 
       <Card padded={false} className="mt-5 overflow-hidden">
         <div className="border-b border-line px-5 py-4 sm:px-7">
-          <h2 className="text-xl font-black text-ink">점검 이력</h2>
+          <h2 className="text-xl font-bold text-ink">점검 이력</h2>
         </div>
         {isLoading ? (
           <div className="space-y-5 p-5 sm:p-7">
@@ -225,12 +258,17 @@ function SafetyCheckHistoryPage() {
                       className="grid w-full cursor-pointer gap-4 px-5 py-4 text-left transition hover:bg-primary-soft/30 sm:px-7 md:grid-cols-2 md:items-center xl:grid-cols-[minmax(0,1.35fr)_minmax(10rem,0.9fr)_minmax(14rem,1fr)_18rem]"
                     >
                       <div>
-                        <p className="font-black tabular-nums text-ink">
+                        <p className="font-bold tabular-nums text-ink">
                           {formatInspectionDate(inspection.createdAt)}
                         </p>
                         <p className="mt-1 text-xs tabular-nums text-text-muted">
                           점검 #{inspection.id}
                         </p>
+                        {inspection.hasSnapshot && (
+                          <div className="mt-2 hidden xl:block">
+                            <SnapshotThumb inspectionId={inspection.id} />
+                          </div>
+                        )}
                       </div>
                       <div>
                         <p className="text-xs text-text-muted">점검 담당자</p>

@@ -352,9 +352,9 @@ export function SimulationCanvas({
   return (
     <div
       ref={containerRef}
-      className={`absolute inset-0 overflow-hidden bg-background ${cursorClass}`}
+      className={`absolute inset-0 overflow-hidden bg-canvas-surround ${cursorClass}`}
       role="application"
-      aria-label="시뮬레이션 인원 및 위험구역 배치 캔버스"
+      aria-label="시뮬레이션 인원 및 위험 구역 배치 캔버스"
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}

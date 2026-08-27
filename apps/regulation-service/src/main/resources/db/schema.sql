@@ -8,7 +8,8 @@ USE hwalro_regulation;
 
 CREATE TABLE IF NOT EXISTS risks (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    simulation_result_id BIGINT UNSIGNED NULL,
+    layout_id BIGINT UNSIGNED NOT NULL,
+    layout_version_id BIGINT UNSIGNED NULL,
     assignee_id BIGINT UNSIGNED NULL,
     title VARCHAR(200) NOT NULL,
     description TEXT NULL,
@@ -20,7 +21,7 @@ CREATE TABLE IF NOT EXISTS risks (
     status VARCHAR(30) NOT NULL,
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     CONSTRAINT pk_risks PRIMARY KEY (id),
-    INDEX idx_risks_simulation_result_id (simulation_result_id),
+    INDEX idx_risks_layout_id (layout_id),
     INDEX idx_risks_assignee_id (assignee_id)
 ) ENGINE = InnoDB
   DEFAULT CHARACTER SET = utf8mb4
@@ -46,6 +47,7 @@ CREATE TABLE IF NOT EXISTS inspection_areas (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     name VARCHAR(200) NOT NULL,
     description TEXT NULL,
+    layout_id BIGINT UNSIGNED NULL,
     active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
@@ -99,6 +101,9 @@ CREATE TABLE IF NOT EXISTS safety_inspections (
     inspection_area_id BIGINT UNSIGNED NOT NULL,
     checklist_template_id BIGINT UNSIGNED NOT NULL,
     simulation_result_id BIGINT UNSIGNED NULL,
+    layout_id BIGINT UNSIGNED NULL,
+    layout_version_id BIGINT UNSIGNED NULL,
+    snapshot_image MEDIUMBLOB NULL,
     inspector_id BIGINT UNSIGNED NOT NULL,
     status VARCHAR(30) NOT NULL DEFAULT 'DRAFT',
     comment TEXT NULL,
@@ -138,6 +143,8 @@ CREATE TABLE IF NOT EXISTS safety_inspection_items (
     display_order INT UNSIGNED NOT NULL,
     result VARCHAR(30) NOT NULL DEFAULT 'PENDING',
     comment TEXT NULL,
+    marker_x DECIMAL(6, 5) NULL,
+    marker_y DECIMAL(6, 5) NULL,
     checked_at DATETIME(6) NULL,
     CONSTRAINT pk_safety_inspection_items PRIMARY KEY (id),
     CONSTRAINT uk_safety_inspection_items_template_item

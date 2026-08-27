@@ -5,6 +5,8 @@ export interface InspectionArea {
   id: number;
   name: string;
   description: string | null;
+  layoutId: number | null;
+  layoutTitle: string | null;
   active: boolean;
   inspectionCount: number;
   lastInspectedAt: string | null;
@@ -14,6 +16,7 @@ export interface InspectionArea {
 export interface InspectionAreaRequest {
   name: string;
   description: string | null;
+  layoutId: number | null;
 }
 
 export interface InspectionHistory {
@@ -24,6 +27,7 @@ export interface InspectionHistory {
   totalItemCount: number;
   failCount: number;
   reviewRequiredCount: number;
+  hasSnapshot: boolean;
   createdAt: string;
 }
 
@@ -35,6 +39,8 @@ export interface InspectionItem {
   displayOrder: number;
   result: InspectionResult;
   comment: string | null;
+  markerX: number | null;
+  markerY: number | null;
 }
 
 export interface InspectionDetail {
@@ -42,6 +48,10 @@ export interface InspectionDetail {
   inspectionAreaId: number;
   areaName: string;
   simulationResultId: number | null;
+  layoutId: number | null;
+  layoutVersionId: number | null;
+  areaLayoutId: number | null;
+  hasSnapshot: boolean;
   inspectorId: number;
   status: InspectionStatus;
   comment: string | null;
@@ -53,7 +63,7 @@ export interface InspectionDetail {
 export interface InspectionUpdateRequest {
   status: InspectionStatus;
   comment: string | null;
-  items: Array<Pick<InspectionItem, 'id' | 'result' | 'comment'>>;
+  items: Array<Pick<InspectionItem, 'id' | 'result' | 'comment' | 'markerX' | 'markerY'>>;
 }
 
 export interface ChecklistTemplateItem {

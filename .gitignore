@@ -57,6 +57,7 @@ logs/
 
 # AI agent tooling (로컬 전용 스킬·설정)
 .playwright-mcp/
+.superpowers/
 
 # Screenshots (로컬 검증 산출물)
 *.png
@@ -74,4 +75,3 @@ build
 
 # Local documentation
 docs/
-

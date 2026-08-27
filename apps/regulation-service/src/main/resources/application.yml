@@ -19,6 +19,13 @@ spring:
   application:
     name: regulation-service
 
+  cache:
+    # 국가법령정보센터 외부 호출을 메모리에 캐싱한다. 법령 데이터는 개정 전까지 불변이므로 하루 TTL로 충분하다.
+    # maximumSize는 캐시명별로 각각 적용된다.
+    type: caffeine
+    caffeine:
+      spec: maximumSize=300,expireAfterWrite=1d
+
   # 기본 실행에서는 AI 모델을 만들지 않는다. OpenAI 사용 시 ai 프로필을 활성화한다.
   ai:
     model:

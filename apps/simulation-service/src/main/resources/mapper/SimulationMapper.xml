@@ -29,37 +29,43 @@
     </select>
 
     <select id="findSimulationById" resultType="com.hwalro.simulation.simulation.domain.Simulation">
-        SELECT id,
-               layout_version_id,
-               parent_simulation_id,
-               created_by,
-               title,
-               status,
-               created_at,
-               requested_at,
-               started_at,
-               finished_at,
-               failure_message,
-               failure_detail
-        FROM simulations
-        WHERE id = #{id}
+        SELECT s.id,
+               s.layout_version_id,
+               s.parent_simulation_id,
+               s.created_by,
+               s.title,
+               s.status,
+               s.created_at,
+               s.requested_at,
+               s.started_at,
+               s.finished_at,
+               s.failure_message,
+               s.failure_detail,
+               (CASE WHEN EXISTS (SELECT 1 FROM layout_search_candidates WHERE prepared_simulation_id = s.id)
+                       OR EXISTS (SELECT 1 FROM proposal_simulations WHERE simulation_id = s.id)
+                     THEN TRUE ELSE FALSE END) AS is_improvement
+        FROM simulations s
+        WHERE s.id = #{id}
     </select>
 
     <select id="findSimulationByIdForUpdate" resultType="com.hwalro.simulation.simulation.domain.Simulation">
-        SELECT id,
-               layout_version_id,
-               parent_simulation_id,
-               created_by,
-               title,
-               status,
-               created_at,
-               requested_at,
-               started_at,
-               finished_at,
-               failure_message,
-               failure_detail
-        FROM simulations
-        WHERE id = #{id}
+        SELECT s.id,
+               s.layout_version_id,
+               s.parent_simulation_id,
+               s.created_by,
+               s.title,
+               s.status,
+               s.created_at,
+               s.requested_at,
+               s.started_at,
+               s.finished_at,
+               s.failure_message,
+               s.failure_detail,
+               (CASE WHEN EXISTS (SELECT 1 FROM layout_search_candidates WHERE prepared_simulation_id = s.id)
+                       OR EXISTS (SELECT 1 FROM proposal_simulations WHERE simulation_id = s.id)
+                     THEN TRUE ELSE FALSE END) AS is_improvement
+        FROM simulations s
+        WHERE s.id = #{id}
         FOR UPDATE
     </select>
 
@@ -71,7 +77,10 @@
                s.title,
                s.status,
                s.created_at,
-               so.total_people
+               so.total_people,
+               (CASE WHEN EXISTS (SELECT 1 FROM layout_search_candidates WHERE prepared_simulation_id = s.id)
+                       OR EXISTS (SELECT 1 FROM proposal_simulations WHERE simulation_id = s.id)
+                     THEN TRUE ELSE FALSE END) AS is_improvement
         FROM simulations s
         JOIN simulation_options so ON so.simulation_id = s.id
         WHERE s.layout_version_id = #{layoutVersionId}
@@ -96,7 +105,12 @@
                l.id AS layout_id,
                l.title AS layout_title,
                lv.version AS layout_version_number,
-               sr.termination_reason
+              sr.termination_reason,
+              (CASE WHEN EXISTS (SELECT 1 FROM layout_search_candidates WHERE prepared_simulation_id = s.id)
+                      OR EXISTS (SELECT 1 FROM proposal_simulations WHERE simulation_id = s.id)
+                    THEN TRUE ELSE FALSE END) AS is_improvement,
+              (CASE WHEN EXISTS (SELECT 1 FROM layout_searches WHERE baseline_simulation_id = s.id)
+                    THEN TRUE ELSE FALSE END) AS has_layout_search
         FROM simulations s
         LEFT JOIN simulation_options so ON so.simulation_id = s.id
         LEFT JOIN layout_versions lv ON lv.id = s.layout_version_id
@@ -109,6 +123,8 @@
             <if test="query != null and query != ''">
                 AND s.title LIKE CONCAT('%', #{query}, '%')
             </if>
+            AND NOT EXISTS (SELECT 1 FROM layout_search_candidates
+                            WHERE prepared_simulation_id = s.id)
         </where>
         ORDER BY s.created_at DESC, s.id DESC
         LIMIT #{offset}, #{size}
@@ -124,6 +140,8 @@
             <if test="query != null and query != ''">
                 AND s.title LIKE CONCAT('%', #{query}, '%')
             </if>
+            AND NOT EXISTS (SELECT 1 FROM layout_search_candidates
+                            WHERE prepared_simulation_id = s.id)
         </where>
     </select>
 
@@ -142,7 +160,10 @@
                l.id AS layout_id,
                l.title AS layout_title,
                lv.version AS layout_version_number,
-               sr.termination_reason
+               sr.termination_reason,
+               (CASE WHEN EXISTS (SELECT 1 FROM layout_search_candidates WHERE prepared_simulation_id = s.id)
+                       OR EXISTS (SELECT 1 FROM proposal_simulations WHERE simulation_id = s.id)
+                     THEN TRUE ELSE FALSE END) AS is_improvement
         FROM simulations s
         JOIN simulation_options so ON so.simulation_id = s.id
         JOIN layout_versions lv ON lv.id = s.layout_version_id
@@ -176,7 +197,10 @@
                l.id AS layout_id,
                l.title AS layout_title,
                lv.version AS layout_version_number,
-               sr.termination_reason
+               sr.termination_reason,
+               (CASE WHEN EXISTS (SELECT 1 FROM layout_search_candidates WHERE prepared_simulation_id = s.id)
+                       OR EXISTS (SELECT 1 FROM proposal_simulations WHERE simulation_id = s.id)
+                     THEN TRUE ELSE FALSE END) AS is_improvement
         FROM simulations s
         JOIN simulation_options so ON so.simulation_id = s.id
         JOIN layout_versions lv ON lv.id = s.layout_version_id
@@ -492,12 +516,10 @@
         </foreach>
     </insert>
 
-    <select id="countImprovementReferences" resultType="int">
+    <select id="countBlockingImprovementReferences" resultType="int">
         SELECT
             (SELECT COUNT(*) FROM improvement_proposals WHERE source_simulation_id = #{simulationId}) +
-            (SELECT COUNT(*) FROM proposal_simulations WHERE simulation_id = #{simulationId} OR source_simulation_id = #{simulationId}) +
-            (SELECT COUNT(*) FROM layout_searches WHERE baseline_simulation_id = #{simulationId}) +
-            (SELECT COUNT(*) FROM layout_search_candidates WHERE prepared_simulation_id = #{simulationId})
+            (SELECT COUNT(*) FROM layout_searches WHERE baseline_simulation_id = #{simulationId})
     </select>
 
     <select id="countChildSimulations" resultType="int">

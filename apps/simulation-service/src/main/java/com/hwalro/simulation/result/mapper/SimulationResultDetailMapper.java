@@ -12,7 +12,9 @@ public interface SimulationResultDetailMapper {
 
     List<SegmentRow> findWalls(@Param("layoutVersionId") Long layoutVersionId);
 
-    List<SegmentRow> findExits(@Param("layoutVersionId") Long layoutVersionId);
+    List<ExitRow> findExits(@Param("layoutVersionId") Long layoutVersionId);
+
+    List<Long> findSelectedExitIds(@Param("simulationId") Long simulationId);
 
     List<SegmentRow> findPillars(@Param("layoutVersionId") Long layoutVersionId);
 
@@ -34,17 +36,22 @@ public interface SimulationResultDetailMapper {
             Long simulationResultId,
             Long simulationId,
             Long createdBy,
+            Long layoutId,
             Long layoutVersionId,
             String layoutTitle,
             String title,
             String drawingName,
             double drawingWidth,
             double drawingHeight,
-            int totalPeople) {}
+            int totalPeople,
+            Boolean isImprovement,
+            Long sourceSimulationId) {}
 
     record MetricRow(String metricType, double metricValue) {}
 
     record SegmentRow(String name, double startX, double startY, double endX, double endY, double rotation) {}
+
+    record ExitRow(Long id, String name, double startX, double startY, double endX, double endY) {}
 
     record HazardZoneRow(Long id, double centerX, double centerY, double radius) {}
 

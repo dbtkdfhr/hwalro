@@ -7,8 +7,10 @@ import com.hwalro.regulation.report.client.SimulationServiceProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.cache.annotation.EnableCaching;
 
 @SpringBootApplication
+@EnableCaching
 @EnableConfigurationProperties({
     LawApiProperties.class,
     JwtProperties.class,

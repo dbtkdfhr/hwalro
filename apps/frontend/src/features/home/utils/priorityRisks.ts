@@ -23,7 +23,7 @@ export function filterPriorityRisks(risks: Risk[]): Risk[] {
 }
 
 /**
- * 우선 확인할 항목: 미완료 위험 항목을 심각도 높은 순(높음 > 보통 > 낮음) 및 최신순으로 정렬하여 상한선만큼 반환.
+ * 우선 확인할 항목: 미완료 주의 항목을 심각도 높은 순(높음 > 보통 > 낮음) 및 최신순으로 정렬하여 상한선만큼 반환.
  */
 export function selectPriorityRisks(risks: Risk[], limit = PRIORITY_RISK_LIMIT): Risk[] {
   return filterPriorityRisks(risks).slice(0, limit);

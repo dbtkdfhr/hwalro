@@ -20,6 +20,12 @@ export default defineConfig({
         target: 'http://localhost:8081',
         changeOrigin: true,
       },
+      // 일반 직원의 담당 구역·대피 안내 경로다. 이 규칙이 없으면 요청이 백엔드에 닿지 못하고 개발 서버가
+      // index.html을 200으로 돌려줘, 화면은 JSON 대신 HTML 문자열을 받는다.
+      '/api/my-zones': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+      },
       '/api/simulations': {
         target: 'http://localhost:8081',
         changeOrigin: true,

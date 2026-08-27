@@ -100,7 +100,7 @@ function AreaQrDialog({ area, onClose }: AreaQrDialogProps) {
               <span className="text-sm text-text-muted">QR 생성 중...</span>
             </div>
           )}
-          <p className="mt-4 text-sm font-black text-ink">{area.name}</p>
+          <p className="mt-4 text-sm font-bold text-ink">{area.name}</p>
           <p className="mt-1 w-full break-all text-center text-xs text-text-muted">{inspectUrl}</p>
           <div className="mt-4 flex w-full gap-2">
             <Button
@@ -148,7 +148,7 @@ function AreaQrDialog({ area, onClose }: AreaQrDialogProps) {
       </Modal>
       <div className="checklist-print-area hidden print:block">
         <div className="flex flex-col items-center px-6 py-8">
-          <p className="text-lg font-black">안전 점검 체크리스트</p>
+          <p className="text-lg font-bold">안전 점검 체크리스트</p>
           <p className="mt-1 text-sm">{area.name}</p>
           {dataUrl ? <img src={dataUrl} alt="" className="mt-6 h-64 w-64" /> : null}
           <p className="mt-4 text-xs text-ink/60">휴대폰으로 QR을 스캔하여 점검을 진행하세요.</p>

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hwalro.simulation.zone.mapper.EvacuationRouteStoreMapper">
+
+    <select id="findPayloadByKey" resultType="string">
+        SELECT result_payload
+        FROM evacuation_route_store
+        WHERE cache_key = #{cacheKey}
+    </select>
+
+    <select id="findLatestPayloadByVersionId" resultType="string">
+        SELECT result_payload
+        FROM evacuation_route_store
+        WHERE layout_version_id = #{layoutVersionId}
+        ORDER BY computed_at DESC
+        LIMIT 1
+    </select>
+
+    <insert id="insert">
+        INSERT INTO evacuation_route_store (cache_key, layout_id, layout_version_id, result_payload)
+        VALUES (#{cacheKey}, #{layoutId}, #{layoutVersionId}, #{resultPayload})
+        ON DUPLICATE KEY UPDATE
+            layout_id = VALUES(layout_id),
+            layout_version_id = VALUES(layout_version_id),
+            result_payload = VALUES(result_payload),
+            computed_at = CURRENT_TIMESTAMP(6)
+    </insert>
+
+    <delete id="deleteByVersionId">
+        DELETE FROM evacuation_route_store
+        WHERE layout_version_id = #{layoutVersionId}
+          AND cache_key != #{cacheKey}
+    </delete>
+
+    <delete id="trimToLimit">
+        DELETE FROM evacuation_route_store
+        WHERE computed_at &lt; (
+            SELECT boundary.computed_at
+            FROM (
+                SELECT computed_at
+                FROM evacuation_route_store
+                ORDER BY computed_at DESC
+                LIMIT 1 OFFSET #{limit}
+            ) boundary
+        )
+    </delete>
+</mapper>

@@ -60,6 +60,20 @@
         ORDER BY created_at ASC, id ASC
     </select>
 
+    <select id="findMonitorItems" resultType="com.hwalro.simulation.search.dto.LayoutSearchMonitorItem">
+        SELECT search.id AS searchId,
+               search.baseline_simulation_id AS baselineSimulationId,
+               COALESCE(NULLIF(simulation.title, ''), layout.title) AS title,
+               search.status
+        FROM layout_searches search
+        JOIN simulations simulation ON simulation.id = search.baseline_simulation_id
+        JOIN layout_versions layout_version ON layout_version.id = simulation.layout_version_id
+        JOIN layouts layout ON layout.id = layout_version.layout_id
+        WHERE search.requested_by = #{requestedBy}
+        ORDER BY search.created_at DESC, search.id DESC
+        LIMIT 100
+    </select>
+
     <update id="updateStudyStarted">
         UPDATE layout_searches
         SET status = 'DIAGNOSING', started_at = #{startedAt}

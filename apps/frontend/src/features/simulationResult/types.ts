@@ -22,6 +22,11 @@ export interface DrawingRect extends DrawingSegment {
   rotation?: number;
 }
 
+export interface DrawingExit extends DrawingSegment {
+  id: number;
+  active: boolean;
+}
+
 export interface DrawingText {
   text: string;
   x: number;
@@ -34,10 +39,20 @@ export interface SimulationDrawing {
   height: number;
   outsideBoundary: Point[];
   walls: DrawingSegment[];
-  exits: DrawingSegment[];
+  exits: DrawingExit[];
   pillars: DrawingRect[];
   fabrics: DrawingRect[];
   layoutTexts: DrawingText[];
+  /** 시뮬레이션 시점의 도면 구역. 위험 구역 이름을 이 이름으로 짓는다. */
+  zones: DrawingZone[];
+}
+
+export interface DrawingZone {
+  name: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 export interface AgentFrameBuffer {
@@ -109,6 +124,7 @@ export interface HazardZone {
 export interface SimulationResultSummaryViewModel {
   simulationId: string;
   simulationResultId: number;
+  layoutId: number;
   title: string;
   subtitle: string;
   durationSeconds: number;
@@ -118,6 +134,8 @@ export interface SimulationResultSummaryViewModel {
   drawing: SimulationDrawing;
   hazardZones: HazardZone[];
   bottlenecks: DetectedBottleneck[];
+  isImprovement?: boolean;
+  sourceSimulationId?: number;
 }
 
 export interface SimulationResultViewModel extends SimulationResultSummaryViewModel {
@@ -134,7 +152,10 @@ export interface SimulationPlaybackChunkData {
 }
 
 export interface SimulationResultProvider {
-  getSummary(simulationId: string): Promise<SimulationResultSummaryViewModel | null>;
+  getSummary(
+    simulationId: string,
+    signal?: AbortSignal,
+  ): Promise<SimulationResultSummaryViewModel | null>;
   getComparableSimulations(
     simulationId: number,
     page: number,
@@ -145,5 +166,6 @@ export interface SimulationResultProvider {
     sequence: number,
     totalPeople: number,
     maxDensity: number,
+    signal?: AbortSignal,
   ): Promise<SimulationPlaybackChunkData>;
 }

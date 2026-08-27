@@ -36,7 +36,7 @@
   border: 1px solid var(--color-line);
   border-radius: 12px;
   background: var(--color-white);
-  box-shadow: var(--shadow-card);
+  box-shadow: none;
 }
 
 .regulations-search input {
@@ -104,7 +104,7 @@
   border: 1px solid var(--color-line);
   border-radius: 12px;
   background: var(--color-white);
-  box-shadow: var(--shadow-card);
+  box-shadow: none;
 }
 
 .regulations-panel__heading,
@@ -126,7 +126,7 @@
   margin: 0;
   color: var(--color-ink);
   font-size: 20px;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .regulations-panel__heading span,

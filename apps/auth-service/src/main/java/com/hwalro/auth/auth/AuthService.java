@@ -96,6 +96,11 @@ public class AuthService {
         return userIds.isEmpty() ? List.of() : userMapper.findByUserIds(userIds);
     }
 
+    /** 구역 배정 대상이 될 수 있는 사용자 목록. {@code userIds}가 비면 전체, 있으면 해당 ID의 유효성 검증용이다. */
+    public List<User> findActiveEmployees(List<Long> userIds) {
+        return userMapper.findActiveEmployees(userIds == null ? List.of() : userIds);
+    }
+
     private void loadRoles(User user) {
         user.setRoles(userMapper.findRoleNamesByLoginId(user.getLoginId()));
     }

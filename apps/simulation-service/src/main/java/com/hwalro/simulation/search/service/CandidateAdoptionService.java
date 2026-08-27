@@ -10,6 +10,7 @@ import com.hwalro.simulation.drawing.domain.OutsideWall;
 import com.hwalro.simulation.drawing.domain.Pillar;
 import com.hwalro.simulation.drawing.domain.Wall;
 import com.hwalro.simulation.drawing.mapper.DrawingMapper;
+import com.hwalro.simulation.drawing.service.LayoutMetadataCopier;
 import com.hwalro.simulation.search.domain.CandidateStatus;
 import com.hwalro.simulation.search.domain.ChangeOp;
 import com.hwalro.simulation.search.domain.ChangeSet;
@@ -29,13 +30,16 @@ import com.hwalro.simulation.simulation.mapper.SimulationMapper;
 import com.hwalro.simulation.simulation.service.AgentPositions;
 import com.hwalro.simulation.simulation.service.SimulationGeometry;
 import com.hwalro.simulation.simulation.service.SimulationService;
+import com.hwalro.simulation.zone.domain.ZoneElementKind;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -50,6 +54,7 @@ public class CandidateAdoptionService {
     private final DrawingMapper drawingMapper;
     private final SimulationMapper simulationMapper;
     private final SimulationService simulationService;
+    private final LayoutMetadataCopier layoutMetadataCopier;
     private final ObjectMapper objectMapper;
     private final TransactionTemplate transactionTemplate;
 
@@ -58,12 +63,14 @@ public class CandidateAdoptionService {
             DrawingMapper drawingMapper,
             SimulationMapper simulationMapper,
             SimulationService simulationService,
+            LayoutMetadataCopier layoutMetadataCopier,
             ObjectMapper objectMapper,
             TransactionTemplate transactionTemplate) {
         this.layoutStudyMapper = layoutStudyMapper;
         this.drawingMapper = drawingMapper;
         this.simulationMapper = simulationMapper;
         this.simulationService = simulationService;
+        this.layoutMetadataCopier = layoutMetadataCopier;
         this.objectMapper = objectMapper;
         this.transactionTemplate = transactionTemplate;
     }
@@ -85,15 +92,23 @@ public class CandidateAdoptionService {
             if (!PREPARABLE_STATUSES.contains(candidate.getStatus())) {
                 throw new SimulationConflictException("탐색이 제안한 후보만 시뮬레이션으로 준비할 수 있습니다.");
             }
-            Long targetVersionId = candidate.getAdoptedLayoutVersionId() == null
-                    ? createAdoptedLayout(study.getBaselineLayoutVersionId(), candidate)
-                    : candidate.getAdoptedLayoutVersionId();
-            Long draftSimulationId =
-                    createDraftSimulation(study.getBaselineSimulationId(), targetVersionId, user.userId());
+            AdoptedSimulation adopted = createAdoption(study, candidate, user.userId(), "DRAFT");
             layoutStudyMapper.markCandidatePrepared(
-                    candidateId, targetVersionId, draftSimulationId, LocalDateTime.now());
-            return new PreparedSimulationDto(draftSimulationId, "DRAFT");
+                    candidateId, adopted.layoutVersionId(), adopted.simulationId(), LocalDateTime.now());
+            return new PreparedSimulationDto(adopted.simulationId(), "DRAFT");
         });
+    }
+
+    public record AdoptedSimulation(long layoutVersionId, long simulationId) {}
+
+    public AdoptedSimulation createAdoption(
+            LayoutSearchEntity study, LayoutSearchCandidateEntity candidate, long requestedBy, String derivedStatus) {
+        Long targetVersionId = candidate.getAdoptedLayoutVersionId() == null
+                ? createAdoptedLayout(study.getBaselineLayoutVersionId(), candidate)
+                : candidate.getAdoptedLayoutVersionId();
+        long simulationId =
+                createDerivedSimulation(study.getBaselineSimulationId(), targetVersionId, requestedBy, derivedStatus);
+        return new AdoptedSimulation(targetVersionId, simulationId);
     }
 
     private PreparedSimulationDto preparedSimulation(Long simulationId) {
@@ -118,12 +133,31 @@ public class CandidateAdoptionService {
         drawingMapper.insertLayoutVersion(targetVersion);
 
         drawingMapper.copyWalls(sourceVersionId, targetVersion.getId());
-        drawingMapper.copyPillars(sourceVersionId, targetVersion.getId());
         drawingMapper.copyOutsideWalls(sourceVersionId, targetVersion.getId());
         drawingMapper.copyLayoutTexts(sourceVersionId, targetVersion.getId());
+        drawingMapper.copyPillars(sourceVersionId, targetVersion.getId());
         drawingMapper.insertFabrics(changedFabrics(candidate, sourceVersionId, targetVersion.getId()));
         copyExits(sourceVersionId, targetVersion.getId());
+        layoutMetadataCopier.copy(
+                sourceVersionId,
+                targetVersion.getId(),
+                exitIdMapByOrder(sourceVersionId, targetVersion.getId()),
+                elementIdMaps(
+                        idMapByOrder(
+                                drawingMapper::findWallIdsByVersionId, sourceVersionId, targetVersion.getId(), "벽"),
+                        idMapByOrder(
+                                drawingMapper::findPillarIdsByVersionId, sourceVersionId, targetVersion.getId(), "기둥"),
+                        fabricIdMapByOrder(sourceVersionId, targetVersion.getId())));
         return targetVersion.getId();
+    }
+
+    private Map<ZoneElementKind, Map<Long, Long>> elementIdMaps(
+            Map<Long, Long> wallIdMap, Map<Long, Long> pillarIdMap, Map<Long, Long> fabricIdMap) {
+        Map<ZoneElementKind, Map<Long, Long>> elementIdMaps = new EnumMap<>(ZoneElementKind.class);
+        elementIdMaps.put(ZoneElementKind.WALL, wallIdMap);
+        elementIdMaps.put(ZoneElementKind.PILLAR, pillarIdMap);
+        elementIdMaps.put(ZoneElementKind.FABRIC, fabricIdMap);
+        return elementIdMaps;
     }
 
     List<Fabric> changedFabrics(LayoutSearchCandidateEntity candidate, Long sourceVersionId, Long targetVersionId) {
@@ -194,7 +228,8 @@ public class CandidateAdoptionService {
         }
     }
 
-    private Long createDraftSimulation(Long sourceSimulationId, Long targetVersionId, long requestedBy) {
+    Long createDerivedSimulation(
+            long sourceSimulationId, long targetVersionId, long requestedBy, String initialStatus) {
         Simulation source = simulationMapper.findSimulationById(sourceSimulationId);
         if (source == null) {
             throw new IllegalArgumentException("기준 시뮬레이션을 찾을 수 없습니다.");
@@ -212,7 +247,7 @@ public class CandidateAdoptionService {
         derived.setParentSimulationId(source.getId());
         derived.setCreatedBy(requestedBy);
         derived.setTitle(source.getTitle() != null && !source.getTitle().isBlank() ? source.getTitle() : "개선안 시뮬레이션");
-        derived.setStatus("DRAFT");
+        derived.setStatus(initialStatus);
         simulationMapper.insertSimulation(derived);
 
         SimulationOption option = copyOption(sourceOption, derived.getId());
@@ -273,30 +308,47 @@ public class CandidateAdoptionService {
         if (selectedSourceIds.isEmpty()) {
             return List.of();
         }
-        List<LayoutExit> targets = drawingMapper.findLayoutExitsByVersionId(targetVersionId);
+        Map<Long, Long> exitIdMap = exitIdMapByOrder(sourceVersionId, targetVersionId);
         List<Long> selectedTargets = new ArrayList<>();
-        for (LayoutExit source : drawingMapper.findLayoutExitsByVersionId(sourceVersionId)) {
-            if (!selectedSourceIds.contains(source.getId())) {
-                continue;
+        for (Long sourceId : selectedSourceIds) {
+            Long targetId = exitIdMap.get(sourceId);
+            if (targetId == null) {
+                throw new IllegalStateException("선택 출구를 새 배치 버전에 연결하지 못했습니다: exitId=" + sourceId);
             }
-            LayoutExit target = targets.stream()
-                    .filter(candidate -> sameExit(source, candidate))
-                    .findFirst()
-                    .orElseThrow(() -> new IllegalStateException("복제된 출구를 찾을 수 없습니다."));
-            selectedTargets.add(target.getId());
-        }
-        if (selectedTargets.size() != selectedSourceIds.size()) {
-            throw new IllegalStateException("선택 출구를 새 배치 버전에 연결하지 못했습니다.");
+            selectedTargets.add(targetId);
         }
         return List.copyOf(selectedTargets);
     }
 
-    private boolean sameExit(LayoutExit left, LayoutExit right) {
-        return left.getName().equals(right.getName())
-                && left.getStartX().compareTo(right.getStartX()) == 0
-                && left.getStartY().compareTo(right.getStartY()) == 0
-                && left.getEndX().compareTo(right.getEndX()) == 0
-                && left.getEndY().compareTo(right.getEndY()) == 0;
+    /**
+     * 원본 버전과 대상 버전의 요소를 순서로 짝지어 ID 맵을 만든다.
+     *
+     * <p>이름이나 좌표로 짝을 찾지 않는다. 이름이 같은 비상구가 둘이면 잘못된 짝을 고르고, 후보가 옮긴
+     * 구조물은 좌표가 아예 다르기 때문이다. 복사와 조회가 모두 {@code ORDER BY display_order ASC, id ASC}를
+     * 유지하므로 두 목록의 i번째끼리가 같은 요소다(비상구는 표시 순서가 없어 {@code ORDER BY id ASC}). 개수가
+     * 어긋나면 그 가정이 깨진 것이므로 즉시 실패한다.
+     */
+    private Map<Long, Long> idMapByOrder(
+            Function<Long, List<Long>> findIdsByVersionId, Long sourceVersionId, Long targetVersionId, String label) {
+        List<Long> sourceIds = findIdsByVersionId.apply(sourceVersionId);
+        List<Long> targetIds = findIdsByVersionId.apply(targetVersionId);
+        if (sourceIds.size() != targetIds.size()) {
+            throw new IllegalStateException(
+                    label + " 복사 결과가 원본과 개수가 다릅니다: source=" + sourceIds.size() + ", target=" + targetIds.size());
+        }
+        Map<Long, Long> idMap = new LinkedHashMap<>();
+        for (int index = 0; index < sourceIds.size(); index++) {
+            idMap.put(sourceIds.get(index), targetIds.get(index));
+        }
+        return idMap;
+    }
+
+    private Map<Long, Long> exitIdMapByOrder(Long sourceVersionId, Long targetVersionId) {
+        return idMapByOrder(drawingMapper::findLayoutExitIdsByVersionId, sourceVersionId, targetVersionId, "비상구");
+    }
+
+    private Map<Long, Long> fabricIdMapByOrder(Long sourceVersionId, Long targetVersionId) {
+        return idMapByOrder(drawingMapper::findFabricIdsByVersionId, sourceVersionId, targetVersionId, "구조물");
     }
 
     private Fabric copyFabric(Fabric source, Long targetVersionId) {
@@ -308,6 +360,11 @@ public class CandidateAdoptionService {
         target.setEndX(source.getEndX());
         target.setEndY(source.getEndY());
         target.setRotation(source.getRotation());
+        target.setMovable(source.getMovable());
+        target.setMaxMovementDistance(source.getMaxMovementDistance());
+        target.setRotationLocked(source.getRotationLocked());
+        target.setKeepAgainstWall(source.getKeepAgainstWall());
+        target.setDisplayOrder(source.getDisplayOrder());
         return target;
     }
 

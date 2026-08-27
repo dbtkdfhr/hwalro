@@ -2,8 +2,10 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Building2, QrCode } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../features/auth/context/AuthContext';
 import { safetyCheckApi } from '../features/safetyChecks/api/safetyCheckApi';
+import { drawingApi } from '../features/drawings/api/drawingApi';
 import type { InspectionArea } from '../features/safetyChecks/types';
 import { formatInspectionDate, getSafetyCheckError } from '../features/safetyChecks/utils';
 import {
@@ -28,6 +30,7 @@ interface AreaEditor {
   id: number | null;
   name: string;
   description: string;
+  layoutId: number | null;
 }
 
 function SafetyCheckAreasPage() {
@@ -44,6 +47,11 @@ function SafetyCheckAreasPage() {
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const canManage = user?.roles.includes('ADMIN') || user?.roles.includes('SAFETY_REVIEWER');
+  const layoutsQuery = useQuery({
+    queryKey: ['drawings-for-area-editor'],
+    queryFn: () => drawingApi.list(1, 100),
+    enabled: canManage,
+  });
   const pageCount = Math.max(1, Math.ceil(areas.length / PAGE_SIZE));
   const visibleAreas = areas.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
@@ -72,12 +80,17 @@ function SafetyCheckAreasPage() {
   }, [error, isLoading, page, pageCount]);
 
   function openCreateEditor() {
-    setEditor({ id: null, name: '', description: '' });
+    setEditor({ id: null, name: '', description: '', layoutId: null });
     setActionError(null);
   }
 
   function openEditEditor(area: InspectionArea) {
-    setEditor({ id: area.id, name: area.name, description: area.description ?? '' });
+    setEditor({
+      id: area.id,
+      name: area.name,
+      description: area.description ?? '',
+      layoutId: area.layoutId,
+    });
     setActionError(null);
   }
 
@@ -94,7 +107,11 @@ function SafetyCheckAreasPage() {
     setIsSaving(true);
     setActionError(null);
     try {
-      const body = { name, description: editor.description.trim() || null };
+      const body = {
+        name,
+        description: editor.description.trim() || null,
+        layoutId: editor.layoutId,
+      };
       if (editor.id === null) {
         const created = await safetyCheckApi.createArea(body);
         navigate(`/safety-checklists/areas/${created.id}/template`);
@@ -148,7 +165,7 @@ function SafetyCheckAreasPage() {
         <section className="mt-5" aria-labelledby="inspection-area-title">
           <div className="flex items-end justify-between gap-4">
             <div>
-              <h2 id="inspection-area-title" className="text-xl font-black text-ink">
+              <h2 id="inspection-area-title" className="text-xl font-bold text-ink">
                 점검 구역
               </h2>
               <p className="mt-2 text-sm text-text-muted">
@@ -170,7 +187,7 @@ function SafetyCheckAreasPage() {
               className="mt-5 rounded-xl border border-line bg-primary-soft p-5 shadow-card"
             >
               <div className="flex items-center justify-between gap-4">
-                <h3 className="text-lg font-black text-ink">
+                <h3 className="text-lg font-bold text-ink">
                   {editor.id === null ? '점검 구역 추가' : '점검 구역 수정'}
                 </h3>
                 <Button type="button" variant="ghost" size="sm" onClick={() => setEditor(null)}>
@@ -201,6 +218,26 @@ function SafetyCheckAreasPage() {
                       })
                     }
                   />
+                </Field>
+                <Field label="연결 도면" htmlFor="area-layout">
+                  <select
+                    id="area-layout"
+                    value={editor.layoutId === null ? '' : String(editor.layoutId)}
+                    onChange={(event) =>
+                      setEditor({
+                        ...editor,
+                        layoutId: event.target.value === '' ? null : Number(event.target.value),
+                      })
+                    }
+                    className="h-11 w-full rounded-lg border border-line bg-white px-3 text-sm text-ink outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+                  >
+                    <option value="">연결하지 않음</option>
+                    {(layoutsQuery.data?.items ?? []).map((drawing) => (
+                      <option key={drawing.id} value={drawing.id}>
+                        {drawing.title}
+                      </option>
+                    ))}
+                  </select>
                 </Field>
               </div>
               <div className="mt-4 flex justify-end">
@@ -262,12 +299,20 @@ function SafetyCheckAreasPage() {
                           점검 {area.inspectionCount}회
                         </Badge>
                       </div>
-                      <h3 className="mt-5 text-xl font-black text-ink group-hover:text-primary">
+                      <h3 className="mt-5 text-xl font-bold text-ink group-hover:text-primary">
                         {area.name}
                       </h3>
                       <p className="mt-2 min-h-10 text-sm leading-5 text-text-muted">
                         {area.description ?? '구역 설명이 없습니다.'}
                       </p>
+                      {area.layoutTitle && (
+                        <p
+                          className="mt-2 text-xs font-bold text-primary"
+                          title={`도면: ${area.layoutTitle}`}
+                        >
+                          도면 연결 · {area.layoutTitle}
+                        </p>
+                      )}
                       <div className="mt-5 flex items-center justify-between border-t border-line pt-4 text-xs text-text-muted">
                         <span>최근 점검</span>
                         <span className="font-bold tabular-nums text-text-strong">

@@ -35,4 +35,22 @@
         ORDER BY r.role_id
     </select>
 
+    <select id="findActiveEmployees" resultType="com.hwalro.auth.domain.User">
+        SELECT u.user_id,
+               u.login_id,
+               u.name
+        FROM users u
+        INNER JOIN user_roles ur ON ur.user_id = u.user_id
+        INNER JOIN roles r ON r.role_id = ur.role_id
+        WHERE r.role_name = 'GENERAL_EMPLOYEE'
+          AND u.enabled = TRUE
+        <if test="userIds != null and !userIds.isEmpty()">
+            AND u.user_id IN
+            <foreach collection="userIds" item="userId" open="(" separator="," close=")">
+                #{userId}
+            </foreach>
+        </if>
+        ORDER BY u.user_id
+    </select>
+
 </mapper>

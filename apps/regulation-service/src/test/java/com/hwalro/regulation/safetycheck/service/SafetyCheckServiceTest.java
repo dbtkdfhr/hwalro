@@ -10,7 +10,10 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.hwalro.regulation.common.jwt.ForbiddenException;
 import com.hwalro.regulation.common.jwt.JwtUser;
+import com.hwalro.regulation.risk.dto.LayoutDrawingContextResponse;
+import com.hwalro.regulation.safetycheck.client.SafetyCheckDrawingContextClient;
 import com.hwalro.regulation.safetycheck.domain.ChecklistTemplate;
 import com.hwalro.regulation.safetycheck.domain.InspectionArea;
 import com.hwalro.regulation.safetycheck.domain.SafetyInspection;
@@ -37,10 +40,42 @@ class SafetyCheckServiceTest {
     @Mock
     private SafetyCheckMapper safetyCheckMapper;
 
+    @Mock
+    private SafetyCheckDrawingContextClient drawingContextClient;
+
+    @Test
+    void storeEmployeeSeesOnlyChecklistAreasTheyInspected() {
+        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper, drawingContextClient);
+        JwtUser employee = new JwtUser(9L, Set.of("GENERAL_EMPLOYEE"));
+        InspectionAreaResponse assigned = new InspectionAreaResponse(41L, "매장", null, 802L, null, true, 0, null, true);
+        when(safetyCheckMapper.findAreas(9L)).thenReturn(List.of(assigned));
+        when(drawingContextClient.findLayoutContexts(List.of(802L), "Bearer token"))
+                .thenReturn(List.of(new LayoutDrawingContextResponse(802L, 1L, 1, "배정 도면", null)));
+
+        List<InspectionAreaResponse> response = service.getAreas(employee, "Bearer token");
+
+        assertThat(response).extracting(InspectionAreaResponse::id).containsExactly(41L);
+    }
+
+    @Test
+    void storeEmployeeCannotReadAnotherEmployeesInspection() {
+        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper, drawingContextClient);
+        JwtUser employee = new JwtUser(9L, Set.of("GENERAL_EMPLOYEE"));
+        when(safetyCheckMapper.findInspectionHeader(12L))
+                .thenReturn(new InspectionDetailHeader(
+                        12L, 2L, "B2", null, null, null, null, false, 3L, "DRAFT", null, LocalDateTime.now(), null));
+
+        assertThatThrownBy(() -> service.getInspection(12L, employee))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("이 안전 점검을 조회할 권한이 없습니다.");
+        verify(safetyCheckMapper, never()).findInspectionItems(12L);
+    }
+
     @Test
     void createsAreaWithNormalizedFields() {
-        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper);
-        InspectionAreaResponse created = new InspectionAreaResponse(41L, "Lobby", null, true, 0, null, true);
+        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper, drawingContextClient);
+        InspectionAreaResponse created =
+                new InspectionAreaResponse(41L, "Lobby", null, null, null, true, 0, null, true);
         doAnswer(invocation -> {
                     invocation.<InspectionArea>getArgument(0).setId(41L);
                     return 1;
@@ -49,7 +84,7 @@ class SafetyCheckServiceTest {
                 .insertArea(any());
         when(safetyCheckMapper.findArea(41L, null)).thenReturn(created);
 
-        InspectionAreaResponse response = service.createArea(new InspectionAreaRequest("  Lobby  ", "   "));
+        InspectionAreaResponse response = service.createArea(new InspectionAreaRequest("  Lobby  ", "   ", null));
 
         assertThat(response).isSameAs(created);
         verify(safetyCheckMapper)
@@ -58,19 +93,21 @@ class SafetyCheckServiceTest {
 
     @Test
     void getsInactiveAreaById() {
-        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper);
+        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper, drawingContextClient);
         JwtUser operator = new JwtUser(3L, Set.of("OPERATOR"));
-        InspectionAreaResponse inactive = new InspectionAreaResponse(41L, "Lobby", null, false, 2, null, true);
+        InspectionAreaResponse inactive =
+                new InspectionAreaResponse(41L, "Lobby", null, null, null, false, 2, null, true);
         when(safetyCheckMapper.findArea(41L, 3L)).thenReturn(inactive);
 
-        assertThat(service.getArea(41L, operator)).isSameAs(inactive);
+        assertThat(service.getArea(41L, operator, "Bearer token")).isSameAs(inactive);
     }
 
     @Test
     void readsHistoryAndTemplateForInactiveArea() {
-        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper);
+        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper, drawingContextClient);
         JwtUser reviewer = new JwtUser(3L, Set.of("SAFETY_REVIEWER"));
-        InspectionAreaResponse inactive = new InspectionAreaResponse(41L, "Lobby", null, false, 2, null, true);
+        InspectionAreaResponse inactive =
+                new InspectionAreaResponse(41L, "Lobby", null, null, null, false, 2, null, true);
         when(safetyCheckMapper.findArea(41L, null)).thenReturn(inactive);
         when(safetyCheckMapper.findInspectionHistory(41L, null)).thenReturn(List.of());
         when(safetyCheckMapper.findActiveTemplateId(41L)).thenReturn(null);
@@ -81,12 +118,13 @@ class SafetyCheckServiceTest {
 
     @Test
     void updatesOnlyActiveArea() {
-        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper);
-        InspectionAreaResponse updated = new InspectionAreaResponse(41L, "Hall", "North", true, 0, null, true);
+        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper, drawingContextClient);
+        InspectionAreaResponse updated =
+                new InspectionAreaResponse(41L, "Hall", "North", null, null, true, 0, null, true);
         when(safetyCheckMapper.updateArea(any())).thenReturn(1);
         when(safetyCheckMapper.findArea(41L, null)).thenReturn(updated);
 
-        assertThat(service.updateArea(41L, new InspectionAreaRequest(" Hall ", " North ")))
+        assertThat(service.updateArea(41L, new InspectionAreaRequest(" Hall ", " North ", null)))
                 .isSameAs(updated);
         verify(safetyCheckMapper)
                 .updateArea(argThat(area -> area.getId().equals(41L)
@@ -96,7 +134,7 @@ class SafetyCheckServiceTest {
 
     @Test
     void softDeletesActiveArea() {
-        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper);
+        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper, drawingContextClient);
         when(safetyCheckMapper.deactivateArea(41L)).thenReturn(1);
 
         service.deleteArea(41L);
@@ -106,15 +144,15 @@ class SafetyCheckServiceTest {
 
     @Test
     void validatesAreaFields() {
-        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper);
+        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper, drawingContextClient);
 
-        assertThatThrownBy(() -> service.createArea(new InspectionAreaRequest("   ", null)))
+        assertThatThrownBy(() -> service.createArea(new InspectionAreaRequest("   ", null, null)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Inspection area name is required.");
-        assertThatThrownBy(() -> service.createArea(new InspectionAreaRequest("x".repeat(201), null)))
+        assertThatThrownBy(() -> service.createArea(new InspectionAreaRequest("x".repeat(201), null, null)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Inspection area name must be 200 characters or fewer.");
-        assertThatThrownBy(() -> service.createArea(new InspectionAreaRequest("Lobby", "x".repeat(1001))))
+        assertThatThrownBy(() -> service.createArea(new InspectionAreaRequest("Lobby", "x".repeat(1001), null)))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Inspection area description must be 1000 characters or fewer.");
         verify(safetyCheckMapper, never()).insertArea(any());
@@ -122,7 +160,7 @@ class SafetyCheckServiceTest {
 
     @Test
     void createsInspectionFromAreasActiveTemplate() {
-        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper);
+        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper, drawingContextClient);
         JwtUser inspector = new JwtUser(3L, Set.of("SAFETY_REVIEWER"));
         when(safetyCheckMapper.areaExists(2L)).thenReturn(true);
         when(safetyCheckMapper.findActiveTemplateId(2L)).thenReturn(7L);
@@ -134,8 +172,8 @@ class SafetyCheckServiceTest {
                 .when(safetyCheckMapper)
                 .insertInspection(any(SafetyInspection.class));
         when(safetyCheckMapper.findInspectionHeader(12L))
-                .thenReturn(
-                        new InspectionDetailHeader(12L, 2L, "B2", null, 3L, "DRAFT", null, LocalDateTime.now(), null));
+                .thenReturn(new InspectionDetailHeader(
+                        12L, 2L, "B2", null, null, null, null, false, 3L, "DRAFT", null, LocalDateTime.now(), null));
         when(safetyCheckMapper.findInspectionItems(12L)).thenReturn(List.of());
 
         service.createInspection(2L, null, inspector);
@@ -145,13 +183,13 @@ class SafetyCheckServiceTest {
 
     @Test
     void returnsExistingOpenDraftInsteadOfCreatingAnother() {
-        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper);
+        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper, drawingContextClient);
         JwtUser inspector = new JwtUser(3L, Set.of("SAFETY_REVIEWER"));
         when(safetyCheckMapper.lockInspectionArea(2L)).thenReturn(2L);
         when(safetyCheckMapper.findOpenDraftId(2L, 3L)).thenReturn(12L);
         when(safetyCheckMapper.findInspectionHeader(12L))
-                .thenReturn(
-                        new InspectionDetailHeader(12L, 2L, "B2", null, 3L, "DRAFT", null, LocalDateTime.now(), null));
+                .thenReturn(new InspectionDetailHeader(
+                        12L, 2L, "B2", null, null, null, null, false, 3L, "DRAFT", null, LocalDateTime.now(), null));
         when(safetyCheckMapper.findInspectionItems(12L)).thenReturn(List.of());
 
         InspectionDetailResponse response = service.getOrCreateOpenInspection(2L, inspector);
@@ -162,7 +200,7 @@ class SafetyCheckServiceTest {
 
     @Test
     void createsOpenDraftWhenNoneExists() {
-        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper);
+        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper, drawingContextClient);
         JwtUser inspector = new JwtUser(3L, Set.of("SAFETY_REVIEWER"));
         when(safetyCheckMapper.lockInspectionArea(2L)).thenReturn(2L);
         when(safetyCheckMapper.findOpenDraftId(2L, 3L)).thenReturn(null);
@@ -176,8 +214,8 @@ class SafetyCheckServiceTest {
                 .when(safetyCheckMapper)
                 .insertInspection(any(SafetyInspection.class));
         when(safetyCheckMapper.findInspectionHeader(12L))
-                .thenReturn(
-                        new InspectionDetailHeader(12L, 2L, "B2", null, 3L, "DRAFT", null, LocalDateTime.now(), null));
+                .thenReturn(new InspectionDetailHeader(
+                        12L, 2L, "B2", null, null, null, null, false, 3L, "DRAFT", null, LocalDateTime.now(), null));
         when(safetyCheckMapper.findInspectionItems(12L)).thenReturn(List.of());
 
         InspectionDetailResponse response = service.getOrCreateOpenInspection(2L, inspector);
@@ -188,18 +226,18 @@ class SafetyCheckServiceTest {
 
     @Test
     void rejectsCompletionWhileAnItemIsPending() {
-        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper);
+        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper, drawingContextClient);
         JwtUser inspector = new JwtUser(3L, Set.of("SAFETY_REVIEWER"));
         when(safetyCheckMapper.findInspectionHeader(12L))
-                .thenReturn(
-                        new InspectionDetailHeader(12L, 2L, "B2", null, 3L, "DRAFT", null, LocalDateTime.now(), null));
+                .thenReturn(new InspectionDetailHeader(
+                        12L, 2L, "B2", null, null, null, null, false, 3L, "DRAFT", null, LocalDateTime.now(), null));
         when(safetyCheckMapper.areaExists(2L)).thenReturn(true);
         when(safetyCheckMapper.countInspectionItems(12L)).thenReturn(1);
-        when(safetyCheckMapper.updateInspectionItem(any(), any(), any(), any(), any()))
+        when(safetyCheckMapper.updateInspectionItem(any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(1);
         when(safetyCheckMapper.countPendingItems(12L)).thenReturn(1);
         InspectionUpdateRequest request = new InspectionUpdateRequest(
-                "COMPLETED", null, List.of(new InspectionUpdateRequest.ItemUpdate(22L, "PENDING", null)));
+                "COMPLETED", null, List.of(new InspectionUpdateRequest.ItemUpdate(22L, "PENDING", null, null, null)));
 
         assertThatThrownBy(() -> service.updateInspection(12L, request, inspector))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -208,14 +246,26 @@ class SafetyCheckServiceTest {
 
     @Test
     void rejectsAnyUpdateAfterInspectionIsCompleted() {
-        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper);
+        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper, drawingContextClient);
         JwtUser inspector = new JwtUser(3L, Set.of("SAFETY_REVIEWER"));
         when(safetyCheckMapper.findInspectionHeader(12L))
                 .thenReturn(new InspectionDetailHeader(
-                        12L, 2L, "B2", null, 3L, "COMPLETED", null, LocalDateTime.now(), LocalDateTime.now()));
+                        12L,
+                        2L,
+                        "B2",
+                        null,
+                        null,
+                        null,
+                        null,
+                        false,
+                        3L,
+                        "COMPLETED",
+                        null,
+                        LocalDateTime.now(),
+                        LocalDateTime.now()));
         when(safetyCheckMapper.areaExists(2L)).thenReturn(true);
         InspectionUpdateRequest request = new InspectionUpdateRequest(
-                "DRAFT", null, List.of(new InspectionUpdateRequest.ItemUpdate(22L, "PASS", null)));
+                "DRAFT", null, List.of(new InspectionUpdateRequest.ItemUpdate(22L, "PASS", null, null, null)));
 
         assertThatThrownBy(() -> service.updateInspection(12L, request, inspector))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -224,9 +274,9 @@ class SafetyCheckServiceTest {
 
     @Test
     void updatesChecklistAsANewTemplateVersion() {
-        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper);
+        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper, drawingContextClient);
         when(safetyCheckMapper.findArea(2L, null))
-                .thenReturn(new InspectionAreaResponse(2L, "B2", null, true, 0, null, true));
+                .thenReturn(new InspectionAreaResponse(2L, "B2", null, null, null, true, 0, null, true));
         when(safetyCheckMapper.lockInspectionArea(2L)).thenReturn(2L);
         when(safetyCheckMapper.findNextTemplateVersion(2L)).thenReturn(3);
         doAnswer(invocation -> {
@@ -253,11 +303,11 @@ class SafetyCheckServiceTest {
 
     @Test
     void deletesDraftInspectionOwnedByRequester() {
-        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper);
+        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper, drawingContextClient);
         JwtUser inspector = new JwtUser(3L, Set.of("SAFETY_REVIEWER"));
         when(safetyCheckMapper.findInspectionHeader(12L))
-                .thenReturn(
-                        new InspectionDetailHeader(12L, 2L, "B2", null, 3L, "DRAFT", null, LocalDateTime.now(), null));
+                .thenReturn(new InspectionDetailHeader(
+                        12L, 2L, "B2", null, null, null, null, false, 3L, "DRAFT", null, LocalDateTime.now(), null));
         when(safetyCheckMapper.deleteInspection(12L)).thenReturn(1);
 
         service.deleteInspection(12L, inspector);
@@ -267,11 +317,23 @@ class SafetyCheckServiceTest {
 
     @Test
     void rejectsDeletingCompletedInspection() {
-        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper);
+        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper, drawingContextClient);
         JwtUser inspector = new JwtUser(3L, Set.of("SAFETY_REVIEWER"));
         when(safetyCheckMapper.findInspectionHeader(12L))
                 .thenReturn(new InspectionDetailHeader(
-                        12L, 2L, "B2", null, 3L, "COMPLETED", null, LocalDateTime.now(), LocalDateTime.now()));
+                        12L,
+                        2L,
+                        "B2",
+                        null,
+                        null,
+                        null,
+                        null,
+                        false,
+                        3L,
+                        "COMPLETED",
+                        null,
+                        LocalDateTime.now(),
+                        LocalDateTime.now()));
 
         assertThatThrownBy(() -> service.deleteInspection(12L, inspector))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -280,7 +342,7 @@ class SafetyCheckServiceTest {
 
     @Test
     void rejectsUnvalidatedSimulationResultReference() {
-        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper);
+        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper, drawingContextClient);
         JwtUser inspector = new JwtUser(3L, Set.of("SAFETY_REVIEWER"));
 
         assertThatThrownBy(() -> service.createInspection(2L, new InspectionCreateRequest(55L), inspector))
@@ -291,18 +353,18 @@ class SafetyCheckServiceTest {
 
     @Test
     void rollsBackWhenAnotherRequestCompletesInspectionFirst() {
-        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper);
+        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper, drawingContextClient);
         JwtUser inspector = new JwtUser(3L, Set.of("SAFETY_REVIEWER"));
         when(safetyCheckMapper.findInspectionHeader(12L))
-                .thenReturn(
-                        new InspectionDetailHeader(12L, 2L, "B2", null, 3L, "DRAFT", null, LocalDateTime.now(), null));
+                .thenReturn(new InspectionDetailHeader(
+                        12L, 2L, "B2", null, null, null, null, false, 3L, "DRAFT", null, LocalDateTime.now(), null));
         when(safetyCheckMapper.areaExists(2L)).thenReturn(true);
         when(safetyCheckMapper.countInspectionItems(12L)).thenReturn(1);
-        when(safetyCheckMapper.updateInspectionItem(any(), any(), any(), any(), any()))
+        when(safetyCheckMapper.updateInspectionItem(any(), any(), any(), any(), any(), any(), any()))
                 .thenReturn(1);
         when(safetyCheckMapper.updateInspection(any(), any(), any(), any())).thenReturn(0);
         InspectionUpdateRequest request = new InspectionUpdateRequest(
-                "DRAFT", null, List.of(new InspectionUpdateRequest.ItemUpdate(22L, "PASS", null)));
+                "DRAFT", null, List.of(new InspectionUpdateRequest.ItemUpdate(22L, "PASS", null, null, null)));
 
         assertThatThrownBy(() -> service.updateInspection(12L, request, inspector))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -311,11 +373,11 @@ class SafetyCheckServiceTest {
 
     @Test
     void rejectsUpdatingInspectionForInactiveArea() {
-        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper);
+        SafetyCheckService service = new SafetyCheckService(safetyCheckMapper, drawingContextClient);
         JwtUser inspector = new JwtUser(3L, Set.of("SAFETY_REVIEWER"));
         when(safetyCheckMapper.findInspectionHeader(12L))
-                .thenReturn(
-                        new InspectionDetailHeader(12L, 2L, "B2", null, 3L, "DRAFT", null, LocalDateTime.now(), null));
+                .thenReturn(new InspectionDetailHeader(
+                        12L, 2L, "B2", null, null, null, null, false, 3L, "DRAFT", null, LocalDateTime.now(), null));
         InspectionUpdateRequest request = new InspectionUpdateRequest("DRAFT", null, List.of());
 
         assertThatThrownBy(() -> service.updateInspection(12L, request, inspector))

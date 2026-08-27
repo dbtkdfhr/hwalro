@@ -1147,7 +1147,8 @@ class SimulationExecutionServiceTest {
                 agents,
                 List.of(),
                 exits,
-                drawing);
+                drawing,
+                false);
     }
 
     private static Simulation simulation(String status) {

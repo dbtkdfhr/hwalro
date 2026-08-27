@@ -7,7 +7,7 @@ import type {
 } from 'react';
 
 export const inputBaseClassName =
-  'h-10 w-full rounded-lg border border-line bg-white px-3.5 text-sm text-ink placeholder:text-text-faint outline-none transition focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:bg-surface disabled:text-text-muted';
+  'h-10 w-full rounded-lg border border-line-strong bg-surface px-3.5 text-sm text-text-strong placeholder:text-text-faint outline-none transition-colors focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:bg-surface-subtle disabled:text-text-muted';
 
 export interface FieldProps {
   label: string;
@@ -21,7 +21,7 @@ export interface FieldProps {
 function Field({ label, htmlFor, required = false, hint, error, children }: FieldProps) {
   return (
     <div>
-      <label htmlFor={htmlFor} className="block text-sm font-bold text-text-strong">
+      <label htmlFor={htmlFor} className="block text-sm font-semibold text-text-strong">
         {label}
         {required ? (
           <span aria-hidden="true" className="ml-0.5 text-danger">

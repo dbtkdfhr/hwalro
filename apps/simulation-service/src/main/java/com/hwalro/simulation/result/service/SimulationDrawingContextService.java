@@ -44,7 +44,13 @@ public class SimulationDrawingContextService {
                     SummaryRow summary = summaries.get(id);
                     Drawing drawing = detailService.findDrawing(summary.simulationId());
                     return new SimulationDrawingContextResponse(
-                            id, summary.simulationId(), summary.layoutTitle(), summary.title(), drawing);
+                            id,
+                            summary.simulationId(),
+                            summary.layoutId(),
+                            summary.layoutVersionId(),
+                            summary.layoutTitle(),
+                            summary.title(),
+                            drawing);
                 })
                 .toList();
     }

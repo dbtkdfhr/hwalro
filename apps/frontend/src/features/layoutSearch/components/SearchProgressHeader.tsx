@@ -86,7 +86,7 @@ export function SearchProgressHeader({
             disabled={rerunning}
             onClick={onRerun}
           >
-            {rerunning ? '준비 중' : '제약 설정 다시 열기'}
+            {rerunning ? '준비 중' : '탐색 다시 시작'}
           </button>
         )}
       </div>

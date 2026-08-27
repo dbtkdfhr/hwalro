@@ -143,6 +143,29 @@ export function clampPan(
   return { zoom: camera.zoom, panX, panY };
 }
 
+export function centerCameraOnPoint(
+  camera: CameraLike,
+  point: Vec2,
+  docWidth: number,
+  docHeight: number,
+  viewportWidth: number,
+  viewportHeight: number,
+): CameraLike {
+  const viewWidth = viewportWidth / (camera.zoom * PX_PER_METER);
+  const viewHeight = viewportHeight / (camera.zoom * PX_PER_METER);
+  return clampPan(
+    {
+      zoom: camera.zoom,
+      panX: point.x - viewWidth / 2,
+      panY: point.y - viewHeight / 2,
+    },
+    docWidth,
+    docHeight,
+    viewWidth,
+    viewHeight,
+  );
+}
+
 function panRange(docSize: number, viewSize: number): { min: number; max: number } {
   const margin = viewSize * PAN_MARGIN_FACTOR;
   let min = -margin;

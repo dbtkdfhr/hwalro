@@ -5,6 +5,7 @@
     "dev": "turbo dev --ui tui",
     "build": "turbo build",
     "lint": "turbo lint",
+    "check:deploy": "node ./scripts/verify-deploy-contract.mjs",
     "clean": "turbo clean",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "infra": "docker compose up -d --wait && node ./scripts/load-dev-test-data.mjs",

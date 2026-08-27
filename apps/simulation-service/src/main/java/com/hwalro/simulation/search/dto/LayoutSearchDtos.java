@@ -1,6 +1,5 @@
 package com.hwalro.simulation.search.dto;
 
-import com.hwalro.simulation.search.domain.SearchConstraints;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -11,13 +10,10 @@ public final class LayoutSearchDtos {
      * {@code verify}가 참이면 후보마다 실제 엔진으로 시행해 실측 개선을 확인한다. 생략하면 확인하지 않고 후보만
      * 생성한다 - 어떤 후보를 실제로 돌려볼지는 사용자가 고른다.
      */
-    public record StartStudyRequest(SearchConstraints constraints, boolean verify) {
-        public StartStudyRequest {
-            if (constraints == null) {
-                constraints = SearchConstraints.empty();
-            }
-        }
-    }
+    /**
+     * 제약은 도면에 저장된 값을 쓴다. 요청으로 덮어쓰는 경로를 두면 진실 원천이 둘이 된다. 실행마다 달라지는 값은 {@code verify}뿐이다.
+     */
+    public record StartStudyRequest(boolean verify) {}
 
     public record StartStudyResponse(long searchId, String status) {}
 

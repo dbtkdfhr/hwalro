@@ -47,6 +47,7 @@ public class SimulationReportContextClient {
     public record Context(
             Long simulationResultId,
             Long simulationId,
+            Long layoutId,
             String layoutTitle,
             List<Metric> metrics,
             List<Bottleneck> bottlenecks) {}

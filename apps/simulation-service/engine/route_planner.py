@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from collections import OrderedDict
 from dataclasses import dataclass, field
 import heapq
 import math
+import sys
 from types import MappingProxyType
 from typing import Any, Callable, Iterable, Sequence
 
@@ -24,6 +26,14 @@ from shapely.ops import nearest_points, unary_union
 from shapely.prepared import prep
 from shapely.strtree import STRtree
 
+try:
+    from scipy.sparse import csr_matrix
+    from scipy.sparse.csgraph import dijkstra as _csgraph_dijkstra
+
+    _SCIPY_AVAILABLE = True
+except ImportError:
+    _SCIPY_AVAILABLE = False
+
 
 GRID_STEP_METERS = 0.25
 WALL_TOTAL_WIDTH_METERS = 0.02
@@ -38,6 +48,9 @@ HAZARD_BOUNDARY_MULTIPLIER = 5.0
 HAZARD_CENTER_MULTIPLIER = 500.0
 RELOCATION_MARGIN_METERS = 1e-6
 _CONNECTOR_VISIBILITY_BATCH_SIZE = 4096
+# 표시 경로의 국소적인 U자 우회만 정리한다. 끝까지 역탐색하면 경로 점 수에
+# 대해 제곱으로 연결 검사가 늘어나므로 긴 경로의 화면 응답을 지연시킨다.
+_DISPLAY_SHORTCUT_LOOKAHEAD_POINTS = 16
 _EPSILON = 1e-9
 _MOVES = (
     (-1, -1),
@@ -322,6 +335,20 @@ def relocate_agents(
     return tuple(positions), tuple(relocations)
 
 
+def relocate_agent_within_bounds(
+    routing_area,
+    agent: Point,
+    bounds: tuple[float, float, float, float],
+) -> Point | None:
+    """Return the nearest walkable point inside the requested zone bounds."""
+    x, y, width, height = bounds
+    bounded = routing_area.intersection(box(x, y, x + width, y + height))
+    if bounded.is_empty or bounded.area <= _EPSILON:
+        return None
+    relocated, _changes = relocate_agents(bounded, (agent,))
+    return relocated[0]
+
+
 def containing_component(area, contained):
     """Return the physical component containing a routing component."""
     components = list(area.geoms) if area.geom_type == "MultiPolygon" else [area]
@@ -399,6 +426,9 @@ def parse_exit_segments(drawing: dict[str, Any]) -> tuple[tuple[Point, Point], .
     return tuple(segments)
 
 
+_GRID_GRAPH_CACHE_MAX_ENTRIES = 8
+_GRID_GRAPH_CACHE: OrderedDict[tuple[str, bytes, float], dict[str, Any]] = OrderedDict()
+
 class GridRouter:
     """One global reverse-Dijkstra field; each planned route is immutable."""
 
@@ -410,6 +440,7 @@ class GridRouter:
         step: float = GRID_STEP_METERS,
         physical_walkable=None,
         exit_clearance: float = 0.3,
+        fast_single_exit_field: bool = False,
     ) -> None:
         if not math.isfinite(step) or step <= 0:
             raise ValueError("grid step must be positive")
@@ -435,6 +466,7 @@ class GridRouter:
         )
         self.step = step
         self.exit_clearance = exit_clearance
+        self._fast_single_exit_field = fast_single_exit_field
 
         min_x, min_y, max_x, max_y = walkable.bounds
         self.origin_x = math.floor(min_x / step) * step
@@ -444,16 +476,51 @@ class GridRouter:
         if self.width * self.height > 10_000_000:
             raise ValueError("drawing is too large for the 0.25m routing grid")
 
-        x_values = self.origin_x + np.arange(self.width, dtype=float) * step
-        y_values = self.origin_y + np.arange(self.height, dtype=float) * step
-        grid_x, grid_y = np.meshgrid(x_values, y_values)
-        self._x = grid_x.ravel()
-        self._y = grid_y.ravel()
-        # contains_xy keeps steering targets off geometry boundaries. The covers
-        # fallback retains valid points in extremely narrow numerical slivers.
-        self.valid = np.asarray(contains_xy(walkable, self._x, self._y), dtype=bool)
-        if not self.valid.any():
-            self.valid = np.asarray(covers(walkable, points(self._x, self._y)), dtype=bool)
+        cache_key = None
+        if not self.hazards:
+            cache_key = ("grid-graph", walkable.wkb, self.step)
+        cached = _GRID_GRAPH_CACHE.get(cache_key) if cache_key is not None else None
+        if cached is not None and cached["width"] == self.width and cached["height"] == self.height:
+            _GRID_GRAPH_CACHE.move_to_end(cache_key)
+            self._x = cached["x"]
+            self._y = cached["y"]
+            self.valid = cached["valid"].copy()
+            self._edge_costs = cached["edge_costs"].copy()
+            self._grid_edges = {
+                direction: values.copy()
+                for direction, values in cached["grid_edges"].items()
+            }
+            self._neighbor_nodes = cached["neighbor_nodes"].copy()
+        else:
+            x_values = self.origin_x + np.arange(self.width, dtype=float) * step
+            y_values = self.origin_y + np.arange(self.height, dtype=float) * step
+            grid_x, grid_y = np.meshgrid(x_values, y_values)
+            self._x = grid_x.ravel()
+            self._y = grid_y.ravel()
+            # contains_xy keeps steering targets off geometry boundaries. The covers
+            # fallback retains valid points in extremely narrow numerical slivers.
+            self.valid = np.asarray(contains_xy(walkable, self._x, self._y), dtype=bool)
+            if not self.valid.any():
+                self.valid = np.asarray(covers(walkable, points(self._x, self._y)), dtype=bool)
+            self._edge_costs = self._build_edge_costs()
+            self._grid_edges = self._build_grid_edges()
+            self._neighbor_nodes = self._build_neighbor_nodes()
+            if cache_key is not None:
+                _GRID_GRAPH_CACHE[cache_key] = {
+                    "x": self._x,
+                    "y": self._y,
+                    "valid": self.valid.copy(),
+                    "edge_costs": self._edge_costs.copy(),
+                    "grid_edges": {
+                        direction: values.copy()
+                        for direction, values in self._grid_edges.items()
+                    },
+                    "neighbor_nodes": self._neighbor_nodes.copy(),
+                    "width": self.width,
+                    "height": self.height,
+                }
+                if len(_GRID_GRAPH_CACHE) > _GRID_GRAPH_CACHE_MAX_ENTRIES:
+                    _GRID_GRAPH_CACHE.popitem(last=False)
         self.distance = np.full(self.width * self.height, np.inf, dtype=float)
         self.next_node = np.full(self.width * self.height, -1, dtype=np.int64)
         self.exit_label = np.full(self.width * self.height, -1, dtype=np.int32)
@@ -462,9 +529,6 @@ class GridRouter:
         self.approach_x = np.full(self.width * self.height, np.nan, dtype=float)
         self.approach_y = np.full(self.width * self.height, np.nan, dtype=float)
         self._plan_cache: dict[Point, tuple[Any, ...]] = {}
-        self._edge_costs = self._build_edge_costs()
-        self._grid_edges = self._build_grid_edges()
-        self._neighbor_nodes = self._build_neighbor_nodes()
         self._build_cost_field()
         self._reachable = self.valid & np.isfinite(self.distance)
         self._has_reachable = bool(self._reachable.any())
@@ -625,6 +689,8 @@ class GridRouter:
         if not derived.valid.any():
             return cold()
         if expands and (lost_nodes.size or closed_edges):
+            return cold()
+        if expands and (gained_nodes.size or opened_edges):
             return cold()
         if contracts and (gained_nodes.size or opened_edges):
             return cold()
@@ -1086,8 +1152,96 @@ class GridRouter:
         if seed_count == 0:
             raise ValueError("no selected exit is reachable from this walkable component")
 
+        if len(self.exits) == 1 and self._fast_single_exit_field and _SCIPY_AVAILABLE:
+            try:
+                if self._propagate_single_exit_cost_field_scipy(0):
+                    self._build_exit_proximity_index()
+                    return
+                else:
+                    print("scipy fast path returned False", file=sys.stderr)
+            except Exception as exc:
+                print(f"scipy fast path failed: {exc!r}", file=sys.stderr)
         self._propagate_cost_field(heap)
         self._build_exit_proximity_index()
+
+    def _propagate_single_exit_cost_field_scipy(self, label: int) -> bool:
+        neighbor_nodes = np.asarray(self._neighbor_nodes)
+        edge_costs = np.asarray(self._edge_costs, dtype=float)
+        node_count = neighbor_nodes.shape[0]
+        seed_nodes = np.flatnonzero(np.isfinite(self.distance))
+        if seed_nodes.size == 0:
+            return False
+
+        super_node = node_count
+        rows = np.repeat(np.arange(node_count), neighbor_nodes.shape[1])
+        columns = neighbor_nodes.ravel()
+        data = edge_costs.ravel()
+        keep = (columns >= 0) & np.isfinite(data)
+        graph_rows = np.concatenate([rows[keep], np.full(seed_nodes.size, super_node)])
+        graph_columns = np.concatenate([columns[keep], seed_nodes])
+        graph_data = np.concatenate([data[keep], self.distance[seed_nodes]])
+        graph = csr_matrix(
+            (graph_data, (graph_rows, graph_columns)), shape=(node_count + 1, node_count + 1)
+        )
+        distances, predecessors = _csgraph_dijkstra(
+            graph, directed=True, indices=np.array([super_node]), return_predecessors=True
+        )
+        distances = distances[0][:node_count]
+        parents = predecessors[0][:node_count]
+
+        reachable = np.isfinite(distances)
+        best_cost = np.where(reachable, distances, np.inf)
+
+        is_seed = np.zeros(node_count, dtype=bool)
+        is_seed[seed_nodes] = True
+        winner_seed = np.full(node_count, -1, dtype=np.int64)
+        winner_seed[seed_nodes] = np.arange(seed_nodes.size)
+
+        terminal_x = np.full(node_count, np.nan, dtype=float)
+        terminal_y = np.full(node_count, np.nan, dtype=float)
+        approach_x = np.full(node_count, np.nan, dtype=float)
+        approach_y = np.full(node_count, np.nan, dtype=float)
+        terminal_x[seed_nodes] = self.terminal_x[seed_nodes]
+        terminal_y[seed_nodes] = self.terminal_y[seed_nodes]
+        approach_x[seed_nodes] = self.approach_x[seed_nodes]
+        approach_y[seed_nodes] = self.approach_y[seed_nodes]
+
+        next_node = np.full(node_count, -1, dtype=np.int64)
+        visit_order = np.argsort(distances, kind="stable")
+        for node in visit_order:
+            if not reachable[node]:
+                break
+            if is_seed[node]:
+                continue
+            parent = int(parents[node])
+            if parent < 0 or parent >= node_count:
+                continue
+            winner_seed[node] = winner_seed[parent]
+            next_node[node] = parent
+            terminal_x[node] = terminal_x[parent]
+            terminal_y[node] = terminal_y[parent]
+            approach_x[node] = approach_x[parent]
+            approach_y[node] = approach_y[parent]
+
+        has_winner = reachable & (winner_seed >= 0)
+        self.distance[:] = np.where(reachable, best_cost, np.inf)
+        self.exit_label[:] = np.where(reachable, label, -1).astype(np.int32)
+        self.next_node[:] = next_node
+        self.terminal_x[:] = terminal_x
+        self.terminal_y[:] = terminal_y
+        self.approach_x[:] = approach_x
+        self.approach_y[:] = approach_y
+
+        missing = reachable & ~has_winner
+        if np.any(missing):
+            self.distance[missing] = np.inf
+            self.exit_label[missing] = -1
+            self.next_node[missing] = -1
+            self.terminal_x[missing] = np.nan
+            self.terminal_y[missing] = np.nan
+            self.approach_x[missing] = np.nan
+            self.approach_y[missing] = np.nan
+        return True
 
     def _build_exit_proximity_index(self) -> None:
         labels = [
@@ -1351,6 +1505,10 @@ class GridRouter:
 
     def can_connect(self, start: Point, end: Point) -> bool:
         return self._prepared_walkable.covers(LineString((start, end)))
+
+    def display_connection_cost(self, start: Point, end: Point) -> float:
+        """Return hazard-aware cost for a display-path shortcut candidate."""
+        return self._expanded_connector_cost(start, end)
 
     def can_connect_many(self, starts: Sequence[Point], ends: Sequence[Point]) -> np.ndarray:
         if len(starts) != len(ends):
@@ -1854,3 +2012,235 @@ def _simplify_collinear(
             result.append(current)
     result.append(path[-1])
     return result
+
+
+def orthogonalize_display_path(
+    path: Sequence[Point], can_connect: Callable[[Point, Point], bool]
+) -> list[Point]:
+    if len(path) < 2:
+        return list(path)
+
+    orthogonal = [path[0]]
+    for end in path[1:]:
+        start = orthogonal[-1]
+        if abs(start[0] - end[0]) <= _EPSILON or abs(start[1] - end[1]) <= _EPSILON:
+            orthogonal.append(end)
+            continue
+
+        horizontal_then_vertical = (end[0], start[1])
+        vertical_then_horizontal = (start[0], end[1])
+        bend = next(
+            (
+                candidate
+                for candidate in (horizontal_then_vertical, vertical_then_horizontal)
+                if can_connect(start, candidate) and can_connect(candidate, end)
+            ),
+            None,
+        )
+        if bend is not None:
+            orthogonal.append(bend)
+        orthogonal.append(end)
+
+    return _simplify_collinear(orthogonal, can_connect)
+
+
+def simplify_orthogonal_display_path(
+    path: Sequence[Point],
+    can_connect: Callable[[Point, Point], bool],
+    segment_cost: Callable[[Point, Point], float] = math.dist,
+) -> list[Point]:
+    """Remove walkable rectangular detours without increasing routing cost."""
+    if len(path) < 3:
+        return list(path)
+
+    accumulated_cost = [0.0]
+    for start, end in zip(path, path[1:]):
+        accumulated_cost.append(accumulated_cost[-1] + segment_cost(start, end))
+
+    simplified = [path[0]]
+    start_index = 0
+    while start_index < len(path) - 1:
+        start = path[start_index]
+        selected_end = start_index + 1
+        selected_connector = [path[selected_end]]
+
+        furthest_end = min(
+            len(path) - 1,
+            start_index + _DISPLAY_SHORTCUT_LOOKAHEAD_POINTS,
+        )
+        for end_index in range(furthest_end, start_index + 1, -1):
+            end = path[end_index]
+            connectors: list[list[Point]] = []
+            if abs(start[0] - end[0]) <= _EPSILON or abs(start[1] - end[1]) <= _EPSILON:
+                if can_connect(start, end):
+                    connectors.append([end])
+            else:
+                for bend in ((end[0], start[1]), (start[0], end[1])):
+                    if can_connect(start, bend) and can_connect(bend, end):
+                        connectors.append([bend, end])
+            if not connectors:
+                continue
+
+            original_cost = accumulated_cost[end_index] - accumulated_cost[start_index]
+
+            def connector_cost(connector: Sequence[Point]) -> float:
+                points = [start, *connector]
+                return sum(
+                    segment_cost(connector_start, connector_end)
+                    for connector_start, connector_end in zip(points, points[1:])
+                )
+
+            affordable = [
+                connector
+                for connector in connectors
+                if connector_cost(connector) <= original_cost + _EPSILON
+            ]
+            if not affordable:
+                continue
+            selected_end = end_index
+            selected_connector = min(
+                affordable,
+                key=lambda connector: (connector_cost(connector), len(connector), connector),
+            )
+            break
+
+        for point in selected_connector:
+            if math.dist(simplified[-1], point) > _EPSILON:
+                simplified.append(point)
+        start_index = selected_end
+
+    return simplified
+
+
+def naturalize_exit_approach(
+    path: Sequence[Point],
+    can_connect: Callable[[Point, Point], bool],
+    preferred_distance: float = 1.0,
+    segment_cost: Callable[[Point, Point], float] = math.dist,
+) -> list[Point]:
+    """Move the final display-path turn away from an exit when space permits.
+
+    Planned routes already finish at an approach point normal to the exit before
+    crossing to its terminal point.  Extending that connector backwards gives the
+    preview a visually natural final run without changing the physical route used
+    by the simulation.
+    """
+    displayed = simplify_orthogonal_display_path(
+        orthogonalize_display_path(path, can_connect),
+        can_connect,
+        segment_cost,
+    )
+    if len(path) < 3 or not math.isfinite(preferred_distance) or preferred_distance <= 0:
+        return displayed
+
+    existing_approach = path[-2]
+    terminal = path[-1]
+    connector_x = existing_approach[0] - terminal[0]
+    connector_y = existing_approach[1] - terminal[1]
+    connector_length = math.hypot(connector_x, connector_y)
+    if connector_length <= _EPSILON or connector_length + _EPSILON >= preferred_distance:
+        return displayed
+
+    inward = (connector_x / connector_length, connector_y / connector_length)
+    full_prefix = simplify_orthogonal_display_path(
+        orthogonalize_display_path(path[:-2], can_connect),
+        can_connect,
+        segment_cost,
+    )
+    attempted_distances = tuple(
+        preferred_distance * ratio for ratio in (1.0, 0.8, 0.6, 0.4)
+    )
+    for distance in attempted_distances:
+        if distance <= connector_length + _EPSILON:
+            continue
+        candidate = (
+            terminal[0] + inward[0] * distance,
+            terminal[1] + inward[1] * distance,
+        )
+        if not can_connect(candidate, existing_approach):
+            continue
+
+        anchor_index = next(
+            (
+                index
+                for index in range(len(full_prefix) - 1, -1, -1)
+                if (
+                    (full_prefix[index][0] - terminal[0]) * inward[0]
+                    + (full_prefix[index][1] - terminal[1]) * inward[1]
+                )
+                + _EPSILON
+                >= distance
+            ),
+            None,
+        )
+        if anchor_index is None:
+            continue
+        prefix = full_prefix[: anchor_index + 1]
+        transition_start = prefix[-1]
+        transition = []
+        if (
+            abs(transition_start[0] - candidate[0]) > _EPSILON
+            and abs(transition_start[1] - candidate[1]) > _EPSILON
+        ):
+            bends = (
+                (candidate[0], transition_start[1]),
+                (transition_start[0], candidate[1]),
+            )
+            valid_bends = [
+                bend
+                for bend in bends
+                if can_connect(transition_start, bend) and can_connect(bend, candidate)
+            ]
+            if not valid_bends:
+                continue
+            preferred_bend = min(
+                valid_bends,
+                key=lambda bend: abs(
+                    (candidate[0] - bend[0]) * inward[0]
+                    + (candidate[1] - bend[1]) * inward[1]
+                ),
+            )
+            transition.append(preferred_bend)
+        transition.append(candidate)
+        adjusted = _simplify_collinear(
+            [*prefix, *transition, terminal], can_connect
+        )
+        if len(adjusted) < 2:
+            continue
+        if any(
+            not can_connect(start, end)
+            for start, end in zip(adjusted[:-2], adjusted[1:-1])
+        ):
+            continue
+
+        final_start = adjusted[-2]
+        final_x = final_start[0] - terminal[0]
+        final_y = final_start[1] - terminal[1]
+        final_length = math.hypot(final_x, final_y)
+        cross = final_x * inward[1] - final_y * inward[0]
+        if (
+            final_length + _EPSILON < distance
+            or abs(cross) > _EPSILON * max(final_length, 1.0)
+            or final_x * inward[0] + final_y * inward[1] <= 0
+        ):
+            continue
+
+        if len(adjusted) >= 3:
+            before_x = final_start[0] - adjusted[-3][0]
+            before_y = final_start[1] - adjusted[-3][1]
+            before_length = math.hypot(before_x, before_y)
+            turn_dot = before_x * final_x + before_y * final_y
+            turn_cross = before_x * final_y - before_y * final_x
+            is_right_angle = abs(turn_dot) <= _EPSILON * max(
+                before_length * final_length, 1.0
+            )
+            is_straight = (
+                abs(turn_cross)
+                <= _EPSILON * max(before_length * final_length, 1.0)
+                and turn_dot < 0
+            )
+            if not is_right_angle and not is_straight:
+                continue
+        return adjusted
+
+    return displayed

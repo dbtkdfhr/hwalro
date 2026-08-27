@@ -113,7 +113,7 @@ public class RegulationService {
                 articles(law.path("조문").path("조문단위")));
     }
 
-    // P2: 위험 항목과 법령 조문을 연결하는 기능은 별도 API와 데이터 모델로 구현한다.
+    // P2: 주의 항목과 법령 조문을 연결하는 기능은 별도 API와 데이터 모델로 구현한다.
 
     /** 검색 전 화면에 보여줄 안전 관련 법령 후보를 키워드별 결과에서 만든다. */
     private RegulationSearchResponse searchDefaultSafetyLaws(int page, int size) {

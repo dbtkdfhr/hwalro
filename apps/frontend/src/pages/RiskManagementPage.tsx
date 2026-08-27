@@ -86,20 +86,20 @@ function RiskManagementPage() {
         <div className="border-b border-line pb-6">
           <PageHeader
             eyebrow="안전 운영"
-            title="위험 예상 항목 관리"
-            description="시뮬레이션과 현장 점검에서 발견한 위험을 담당자와 상태로 관리합니다."
+            title="주의 항목 관리"
+            description="도면과 시뮬레이션에서 발견한 주의 항목을 도면 기준으로 관리합니다."
             actions={
               <Button size="lg" onClick={() => setIsCreateOpen(true)}>
-                위험 예상 항목 등록
+                주의 항목 등록
               </Button>
             }
           />
         </div>
 
-        <Card className="mt-5" aria-label="위험 예상 항목 검색">
+        <Card className="mt-5" aria-label="주의 항목 검색">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
             <label htmlFor="risk-search" className="sr-only">
-              위험 항목 검색
+              주의 항목 검색
             </label>
             <Input
               id="risk-search"
@@ -111,7 +111,7 @@ function RiskManagementPage() {
                 setQuery(event.target.value);
                 setPage(1);
               }}
-              placeholder="위험 항목 검색"
+              placeholder="주의 항목 검색"
               className="min-w-0 flex-1"
             />
           </div>
@@ -120,7 +120,7 @@ function RiskManagementPage() {
         <div className="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
           <Card padded={false} className="flex min-h-[500px] flex-col overflow-hidden">
             <div className="border-b border-line px-5 py-4 sm:px-7">
-              <h2 className="text-xl font-black text-ink">위험 예상 목록</h2>
+              <h2 className="text-xl font-bold text-ink">주의 항목 목록</h2>
             </div>
             <div className="flex min-h-0 flex-1 flex-col">
               {isPending ? (
@@ -151,10 +151,10 @@ function RiskManagementPage() {
                     emptyTitle={
                       debouncedQuery.trim()
                         ? '검색 결과가 없습니다.'
-                        : '등록된 위험 항목이 없습니다.'
+                        : '등록된 주의 항목이 없습니다.'
                     }
                     emptyDescription={
-                      debouncedQuery.trim() ? '다른 검색어로 위험 항목을 검색해 보세요.' : undefined
+                      debouncedQuery.trim() ? '다른 검색어로 주의 항목을 검색해 보세요.' : undefined
                     }
                   />
                   {items.length > 0 && (
@@ -166,7 +166,7 @@ function RiskManagementPage() {
                         page={page}
                         pageCount={pageCount}
                         onPageChange={handlePageChange}
-                        ariaLabel="위험 예상 목록 페이지"
+                        ariaLabel="주의 항목 목록 페이지"
                       />
                     </div>
                   )}
@@ -176,7 +176,7 @@ function RiskManagementPage() {
           </Card>
 
           <Card padded={false} className="flex min-h-[500px] flex-col p-6">
-            <h2 className="text-xl font-black text-ink">위험 상세</h2>
+            <h2 className="text-xl font-bold text-ink">주의 항목 상세</h2>
             <div className="mt-5">
               {isLinkedRiskPending ? (
                 <div className="space-y-4">
@@ -189,7 +189,7 @@ function RiskManagementPage() {
               ) : selectedItem ? (
                 <RiskDetailPanel key={selectedItem.id} risk={selectedItem} />
               ) : (
-                <EmptyState icon={ShieldAlert} title="선택된 위험 항목이 없습니다." />
+                <EmptyState icon={ShieldAlert} title="선택된 주의 항목이 없습니다." />
               )}
             </div>
           </Card>

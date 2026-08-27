@@ -59,15 +59,15 @@ class AiReportDraftServiceTest {
         verifyNoInteractions(simulationClient, riskMapper, generator);
         verify(reportService, never()).completeAiGeneration(any(), any(), any());
 
-        Context source = new Context(10L, 100L, "현재 배치안", List.of(), List.of());
-        Context comparison = new Context(20L, 200L, "비교 배치안", List.of(), List.of());
+        Context source = new Context(10L, 100L, 1000L, "현재 배치안", List.of(), List.of());
+        Context comparison = new Context(20L, 200L, 2000L, "비교 배치안", List.of(), List.of());
         when(simulationClient.findAll(List.of(10L, 20L), "Bearer token")).thenReturn(List.of(source, comparison));
         Risk risk = new Risk();
-        risk.setSimulationResultId(10L);
-        risk.setTitle("위험 예상 구역");
+        risk.setLayoutId(1000L);
+        risk.setTitle("주의 구역");
         risk.setDescription("사용자 지정");
         risk.setSeverity("HIGH");
-        when(riskMapper.findBySimulationResultIds(List.of(10L, 20L))).thenReturn(List.of(risk));
+        when(riskMapper.findByLayoutIds(List.of(1000L, 2000L))).thenReturn(List.of(risk));
         ReportContent content = new ReportContent("개요", "분석", "개선");
         when(generator.generate(any())).thenReturn(content);
 
@@ -77,6 +77,8 @@ class AiReportDraftServiceTest {
         verify(generator).generate(inputCaptor.capture());
         assertThat(inputCaptor.getValue().source()).isEqualTo(source);
         assertThat(inputCaptor.getValue().comparisons()).containsExactly(comparison);
+        assertThat(inputCaptor.getValue().risks())
+                .containsExactly(new ReportDraftInput.Risk(1000L, "주의 구역", "사용자 지정", "HIGH"));
         verify(reportService).completeAiGeneration(30L, "현재 배치안 안전 검토 보고서", content);
         verify(reportService, never()).failAiGeneration(30L);
     }

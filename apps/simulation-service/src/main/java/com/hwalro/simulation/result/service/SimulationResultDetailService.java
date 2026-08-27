@@ -13,20 +13,25 @@ import com.hwalro.simulation.result.dto.SimulationResultDetailResponse;
 import com.hwalro.simulation.result.dto.SimulationResultDetailResponse.Bottleneck;
 import com.hwalro.simulation.result.dto.SimulationResultDetailResponse.Bounds;
 import com.hwalro.simulation.result.dto.SimulationResultDetailResponse.Drawing;
+import com.hwalro.simulation.result.dto.SimulationResultDetailResponse.Exit;
 import com.hwalro.simulation.result.dto.SimulationResultDetailResponse.HazardZone;
 import com.hwalro.simulation.result.dto.SimulationResultDetailResponse.LayoutText;
 import com.hwalro.simulation.result.dto.SimulationResultDetailResponse.Point;
 import com.hwalro.simulation.result.dto.SimulationResultDetailResponse.Rectangle;
 import com.hwalro.simulation.result.dto.SimulationResultDetailResponse.Segment;
 import com.hwalro.simulation.result.mapper.SimulationResultDetailMapper;
+import com.hwalro.simulation.result.mapper.SimulationResultDetailMapper.ExitRow;
 import com.hwalro.simulation.result.mapper.SimulationResultDetailMapper.SegmentRow;
 import com.hwalro.simulation.result.mapper.SimulationResultDetailMapper.SummaryRow;
 import com.hwalro.simulation.simulation.exception.SimulationNotFoundException;
 import com.hwalro.simulation.simulation.service.SimulationGeometry;
+import com.hwalro.simulation.zone.mapper.LayoutZoneMapper;
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -37,16 +42,19 @@ public class SimulationResultDetailService {
 
     private final SimulationResultDetailMapper mapper;
     private final DrawingMapper drawingMapper;
+    private final LayoutZoneMapper layoutZoneMapper;
     private final ObjectMapper objectMapper;
     private final DensityThresholdProvider densityThresholdProvider;
 
     public SimulationResultDetailService(
             SimulationResultDetailMapper mapper,
             DrawingMapper drawingMapper,
+            LayoutZoneMapper layoutZoneMapper,
             ObjectMapper objectMapper,
             DensityThresholdProvider densityThresholdProvider) {
         this.mapper = mapper;
         this.drawingMapper = drawingMapper;
+        this.layoutZoneMapper = layoutZoneMapper;
         this.objectMapper = objectMapper;
         this.densityThresholdProvider = densityThresholdProvider;
     }
@@ -73,6 +81,7 @@ public class SimulationResultDetailService {
         return new SimulationResultDetailResponse(
                 summary.simulationId(),
                 summary.simulationResultId(),
+                summary.layoutId(),
                 summary.title() != null && !summary.title().isBlank() ? summary.title() : summary.layoutTitle(),
                 SUBTITLE,
                 duration,
@@ -83,7 +92,9 @@ public class SimulationResultDetailService {
                 mapper.findHazardZones(simulationId).stream()
                         .map(row -> new HazardZone(row.id(), row.centerX(), row.centerY(), row.radius()))
                         .toList(),
-                bottlenecks);
+                bottlenecks,
+                summary.isImprovement(),
+                summary.sourceSimulationId());
     }
 
     public ComparableSimulationPageResponse findComparableSimulations(
@@ -133,6 +144,7 @@ public class SimulationResultDetailService {
     }
 
     private SimulationResultDetailResponse.Drawing assembleDrawing(SummaryRow summary) {
+        Set<Long> selectedExitIds = new HashSet<>(mapper.findSelectedExitIds(summary.simulationId()));
         List<Point> outsideBoundary = SimulationGeometry.assembleBoundary(
                         drawingMapper.findOutsideWallsByVersionId(summary.layoutVersionId()),
                         BigDecimal.valueOf(summary.drawingWidth()),
@@ -149,7 +161,7 @@ public class SimulationResultDetailService {
                         .map(this::toSegment)
                         .toList(),
                 mapper.findExits(summary.layoutVersionId()).stream()
-                        .map(this::toSegment)
+                        .map(row -> toExit(row, selectedExitIds.contains(row.id())))
                         .toList(),
                 mapper.findPillars(summary.layoutVersionId()).stream()
                         .map(this::toRectangle)
@@ -162,6 +174,14 @@ public class SimulationResultDetailService {
                                 text.getText(),
                                 text.getX().doubleValue(),
                                 text.getY().doubleValue()))
+                        .toList(),
+                layoutZoneMapper.findZonesByVersionId(summary.layoutVersionId()).stream()
+                        .map(zone -> new SimulationResultDetailResponse.Zone(
+                                zone.getName(),
+                                zone.getX().doubleValue(),
+                                zone.getY().doubleValue(),
+                                zone.getWidth().doubleValue(),
+                                zone.getHeight().doubleValue()))
                         .toList());
     }
 
@@ -206,6 +226,10 @@ public class SimulationResultDetailService {
 
     private Segment toSegment(SegmentRow row) {
         return new Segment(row.name(), row.startX(), row.startY(), row.endX(), row.endY());
+    }
+
+    private Exit toExit(ExitRow row, boolean active) {
+        return new Exit(row.id(), row.name(), row.startX(), row.startY(), row.endX(), row.endY(), active);
     }
 
     private Rectangle toRectangle(SegmentRow row) {

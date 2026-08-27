@@ -64,6 +64,9 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers("/api/admin/system-management", "/api/admin/system-management/**")
                         .hasAuthority("ROLE_ADMIN")
+                        // 직원 디렉터리는 구역을 배정하는 역할만 볼 수 있다. 일반 직원 본인은 조회할 수 없다.
+                        .requestMatchers("/api/auth/employees")
+                        .hasAnyAuthority("ROLE_ADMIN", "ROLE_SAFETY_REVIEWER", "ROLE_OPERATOR")
                         .anyRequest()
                         .authenticated())
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(restAuthenticationEntryPoint))

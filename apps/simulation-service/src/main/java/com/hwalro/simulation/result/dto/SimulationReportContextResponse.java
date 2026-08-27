@@ -5,6 +5,7 @@ import java.util.List;
 public record SimulationReportContextResponse(
         Long simulationResultId,
         Long simulationId,
+        Long layoutId,
         String layoutTitle,
         List<Metric> metrics,
         List<Bottleneck> bottlenecks) {

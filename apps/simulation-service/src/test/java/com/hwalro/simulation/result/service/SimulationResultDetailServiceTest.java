@@ -35,12 +35,15 @@ class SimulationResultDetailServiceTest {
     @Mock
     private DrawingMapper drawingMapper;
 
+    @Mock
+    private com.hwalro.simulation.zone.mapper.LayoutZoneMapper layoutZoneMapper;
+
     private SimulationResultDetailService service;
 
     @BeforeEach
     void setUp() {
-        service =
-                new SimulationResultDetailService(mapper, drawingMapper, new ObjectMapper(), densityThresholdProvider);
+        service = new SimulationResultDetailService(
+                mapper, drawingMapper, layoutZoneMapper, new ObjectMapper(), densityThresholdProvider);
     }
 
     @Test
@@ -48,7 +51,19 @@ class SimulationResultDetailServiceTest {
         long simulationId = 9201L;
         when(mapper.findSummary(simulationId))
                 .thenReturn(new SimulationResultDetailMapper.SummaryRow(
-                        9301L, simulationId, 9001L, 9100L, "행사장", "테스트 시뮬레이션", "지하 2층", 20, 10, 100));
+                        9301L,
+                        simulationId,
+                        9001L,
+                        9000L,
+                        9100L,
+                        "행사장",
+                        "테스트 시뮬레이션",
+                        "지하 2층",
+                        20,
+                        10,
+                        100,
+                        true,
+                        9150L));
         when(mapper.findMetrics(9301L))
                 .thenReturn(List.of(
                         new SimulationResultDetailMapper.MetricRow("SIMULATION_DURATION_SECONDS", 264),
@@ -58,7 +73,10 @@ class SimulationResultDetailServiceTest {
         when(mapper.findWalls(9100L))
                 .thenReturn(List.of(new SimulationResultDetailMapper.SegmentRow("벽", 0, 0, 10, 0, 0)));
         when(mapper.findExits(9100L))
-                .thenReturn(List.of(new SimulationResultDetailMapper.SegmentRow("출구", 10, 0, 10, 2, 0)));
+                .thenReturn(List.of(
+                        new SimulationResultDetailMapper.ExitRow(41L, "활성 출구", 10, 0, 10, 2),
+                        new SimulationResultDetailMapper.ExitRow(42L, "비활성 출구", 0, 2, 0, 4)));
+        when(mapper.findSelectedExitIds(simulationId)).thenReturn(List.of(41L));
         when(mapper.findPillars(9100L)).thenReturn(List.of());
         when(mapper.findFabrics(9100L)).thenReturn(List.of());
         when(mapper.findHazardZones(simulationId))
@@ -77,6 +95,7 @@ class SimulationResultDetailServiceTest {
         var result = service.find(simulationId, new JwtUser(9001L, Set.of("OPERATOR")));
 
         assertThat(result.simulationResultId()).isEqualTo(9301L);
+        assertThat(result.layoutId()).isEqualTo(9000L);
         assertThat(result.durationSeconds()).isEqualTo(264);
         assertThat(result.totalPeople()).isEqualTo(100);
         assertThat(result.densityThreshold()).isEqualTo(3.5);
@@ -84,6 +103,9 @@ class SimulationResultDetailServiceTest {
                 .extracting(point -> point.x() + "," + point.y())
                 .containsExactly("0.0,0.0", "0.0,10.0", "20.0,10.0", "20.0,0.0");
         assertThat(result.drawing().walls()).hasSize(1);
+        assertThat(result.drawing().exits())
+                .extracting(exit -> exit.id() + ":" + exit.active())
+                .containsExactly("41:true", "42:false");
         assertThat(result.hazardZones()).singleElement().satisfies(hazard -> {
             assertThat(hazard.id()).isEqualTo(31L);
             assertThat(hazard.centerX()).isEqualTo(7.5);
@@ -96,13 +118,15 @@ class SimulationResultDetailServiceTest {
             assertThat(text.y()).isEqualTo(5);
         });
         assertThat(result.bottlenecks().get(0).name()).isEqualTo("중앙 통로");
+        assertThat(result.isImprovement()).isTrue();
+        assertThat(result.sourceSimulationId()).isEqualTo(9150L);
     }
 
     @Test
     void rejectsAnotherOperatorsSimulation() {
         when(mapper.findSummary(9201L))
                 .thenReturn(new SimulationResultDetailMapper.SummaryRow(
-                        9301L, 9201L, 9001L, 9100L, "행사장", "테스트 시뮬레이션", "지하 2층", 20, 10, 100));
+                        9301L, 9201L, 9001L, 9000L, 9100L, "행사장", "테스트 시뮬레이션", "지하 2층", 20, 10, 100, false, null));
 
         assertThatThrownBy(() -> service.find(9201L, new JwtUser(7L, Set.of("OPERATOR"))))
                 .isInstanceOf(ForbiddenException.class);
@@ -122,7 +146,19 @@ class SimulationResultDetailServiceTest {
         long simulationId = 9201L;
         when(mapper.findSummary(simulationId))
                 .thenReturn(new SimulationResultDetailMapper.SummaryRow(
-                        9301L, simulationId, 9001L, 9100L, "행사장", "테스트 시뮬레이션", "지하 2층", 20, 10, 100));
+                        9301L,
+                        simulationId,
+                        9001L,
+                        9000L,
+                        9100L,
+                        "행사장",
+                        "테스트 시뮬레이션",
+                        "지하 2층",
+                        20,
+                        10,
+                        100,
+                        false,
+                        null));
         when(mapper.countComparableSimulations(simulationId, 9001L)).thenReturn(7L);
         when(mapper.findComparableSimulationPage(simulationId, 9001L, 5, 5))
                 .thenReturn(List.of(new SimulationResultDetailMapper.ComparableRow(9202L, 9302L, "비교안", 221)));
@@ -146,7 +182,19 @@ class SimulationResultDetailServiceTest {
         long simulationId = 9201L;
         when(mapper.findSummary(simulationId))
                 .thenReturn(new SimulationResultDetailMapper.SummaryRow(
-                        9301L, simulationId, 9001L, 9100L, "행사장", "테스트 시뮬레이션", "지하 2층", 20, 10, 100));
+                        9301L,
+                        simulationId,
+                        9001L,
+                        9000L,
+                        9100L,
+                        "행사장",
+                        "테스트 시뮬레이션",
+                        "지하 2층",
+                        20,
+                        10,
+                        100,
+                        false,
+                        null));
         when(mapper.findMetrics(9301L))
                 .thenReturn(List.of(new SimulationResultDetailMapper.MetricRow("MAX_DENSITY", 4.8)));
 

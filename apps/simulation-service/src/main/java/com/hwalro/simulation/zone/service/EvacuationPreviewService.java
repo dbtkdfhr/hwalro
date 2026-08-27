@@ -150,17 +150,10 @@ public class EvacuationPreviewService {
         }
 
         List<EvacuationRouteResponse> stale = routeStore.findLatest(versionId);
-        CompletableFuture<List<EvacuationRouteResponse>> inFlight = inFlightComputes.computeIfAbsent(
-            cacheKey,
-            key -> CompletableFuture.supplyAsync(
-                    () -> {
-                        List<EvacuationRouteResponse> fresh = computeAll(layoutId, versionId, zones);
-                        routeStore.save(layoutId, versionId, key, fresh);
-                        routeCache.put(key, fresh);
-                        return fresh;
-                    },
-                    computeExecutor)
-                .whenComplete((fresh, error) -> inFlightComputes.remove(key)));
+        CompletableFuture<List<EvacuationRouteResponse>> inFlight = inFlightComputes.get(cacheKey);
+        if (inFlight == null) {
+            inFlight = startCompute(layoutId, versionId, zones, cacheKey);
+        }
 
         if (stale != null) {
             return stale;
@@ -173,9 +166,6 @@ public class EvacuationPreviewService {
                 throw runtimeException;
             }
             throw exception;
-        } finally {
-            // 실패 시 다음 호출에서 즉시 재시도할 수 있도록 맵에서 제거 보장
-            inFlightComputes.remove(cacheKey);
         }
     }
 

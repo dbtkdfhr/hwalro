@@ -65,6 +65,22 @@ if (simulationStart < 0 || regulationStart < 0) {
   }
 }
 
+const gatewayConfig = await readFile('deploy/nginx/api-gateway.conf.template', 'utf8');
+const requiredGatewayRoutes = [
+  ['/api/my-zones', 'simulation_service_upstream'],
+];
+
+for (const [path, upstream] of requiredGatewayRoutes) {
+  const escapedPath = path.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+  const locationPattern = new RegExp(
+    `location\\s+(?:=\\s+)?${escapedPath}\\s*\\{[^}]*proxy_pass\\s+http://${upstream};`,
+    'su',
+  );
+  if (!locationPattern.test(gatewayConfig)) {
+    failures.push(`API gateway must route ${path} to ${upstream}`);
+  }
+}
+
 const migrationContracts = [
   {
     path: 'apps/auth-service/src/main/resources/db/migration-add-general-employee-role.sql',

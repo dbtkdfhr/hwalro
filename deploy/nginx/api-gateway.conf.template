@@ -44,6 +44,10 @@ server {
         proxy_pass http://auth_service_upstream;
     }
 
+    location /api/my-zones {
+        proxy_pass http://simulation_service_upstream;
+    }
+
     location /api/drawings {
         proxy_pass http://simulation_service_upstream;
     }

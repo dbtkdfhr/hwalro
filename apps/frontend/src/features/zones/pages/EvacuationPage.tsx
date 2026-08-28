@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Layer, Line, Rect, Stage } from 'react-konva';
+import { Layer, Line, Rect, Stage, Text as KonvaText } from 'react-konva';
 import { Card, ErrorState, PageHeader, buttonClassName } from '../../../components/ui';
 import { drawingApi } from '../../drawings/api/drawingApi';
 import type { Drawing } from '../../drawings/types/drawing';
@@ -9,6 +9,7 @@ import { getDrawingErrorMessage } from '../../drawings/utils/getDrawingErrorMess
 import { layoutMetadataApi, type LayoutZone } from '../../layout/api/layoutMetadataApi';
 import { CANVAS_COLORS } from '../../layout/utils/colors';
 import { clampPan, fitCamera, PX_PER_METER, zoomAtPoint } from '../../layout/utils/geometry';
+import { MIN_TEXT_SCREEN_PX, TEXT_FONT_PX } from '../../layout/utils/hitTest';
 import type { Camera, Vec2 } from '../../layout/types';
 import { zoneApi, type EvacuationRoute, type MyZone } from '../api/zoneApi';
 import { EvacuationRouteOverlay } from '../components/EvacuationRouteOverlay';
@@ -196,6 +197,18 @@ function EvacuationCanvas({
               />
             );
           })}
+          {TEXT_FONT_PX * camera.zoom >= MIN_TEXT_SCREEN_PX &&
+            drawing.layoutTexts.map((text, index) => (
+              <KonvaText
+                key={`${text.text}-${index}`}
+                x={text.x}
+                y={text.y}
+                text={text.text}
+                fontSize={TEXT_FONT_PX / PX_PER_METER}
+                fill={CANVAS_COLORS.ink}
+                listening={false}
+              />
+            ))}
           {drawing.exits.map((exit, index) => {
             const isRecommended = exit.id !== null && exit.id === route.recommendedExitId;
             const isConfigured = exit.id !== null && exit.id === route.defaultExit?.id;

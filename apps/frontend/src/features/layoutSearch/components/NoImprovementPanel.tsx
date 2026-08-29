@@ -1,5 +1,9 @@
 import type { SearchCandidate } from '../api/layoutSearchApi';
-import { candidateResultLabel, recommendationLabel } from '../utils/searchLabels';
+import {
+  candidateResultLabel,
+  hasOfficialRecommendation,
+  recommendationLabel,
+} from '../utils/searchLabels';
 
 const MAX_TABS = 20;
 
@@ -10,23 +14,8 @@ interface CandidateTabsProps {
   onSelect: (key: string) => void;
 }
 
-export function getCandidateTabColorClass(operatorType: string): string {
-  switch (operatorType) {
-    case 'CLEAR_CORRIDOR':
-    case 'OPEN_DUAL_GAP':
-      return 'is-corridor';
-    case 'RELIEVE_HOTSPOT':
-    case 'RELIEVE_DIAGONAL':
-      return 'is-hotspot';
-    case 'REBALANCE_EXIT':
-    case 'EXIT_OPENING':
-    case 'CLEAR_EXIT_PATH':
-      return 'is-exit';
-    case 'ROTATE_TO_OPEN':
-      return 'is-rotate';
-    default:
-      return 'is-improved';
-  }
+export function getCandidateTabColorClass(_operatorType: string): string {
+  return 'is-improved';
 }
 
 function tabs(
@@ -60,10 +49,18 @@ function tabs(
 }
 
 export function CandidateTabs({ recommended, comparisons, activeKey, onSelect }: CandidateTabsProps) {
-  const visibleRecommended = recommended.slice(0, 3);
+  const officialRecommendations = recommended.filter((candidate) =>
+    hasOfficialRecommendation(candidate.recommendationTypes),
+  );
+  const comparisonRecords = [
+    ...recommended.filter((candidate) => !hasOfficialRecommendation(candidate.recommendationTypes)),
+    ...comparisons,
+  ];
+  const visibleRecommended = officialRecommendations.slice(0, 3);
   const remaining = MAX_TABS - visibleRecommended.length;
-  const visibleComparisons = comparisons.slice(0, remaining);
-  const hiddenCount = recommended.length + comparisons.length - visibleRecommended.length - visibleComparisons.length;
+  const visibleComparisons = comparisonRecords.slice(0, remaining);
+  const hiddenCount =
+    officialRecommendations.length + comparisonRecords.length - visibleRecommended.length - visibleComparisons.length;
   return (
     <div className="no-improvement-tabs" role="tablist" aria-label="개선 후보">
       {visibleRecommended.length > 0 && <span className="candidate-tab-group-label">추천 개선안</span>}

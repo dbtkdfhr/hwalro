@@ -27,24 +27,26 @@ export const CANDIDATE_STATUS_LABELS: Record<CandidateStatus, string> = {
 };
 
 export const OPERATOR_LABELS: Record<string, string> = {
-  CLEAR_CORRIDOR: '통로 확보',
-  RELIEVE_HOTSPOT: '혼잡 완화',
-  RELIEVE_DIAGONAL: '혼잡 완화(대각)',
-  REBALANCE_EXIT: '출구 균형',
-  ROTATE_TO_OPEN: '회전 개방',
-  OPEN_DUAL_GAP: '양쪽 통로 확보',
-  EXIT_OPENING: '출구 전면 확보',
-  CLEAR_EXIT_PATH: '출구 직선 경로 확보',
+  CLEAR_CORRIDOR: '배치 조정',
+  RELIEVE_HOTSPOT: '배치 조정',
+  RELIEVE_DIAGONAL: '배치 조정',
+  REBALANCE_EXIT: '배치 조정',
+  ROTATE_TO_OPEN: '배치 조정',
+  OPEN_DUAL_GAP: '배치 조정',
+  EXIT_OPENING: '배치 조정',
+  CLEAR_EXIT_PATH: '배치 조정',
   CONSTRAINT: '제약 위반',
-  BOUNDARY_DOCKING: '경계 흡착 배치',
+  BOUNDARY_DOCKING: '배치 조정',
+  CONFIGURATION_SPACE_SHAPE: '배치 조정',
 };
 
 export const FINDING_LABELS: Record<string, string> = {
   BOTTLENECK: '병목 구역',
   CONGESTION_HOTSPOT: '혼잡 구역',
-  EXIT_IMBALANCE: '출구 편중',
+  EXIT_IMBALANCE: '대피 흐름',
   EVACUATION_TAIL: '대피 지연',
   IDEAL_ROUTE: '이상 경로',
+  IDEAL_FLOW: '이상 흐름',
 };
 
 export const RECOMMENDATION_LABELS: Record<RecommendationType, string> = {
@@ -54,9 +56,24 @@ export const RECOMMENDATION_LABELS: Record<RecommendationType, string> = {
   GEOMETRY: '실측 전 예상안',
 };
 
+export const OFFICIAL_RECOMMENDATION_TYPES = ['TOTAL_TIME', 'AVERAGE_TIME', 'BALANCED'] as const;
+
+type OfficialRecommendationType = (typeof OFFICIAL_RECOMMENDATION_TYPES)[number];
+
+function isOfficialRecommendationType(
+  type: RecommendationType,
+): type is OfficialRecommendationType {
+  return type === 'TOTAL_TIME' || type === 'AVERAGE_TIME' || type === 'BALANCED';
+}
+
+export function hasOfficialRecommendation(types: readonly RecommendationType[] | undefined) {
+  return types?.some(isOfficialRecommendationType) ?? false;
+}
+
 export function recommendationLabel(types: readonly RecommendationType[] | undefined) {
-  return types && types.length > 0
-    ? types.map((type) => RECOMMENDATION_LABELS[type]).join(' · ')
+  const officialTypes = types?.filter(isOfficialRecommendationType) ?? [];
+  return officialTypes.length > 0
+    ? officialTypes.map((type) => RECOMMENDATION_LABELS[type]).join(' · ')
     : '비교 후보';
 }
 

@@ -28,17 +28,20 @@ function search(status: LayoutSearch['status'], verifiedCount: number, plannedCo
 }
 
 describe('layoutSearchReplies', () => {
-  it('검증 중 후보 배열이 비어 있어도 생성·검증 진행량을 안내한다', () => {
-    const replies = layoutSearchReplies(search('VERIFYING', 2, 6));
+  it.each([
+    { verifiedCount: 1, plannedCount: 3 },
+    { verifiedCount: 4, plannedCount: 7 },
+  ])('검증 중 후보 배열이 비어도 실제 후보 수($plannedCount)를 안내한다', ({ verifiedCount, plannedCount }) => {
+    const replies = layoutSearchReplies(search('VERIFYING', verifiedCount, plannedCount));
 
     expect(replies[0]).toMatchObject({
       tone: 'running',
-      text: '개선안 후보 6개를 찾았습니다 · 2/6 검증 완료',
+      text: `개선안 후보 ${plannedCount}개를 찾았습니다 · ${verifiedCount}/${plannedCount} 검증 완료`,
     });
   });
 
   it('검증이 끝나 개선안이 없을 때만 후보 없음으로 안내한다', () => {
-    const replies = layoutSearchReplies(search('NO_IMPROVEMENT', 6, 6));
+    const replies = layoutSearchReplies(search('NO_IMPROVEMENT', 3, 3));
 
     expect(replies[0]).toMatchObject({
       tone: 'done',

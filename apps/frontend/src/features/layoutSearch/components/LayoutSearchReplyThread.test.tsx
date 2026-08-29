@@ -51,6 +51,18 @@ function failedCandidate(): SearchCandidate {
   };
 }
 
+function completedCandidate(
+  candidateId: number,
+  status: Extract<SearchCandidate['status'], 'NOT_IMPROVED' | 'FAILED'>,
+): SearchCandidate {
+  return {
+    ...failedCandidate(),
+    candidateId,
+    status,
+    preparedSimulation: { simulationId: candidateId + 100, status: 'COMPLETED' },
+  };
+}
+
 describe('LayoutSearchReplyThread', () => {
   let container: HTMLDivElement;
   let root: Root;
@@ -97,5 +109,24 @@ describe('LayoutSearchReplyThread', () => {
     expect(container.textContent).toContain(
       '변경 배치에서 초기 인원을 안전하게 배치할 공간이 부족합니다.',
     );
+  });
+
+  it('개선 미달과 실패 후보도 완료된 실측 결과가 있으면 결과로 이동할 수 있다', async () => {
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <LayoutSearchReplyThread
+            search={search('COMPLETED', [
+              completedCandidate(71, 'NOT_IMPROVED'),
+              completedCandidate(72, 'FAILED'),
+            ])}
+          />
+        </MemoryRouter>,
+      );
+    });
+
+    const resultLinks = [...container.querySelectorAll('a')].map((link) => link.getAttribute('href'));
+    expect(resultLinks).toContain('/simulations/171/results');
+    expect(resultLinks).toContain('/simulations/172/results');
   });
 });

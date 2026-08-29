@@ -57,7 +57,7 @@ public class LayoutGeometryValidator {
         List<Walk> regionWalks = findBoundedWalks(outsideWalls, walls);
         for (Walk walk : regionWalks) {
             if (!walk.hasOutsideEdge()) {
-                messages.add("내부 벽이 닫힌 다각형을 만들어 벽으로 둘러싸인 공간이 생겼습니다. 내부 벽이 다각형을 만들지 않도록 수정해 주세요.");
+                addMessageIfAbsent(messages, "내부 벽이 닫힌 다각형을 만들어 벽으로 둘러싸인 공간이 생겼습니다. 내부 벽이 다각형을 만들지 않도록 수정해 주세요.");
                 addWallProblems(problems, reportedWalls, walk.innerNames());
             }
         }
@@ -228,7 +228,7 @@ public class LayoutGeometryValidator {
             if (!rectInsideFrame(
                     frame,
                     rectCorners(pillar.startX(), pillar.startY(), pillar.endX(), pillar.endY(), pillar.rotation()))) {
-                messages.add("외곽벽 밖에 위치한 시설물이 있습니다: " + describe(pillar.name(), "기둥"));
+                addMessageIfAbsent(messages, "외곽벽 밖에 위치한 시설물이 있습니다: " + describe(pillar.name(), "기둥"));
                 addProblem(problems, "pillar", pillar.name());
             }
         }
@@ -239,7 +239,7 @@ public class LayoutGeometryValidator {
             if (!rectInsideFrame(
                     frame,
                     rectCorners(fabric.startX(), fabric.startY(), fabric.endX(), fabric.endY(), fabric.rotation()))) {
-                messages.add("외곽벽 밖에 위치한 시설물이 있습니다: " + describe(fabric.name(), "구조물"));
+                addMessageIfAbsent(messages, "외곽벽 밖에 위치한 시설물이 있습니다: " + describe(fabric.name(), "구조물"));
                 addProblem(problems, "fabric", fabric.name());
             }
         }
@@ -250,7 +250,7 @@ public class LayoutGeometryValidator {
             Point start = new Point(exit.startX().doubleValue(), exit.startY().doubleValue());
             Point end = new Point(exit.endX().doubleValue(), exit.endY().doubleValue());
             if (!contains(frame, start) || !contains(frame, end) || crossesFrame(frame, start, end)) {
-                messages.add("외곽벽 밖에 위치한 비상구가 있습니다: " + describe(exit.name(), "비상구"));
+                addMessageIfAbsent(messages, "외곽벽 밖에 위치한 비상구가 있습니다: " + describe(exit.name(), "비상구"));
                 addProblem(problems, "exit", exit.name());
             }
         }
@@ -300,7 +300,7 @@ public class LayoutGeometryValidator {
             boolean reachable =
                     exits.stream().filter(exit -> exit != null).anyMatch(exit -> contains(region, midpoint(exit)));
             if (!reachable) {
-                messages.add("비상구로 갈 수 없는 공간이 있습니다. 벽으로 나뉜 모든 공간에서 비상구에 닿도록 배치해 주세요.");
+                addMessageIfAbsent(messages, "비상구로 갈 수 없는 공간이 있습니다. 벽으로 나뉜 모든 공간에서 비상구에 닿도록 배치해 주세요.");
                 addWallProblems(problems, reportedWalls, region.innerNames());
             }
         }
@@ -330,14 +330,14 @@ public class LayoutGeometryValidator {
             Point end = new Point(exit.endX().doubleValue(), exit.endY().doubleValue());
             for (int i = 0; i < pillarList.size(); i++) {
                 if (exitBlockedByRect(start, end, pillarRects.get(i))) {
-                    messages.add("비상구가 기둥에 막혀 있습니다: " + describe(exit.name(), "비상구"));
+                    addMessageIfAbsent(messages, "비상구가 기둥에 막혀 있습니다: " + describe(exit.name(), "비상구"));
                     addProblem(problems, "exit", exit.name());
                     addProblem(problems, "pillar", pillarList.get(i).name());
                 }
             }
             for (int i = 0; i < fabricList.size(); i++) {
                 if (exitBlockedByRect(start, end, fabricRects.get(i))) {
-                    messages.add("비상구가 구조물에 막혀 있습니다: " + describe(exit.name(), "비상구"));
+                    addMessageIfAbsent(messages, "비상구가 구조물에 막혀 있습니다: " + describe(exit.name(), "비상구"));
                     addProblem(problems, "exit", exit.name());
                     addProblem(problems, "fabric", fabricList.get(i).name());
                 }
@@ -356,6 +356,12 @@ public class LayoutGeometryValidator {
     private void addProblem(List<ValidationProblem> problems, String kind, String name) {
         if (name != null && !name.isBlank()) {
             problems.add(new ValidationProblem(kind, name));
+        }
+    }
+
+    private void addMessageIfAbsent(List<String> messages, String message) {
+        if (!messages.contains(message)) {
+            messages.add(message);
         }
     }
 

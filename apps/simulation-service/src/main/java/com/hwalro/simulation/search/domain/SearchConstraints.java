@@ -8,16 +8,16 @@ import java.util.Map;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record SearchConstraints(
-        Map<Long, Double> moveRadii,
-        List<ForbiddenZone> forbiddenZones,
-        Map<Long, Boolean> rotationAllowed,
-        Map<Long, Boolean> wallAnchored) {
+        Map<Long, String> movementPolicies, Map<Long, MovementZone> movementZones, List<ForbiddenZone> forbiddenZones) {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record ForbiddenZone(double x, double y, double width, double height) {}
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record MovementZone(double x, double y, double width, double height) {}
+
     public static SearchConstraints empty() {
-        return new SearchConstraints(Map.of(), List.of(), Map.of(), Map.of());
+        return new SearchConstraints(Map.of(), Map.of(), List.of());
     }
 
     public String toJson(ObjectMapper objectMapper) {

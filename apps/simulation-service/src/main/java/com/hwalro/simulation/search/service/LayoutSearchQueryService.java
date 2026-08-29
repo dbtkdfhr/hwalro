@@ -99,28 +99,34 @@ public class LayoutSearchQueryService {
         // 잴 것이 없으니 다시 매길 것도 없다.
         boolean verified = budget.verifies();
         String proposedStatus = verified ? CandidateStatus.EVALUATED.name() : CandidateStatus.QUEUED.name();
-        List<CandidateDto> improved = new ArrayList<>();
-        List<CandidateDto> rejected = new ArrayList<>();
         List<CandidateSelector.RankableCandidate> rankable = new ArrayList<>();
         for (LayoutSearchCandidateEntity candidate : candidates) {
-            CandidateDto dto = toCandidate(candidate, trials.get(candidate.getId()), baselineMetrics);
             if (proposedStatus.equals(candidate.getStatus())) {
-                improved.add(dto);
                 rankable.add(new CandidateSelector.RankableCandidate(
                         candidate.getId(), List.of(), readDeltas(candidate.getMetricDelta()), opsCount(candidate)));
-            } else {
-                rejected.add(dto);
             }
         }
-        if (verified) {
-            List<Long> rankedIds = rankable.stream()
-                    .sorted(CandidateSelector.rankingComparator(baselineMetrics))
-                    .map(CandidateSelector.RankableCandidate::candidateId)
-                    .toList();
-            Map<Long, CandidateDto> improvedById =
-                    improved.stream().collect(Collectors.toMap(CandidateDto::candidateId, dto -> dto));
-            improved = rankedIds.stream().map(improvedById::get).toList();
-        }
+        Map<Long, List<String>> recommendationTypes = verified
+                ? CandidateSelector.selectRecommendations(rankable, properties.getImprovementMargin())
+                : rankable.stream()
+                        .findFirst()
+                        .map(candidate -> Map.of(candidate.candidateId(), List.of("GEOMETRY")))
+                        .orElseGet(Map::of);
+        List<CandidateDto> improved = candidates.stream()
+                .filter(candidate -> recommendationTypes.containsKey(candidate.getId()))
+                .map(candidate -> toCandidate(
+                        candidate,
+                        trials.get(candidate.getId()),
+                        baselineMetrics,
+                        recommendationTypes.get(candidate.getId())))
+                .toList();
+        List<CandidateDto> rejected = verified
+                ? candidates.stream()
+                        .filter(candidate -> isMeasuredComparison(candidate, recommendationTypes))
+                        .map(candidate ->
+                                toCandidate(candidate, trials.get(candidate.getId()), baselineMetrics, List.of()))
+                        .toList()
+                : List.of();
 
         boolean terminal = TERMINAL_STATUSES.contains(search.getStatus());
         int verifiedCount = (int) candidates.stream()
@@ -168,6 +174,16 @@ public class LayoutSearchQueryService {
                 search.getFailureMessage());
     }
 
+    static boolean isMeasuredComparison(
+            LayoutSearchCandidateEntity candidate, Map<Long, List<String>> recommendationTypes) {
+        return List.of(
+                                CandidateStatus.EVALUATED.name(),
+                                CandidateStatus.NOT_IMPROVED.name(),
+                                CandidateStatus.FAILED.name())
+                        .contains(candidate.getStatus())
+                && !recommendationTypes.containsKey(candidate.getId());
+    }
+
     static Integer plannedCount(
             SearchBudget budget, boolean terminal, List<LayoutSearchCandidateEntity> candidates, int generatedCount) {
         if (!"THOROUGH".equals(budget.preset())) {
@@ -181,7 +197,10 @@ public class LayoutSearchQueryService {
     }
 
     private CandidateDto toCandidate(
-            LayoutSearchCandidateEntity candidate, LayoutSearchTrialEntity trial, List<Metric> baselineMetrics) {
+            LayoutSearchCandidateEntity candidate,
+            LayoutSearchTrialEntity trial,
+            List<Metric> baselineMetrics,
+            List<String> recommendationTypes) {
         List<Metric> measuredMetrics =
                 trial == null || trial.getMetrics() == null ? null : readMetrics(trial.getMetrics());
         List<MetricDelta> deltas = readDeltas(candidate.getMetricDelta());
@@ -211,6 +230,7 @@ public class LayoutSearchQueryService {
                 candidate.getOriginFindingType(),
                 candidate.getOperatorType(),
                 candidate.getStatus(),
+                recommendationTypes,
                 toRationale(candidate.getRationale()),
                 toChangeSet(candidate.getChangeSet()),
                 measuredMetrics == null
@@ -219,7 +239,9 @@ public class LayoutSearchQueryService {
                                 .map(LayoutSearchQueryService::toMetricDto)
                                 .toList(),
                 deltas.stream().map(LayoutSearchQueryService::toDeltaDto).toList(),
-                candidate.getRejectReason(),
+                candidate.getRejectReason() != null
+                        ? candidate.getRejectReason()
+                        : trial == null ? null : trial.getFailureMessage(),
                 candidate.getPreparedSimulationId() == null
                         ? null
                         : new PreparedSimulationDto(

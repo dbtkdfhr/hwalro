@@ -50,6 +50,7 @@ public class DefaultDrawingData {
             BigDecimal endX,
             BigDecimal endY,
             BigDecimal rotation,
+            String movementPolicy,
             Integer displayOrder) {}
 
     public record DefaultExit(String name, BigDecimal startX, BigDecimal startY, BigDecimal endX, BigDecimal endY) {}
@@ -86,7 +87,7 @@ public class DefaultDrawingData {
     private final DefaultDrawing defaultDrawing;
 
     public DefaultDrawingData(ObjectMapper objectMapper) {
-        try (InputStream inputStream = new ClassPathResource("drawings/default-drawing-v10.json").getInputStream()) {
+        try (InputStream inputStream = new ClassPathResource("drawings/default-drawing-v11.json").getInputStream()) {
             this.defaultDrawing = objectMapper.readValue(inputStream, DefaultDrawing.class);
         } catch (IOException e) {
             throw new IllegalStateException("기본 도면 데이터를 불러올 수 없습니다.", e);

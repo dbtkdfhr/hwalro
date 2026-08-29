@@ -845,6 +845,19 @@
   font-weight: 800;
 }
 
+.delta-badge.is-worse {
+  background: var(--color-danger-soft);
+  color: var(--color-danger-strong);
+}
+
+.candidate-tab-group-label {
+  align-self: center;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 .metric-source {
   display: flex;
   align-items: flex-start;

@@ -64,7 +64,6 @@ public class LayoutMetadataService {
         List<LayoutZone> zones = layoutZoneService.zones(versionId);
         List<LayoutZoneMember> memberships = layoutZoneService.memberships(versionId);
         List<Fabric> fabrics = layoutZoneService.fabrics(versionId);
-        Map<Long, Boolean> wallContacts = layoutZoneService.wallContacts(versionId, fabrics);
 
         List<LayoutZone> visibleZones = LayoutZoneService.visibleZones(zones, user);
         Set<Long> visibleZoneIds = visibleZones.stream().map(LayoutZone::getId).collect(Collectors.toSet());
@@ -88,14 +87,7 @@ public class LayoutMetadataService {
         List<StructureConstraintDto> constraints = fabrics.stream()
                 .filter(fabric -> privileged || visibleZoneIds.contains(zoneIdByFabric.get(fabric.getId())))
                 .map(fabric -> new StructureConstraintDto(
-                        fabric.getId(),
-                        zoneIdByFabric.get(fabric.getId()),
-                        fabric.getMovable(),
-                        fabric.getMaxMovementDistance(),
-                        fabric.getRotationLocked(),
-                        Boolean.TRUE.equals(fabric.getKeepAgainstWall())
-                                && wallContacts.getOrDefault(fabric.getId(), false),
-                        wallContacts.getOrDefault(fabric.getId(), false)))
+                        fabric.getId(), zoneIdByFabric.get(fabric.getId()), fabric.getMovementPolicy()))
                 .toList();
 
         List<ZoneResponse> zoneResponses = visibleZones.stream()

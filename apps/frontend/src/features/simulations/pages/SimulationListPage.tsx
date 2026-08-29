@@ -3,6 +3,7 @@ import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronRight, LayoutGrid } from 'lucide-react';
 import { LayoutSearchReplyThread } from '../../layoutSearch/components/LayoutSearchReplyThread';
+import { layoutSearchApi } from '../../layoutSearch/api/layoutSearchApi';
 import { useLayoutSearchFeeds } from '../../layoutSearch/hooks/useLayoutSearchFeed';
 import { simulationApi } from '../api/simulationApi';
 import { SimulationStatusDialog } from '../components/SimulationStatusDialog';
@@ -50,6 +51,7 @@ function SimulationListPage() {
   const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [pendingCancellation, setPendingCancellation] = useState<SimulationOverview | null>(null);
   const [cancelError, setCancelError] = useState<string | null>(null);
+  const [cancellingSearchId, setCancellingSearchId] = useState<number | null>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [pendingDeletion, setPendingDeletion] = useState<SimulationOverview | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -134,6 +136,19 @@ function SimulationListPage() {
       setCancelError(getSimulationErrorMessage(error));
     } finally {
       setCancellingId(null);
+    }
+  };
+
+  const cancelLayoutSearch = async (searchId: number) => {
+    setCancellingSearchId(searchId);
+    setActionError(null);
+    try {
+      await layoutSearchApi.cancel(searchId);
+      await layoutSearchFeed.refresh();
+    } catch (error) {
+      setActionError(getSimulationErrorMessage(error));
+    } finally {
+      setCancellingSearchId(null);
     }
   };
 
@@ -468,6 +483,8 @@ function SimulationListPage() {
                               <td colSpan={6} className="bg-surface/60 px-4 py-3 sm:px-6">
                                 <LayoutSearchReplyThread
                                   search={feedSearch}
+                                  cancellingSearchId={cancellingSearchId}
+                                  onCancelSearch={(searchId) => void cancelLayoutSearch(searchId)}
                                   deletingSimulationId={deletingId}
                                   onDeleteSimulation={async (targetId) => {
                                     try {

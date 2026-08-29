@@ -59,7 +59,7 @@ def base_input(drawing, findings=None, parents=None, max_candidates=6, constrain
 def test_empty_findings_produce_no_candidates():
     drawing = room_drawing(fabrics=[{"id": 1, "name": "f", "startX": 4, "startY": 5, "endX": 6, "endY": 6, "rotation": 0}])
     result = layout_search.generate(base_input(drawing, findings=[]))
-    assert result["plannerVersion"] == "DIAGNOSTIC_BEAM_V1"
+    assert result["plannerVersion"] == "DIAGNOSTIC_BEAM_V2"
     assert result["candidates"] == []
     assert result["rejected"] == []
 
@@ -70,7 +70,7 @@ def test_generates_clear_corridor_candidates_for_bottleneck():
     assert len(result["candidates"]) > 0
     for candidate in result["candidates"]:
         assert candidate["originFindingType"] == "BOTTLENECK"
-        assert candidate["operatorType"] in ("CLEAR_CORRIDOR", "ROTATE_TO_OPEN", "OPEN_DUAL_GAP")
+        assert candidate["operatorType"] in ("CLEAR_CORRIDOR", "ROTATE_TO_OPEN", "SHIFT_AND_TURN", "OPEN_DUAL_GAP")
         assert candidate["parentCandidateId"] is None
         assert candidate["proxyScore"] >= 0
         assert candidate["ops"]
@@ -552,7 +552,8 @@ def test_rejection_examples_are_capped_but_counts_are_complete():
     assert counts["OUTSIDE_BOUNDARY"] > layout_search.REJECTED_EXAMPLES_PER_REASON
     for reason, total in counts.items():
         examples = [entry for entry in result["rejected"] if entry["reason"] == reason]
-        assert len(examples) == min(total, layout_search.REJECTED_EXAMPLES_PER_REASON)
+        expected = 0 if reason == "OVERLAP" else min(total, layout_search.REJECTED_EXAMPLES_PER_REASON)
+        assert len(examples) == expected
     assert set(counts) <= set(layout_search.REJECT_REASONS)
 
 
@@ -661,16 +662,25 @@ def test_selection_never_exceeds_the_requested_candidate_count():
 
 def test_fixed_fabric_is_excluded_from_candidates():
     drawing = room_drawing(fabrics=[{"id": 1, "name": "f", "startX": 4, "startY": 5, "endX": 6, "endY": 6, "rotation": 0}])
-    result = layout_search.generate(base_input(drawing, constraints={"moveRadii": {"1": 0.0}}))
+    result = layout_search.generate(base_input(drawing, constraints={"movementPolicies": {"1": "FIXED"}}))
     assert result["candidates"] == []
     assert result["rejectedCounts"].get("CONSTRAINT_FIXED", 0) == 0
 
 
-def test_move_radius_limits_candidate_distances():
+def test_within_zone_rejects_candidates_outside_the_zone():
     drawing = room_drawing(fabrics=[{"id": 1, "name": "f", "startX": 4, "startY": 5, "endX": 6, "endY": 6, "rotation": 0}])
-    result = layout_search.generate(base_input(drawing, constraints={"moveRadii": {"1": 0.5}}))
+    constraints = {
+        "movementPolicies": {"1": "WITHIN_ZONE"},
+        "movementZones": {"1": {"x": 3, "y": 4, "width": 4, "height": 3}},
+    }
+    result = layout_search.generate(base_input(drawing, constraints=constraints))
     for candidate in result["candidates"]:
-        assert candidate["totalMoveDistance"] <= 0.5 + 1e-6
+        for operation in candidate["ops"]:
+            after = operation["after"]
+            assert after["startX"] >= 3
+            assert after["startY"] >= 4
+            assert after["endX"] <= 7
+            assert after["endY"] <= 7
 
 
 def test_forbidden_zone_rejects_overlapping_candidates():
@@ -681,9 +691,9 @@ def test_forbidden_zone_rejects_overlapping_candidates():
     assert result["rejectedCounts"].get("CONSTRAINT_ZONE", 0) > 0
 
 
-def test_rotation_disabled_removes_rotate_candidates():
+def test_fixed_policy_removes_rotate_candidates():
     drawing = room_drawing(fabrics=[{"id": 1, "name": "f", "startX": 4, "startY": 5, "endX": 6, "endY": 6, "rotation": 0}])
-    result = layout_search.generate(base_input(drawing, constraints={"rotationAllowed": {"1": False}}))
+    result = layout_search.generate(base_input(drawing, constraints={"movementPolicies": {"1": "FIXED"}}))
     for candidate in result["candidates"]:
         assert candidate["operatorType"] != "ROTATE_TO_OPEN"
 
@@ -695,7 +705,7 @@ def test_fixed_fabric_is_excluded_from_dual_gap_candidates():
             {"id": 2, "name": "b", "startX": 7, "startY": 5, "endX": 9, "endY": 6, "rotation": 0},
         ]
     )
-    result = layout_search.generate(base_input(drawing, constraints={"moveRadii": {"1": 0.0}}))
+    result = layout_search.generate(base_input(drawing, constraints={"movementPolicies": {"1": "FIXED"}}))
     for candidate in result["candidates"]:
         assert all(op["fabricId"] != 1 for op in candidate["ops"])
 
@@ -706,7 +716,7 @@ def test_agents_overlapping_obstacles_are_relocated_before_routing():
     result = layout_search.generate(
         {**base_input(drawing, findings=[bottleneck_finding()], max_candidates=6), "agents": overlapping}
     )
-    assert result["plannerVersion"] == "DIAGNOSTIC_BEAM_V1"
+    assert result["plannerVersion"] == "DIAGNOSTIC_BEAM_V2"
     assert len(result["candidates"]) > 0
 
 

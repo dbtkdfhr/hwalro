@@ -156,14 +156,15 @@ class LayoutZoneSchemaIntegrationTest {
     }
 
     @Test
-    void maxMovementDistanceRejectsZeroButAllowsNull() throws SQLException {
+    void movementPolicyAcceptsOnlyThreeLevels() throws SQLException {
         try (Connection connection = connection();
                 Statement statement = connection.createStatement()) {
-            statement.executeUpdate("UPDATE fabrics SET max_movement_distance = NULL WHERE id = 807");
-            statement.executeUpdate("UPDATE fabrics SET max_movement_distance = 2.5 WHERE id = 807");
+            statement.executeUpdate("UPDATE fabrics SET movement_policy = 'FREE' WHERE id = 807");
+            statement.executeUpdate("UPDATE fabrics SET movement_policy = 'WITHIN_ZONE' WHERE id = 807");
+            statement.executeUpdate("UPDATE fabrics SET movement_policy = 'FIXED' WHERE id = 807");
 
             assertThatThrownBy(() ->
-                            statement.executeUpdate("UPDATE fabrics SET max_movement_distance = 0 WHERE id = 807"))
+                            statement.executeUpdate("UPDATE fabrics SET movement_policy = 'TELEPORT' WHERE id = 807"))
                     .isInstanceOf(SQLException.class);
         }
     }

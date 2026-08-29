@@ -215,19 +215,13 @@ class CandidateAdoptionServiceTest {
     void keepsStructureConstraintsInTheAdoptedLayout() {
         Fabric source = fabric(1, 1, 2, 2);
         source.setId(FABRIC_ID);
-        source.setMovable(true);
-        source.setMaxMovementDistance(BigDecimal.valueOf(3));
-        source.setRotationLocked(true);
-        source.setKeepAgainstWall(true);
+        source.setMovementPolicy("WITHIN_ZONE");
         when(drawingMapper.findFabricsByVersionId(BASELINE_VERSION_ID)).thenReturn(List.of(source));
 
         Fabric copied = service.changedFabrics(candidate(), BASELINE_VERSION_ID, TARGET_VERSION_ID)
                 .get(0);
 
-        assertThat(copied.getMovable()).isTrue();
-        assertThat(copied.getMaxMovementDistance()).isEqualByComparingTo("3");
-        assertThat(copied.getRotationLocked()).isTrue();
-        assertThat(copied.getKeepAgainstWall()).isTrue();
+        assertThat(copied.getMovementPolicy()).isEqualTo("WITHIN_ZONE");
     }
 
     private List<List<BigDecimal>> capturedAgents() {

@@ -363,10 +363,7 @@ public class DrawingService {
             Fabric target = new Fabric();
             target.setId(targetId);
             target.setLayoutVersionId(targetVersionId);
-            target.setMovable(source.getMovable());
-            target.setMaxMovementDistance(source.getMaxMovementDistance());
-            target.setRotationLocked(source.getRotationLocked());
-            target.setKeepAgainstWall(source.getKeepAgainstWall());
+            target.setMovementPolicy(source.getMovementPolicy());
             drawingMapper.updateFabricConstraints(target);
         }
     }
@@ -870,6 +867,9 @@ public class DrawingService {
                     domainFabric.setEndX(larger(fabric.startX(), fabric.endX()));
                     domainFabric.setEndY(larger(fabric.startY(), fabric.endY()));
                     domainFabric.setRotation(fabric.rotation());
+                    domainFabric.setMovementPolicy(
+                            com.hwalro.simulation.drawing.domain.MovementPolicy.from(fabric.movementPolicy())
+                                    .name());
                     domainFabric.setDisplayOrder(fabric.displayOrder());
                     return domainFabric;
                 })
@@ -978,10 +978,7 @@ public class DrawingService {
             copy.setEndX(source.getEndX());
             copy.setEndY(source.getEndY());
             copy.setRotation(source.getRotation());
-            copy.setMovable(source.getMovable());
-            copy.setMaxMovementDistance(source.getMaxMovementDistance());
-            copy.setRotationLocked(source.getRotationLocked());
-            copy.setKeepAgainstWall(source.getKeepAgainstWall());
+            copy.setMovementPolicy(source.getMovementPolicy());
             copy.setDisplayOrder(source.getDisplayOrder());
             drawingMapper.insertFabric(copy);
             idMap.put(source.getId(), copy.getId());

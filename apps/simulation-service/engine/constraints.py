@@ -1,66 +1,87 @@
-"""User-supplied constraints for layout search candidates.
-
-Constraint model (all optional, all defaults to permissive):
-
-* moveRadii: {fabricId: meters} — 0.0 fixes the fabric, infinity allows free
-  movement. Default: infinity (free).
-* forbiddenZones: [{x, y, width, height}] — rectangles in drawing coordinates
-  that no fabric may intersect after a move.
-* rotationAllowed: {fabricId: bool} — default True.
-* wallAnchored: {fabricId: bool} — fabric must keep touching at least one wall
-  segment after a move. Only meaningful for fabrics already touching a wall.
-
-The module is pure: it parses and judges constraints, it never generates
-candidates. Candidate generation that respects these constraints lives in
-layout_search.py, which imports this module.
-"""
-
 from __future__ import annotations
 
-import math
 from typing import Any, Sequence
 
 from shapely.geometry import LineString, box
 
-DEFAULT_MOVE_RADIUS = math.inf
+FREE = "FREE"
+WITHIN_ZONE = "WITHIN_ZONE"
+FIXED = "FIXED"
 
 WALL_TOUCH_TOLERANCE_METERS = 0.05
 
 
 class SearchConstraints:
-    __slots__ = ("move_radii", "forbidden_zones", "rotation_allowed", "wall_anchored")
+    __slots__ = ("movement_policies", "movement_zones", "forbidden_zones")
 
     def __init__(
         self,
-        move_radii: dict[Any, float] | None = None,
+        movement_policies: dict[Any, str] | None = None,
+        movement_zones: dict[Any, dict[str, float]] | None = None,
         forbidden_zones: Sequence[dict[str, float]] = (),
-        rotation_allowed: dict[Any, bool] | None = None,
-        wall_anchored: dict[Any, bool] | None = None,
     ) -> None:
-        self.move_radii = move_radii or {}
+        self.movement_policies = movement_policies or {}
+        self.movement_zones = {
+            fabric_id: box(
+                float(zone["x"]),
+                float(zone["y"]),
+                float(zone["x"]) + float(zone["width"]),
+                float(zone["y"]) + float(zone["height"]),
+            )
+            for fabric_id, zone in (movement_zones or {}).items()
+            if float(zone.get("width", 0.0)) > 0 and float(zone.get("height", 0.0)) > 0
+        }
         self.forbidden_zones = [
             box(float(z["x"]), float(z["y"]), float(z["x"]) + float(z["width"]), float(z["y"]) + float(z["height"]))
             for z in forbidden_zones
             if float(z.get("width", 0.0)) > 0 and float(z.get("height", 0.0)) > 0
         ]
-        self.rotation_allowed = rotation_allowed or {}
-        self.wall_anchored = wall_anchored or {}
+
+    def movement_policy_of(self, fabric_id: Any) -> str:
+        return self.movement_policies.get(fabric_id, FREE)
+
+    def can_move(self, fabric_id: Any) -> bool:
+        policy = self.movement_policy_of(fabric_id)
+        return policy == FREE or (policy == WITHIN_ZONE and fabric_id in self.movement_zones)
+
+    def movement_area_of(self, fabric_id: Any) -> Any | None:
+        if self.movement_policy_of(fabric_id) == FREE:
+            return None
+        return self.movement_zones.get(fabric_id)
+
+    def allows_placement(self, fabric_id: Any, geometry: Any) -> bool:
+        policy = self.movement_policy_of(fabric_id)
+        if policy == FIXED:
+            return False
+        if policy == FREE:
+            return True
+        zone = self.movement_zones.get(fabric_id)
+        return zone is not None and zone.covers(geometry)
 
     def move_radius_of(self, fabric_id: Any) -> float:
-        return self.move_radii.get(fabric_id, DEFAULT_MOVE_RADIUS)
+        return float("inf") if self.can_move(fabric_id) else 0.0
 
     def rotation_allowed_of(self, fabric_id: Any) -> bool:
-        return self.rotation_allowed.get(fabric_id, True)
+        return self.can_move(fabric_id)
 
     def is_wall_anchored(self, fabric_id: Any) -> bool:
-        return self.wall_anchored.get(fabric_id, False)
+        return False
 
     def intersects_forbidden_zone(self, geometry: Any) -> bool:
         return any(geometry.intersects(zone) for zone in self.forbidden_zones)
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "moveRadii": {str(k): v for k, v in self.move_radii.items()},
+            "movementPolicies": {str(k): v for k, v in self.movement_policies.items()},
+            "movementZones": {
+                str(fabric_id): {
+                    "x": zone.bounds[0],
+                    "y": zone.bounds[1],
+                    "width": zone.bounds[2] - zone.bounds[0],
+                    "height": zone.bounds[3] - zone.bounds[1],
+                }
+                for fabric_id, zone in self.movement_zones.items()
+            },
             "forbiddenZones": [
                 {
                     "x": zone.bounds[0],
@@ -70,8 +91,6 @@ class SearchConstraints:
                 }
                 for zone in self.forbidden_zones
             ],
-            "rotationAllowed": {str(k): v for k, v in self.rotation_allowed.items()},
-            "wallAnchored": {str(k): v for k, v in self.wall_anchored.items()},
         }
 
 
@@ -84,11 +103,14 @@ def _key_to_int(value: Any) -> int:
 def parse_constraints(raw: dict[str, Any] | None) -> SearchConstraints:
     if not raw:
         return SearchConstraints()
-    move_radii = {_key_to_int(k): float(v) for k, v in (raw.get("moveRadii") or {}).items()}
+    movement_policies = {
+        _key_to_int(k): str(v).strip().upper()
+        for k, v in (raw.get("movementPolicies") or {}).items()
+        if str(v).strip().upper() in {FREE, WITHIN_ZONE, FIXED}
+    }
+    movement_zones = {_key_to_int(k): v for k, v in (raw.get("movementZones") or {}).items()}
     forbidden = list(raw.get("forbiddenZones") or [])
-    rotation_allowed = {_key_to_int(k): bool(v) for k, v in (raw.get("rotationAllowed") or {}).items()}
-    wall_anchored = {_key_to_int(k): bool(v) for k, v in (raw.get("wallAnchored") or {}).items()}
-    return SearchConstraints(move_radii, forbidden, rotation_allowed, wall_anchored)
+    return SearchConstraints(movement_policies, movement_zones, forbidden)
 
 
 def touches_wall(fabric: dict[str, Any], walls: Sequence[dict[str, Any]]) -> bool:

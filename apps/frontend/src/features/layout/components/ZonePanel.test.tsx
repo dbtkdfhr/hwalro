@@ -26,73 +26,55 @@ function constraint(patch: Partial<StructureConstraint> = {}): StructureConstrai
   return {
     fabricId: 20,
     zoneId: 30,
-    movable: true,
-    maxMovementDistance: null,
-    rotationLocked: false,
-    keepAgainstWall: false,
-    wallContact: true,
+    movementPolicy: 'WITHIN_ZONE',
     ...patch,
   };
 }
 
-function renderPanel(value: StructureConstraint, onChange = vi.fn(), onMovementPreview = vi.fn()) {
+function renderPanel(
+  value: StructureConstraint,
+  onChange = vi.fn(),
+  zoneName: string | null = '담당 구역',
+) {
   act(() => {
     root.render(
       <StructureConstraintPanel
         fabricName="진열대"
-        zoneName="담당 구역"
+        zoneName={zoneName}
         constraint={value}
         editable
         saved
-        onMovementPreview={onMovementPreview}
         onChange={onChange}
       />,
     );
   });
-  return { onChange, onMovementPreview };
-}
-
-function moveSlider(value: string) {
-  const slider = container.querySelector<HTMLInputElement>('input[type="range"]');
-  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
-  act(() => {
-    setter?.call(slider, value);
-    slider?.dispatchEvent(new Event('input', { bubbles: true }));
-  });
-  act(() => slider?.dispatchEvent(new PointerEvent('pointerup', { bubbles: true })));
+  return { onChange };
 }
 
 describe('StructureConstraintPanel', () => {
-  it('disables and clears the wall option for a structure away from walls', () => {
-    renderPanel(constraint({ wallContact: false, keepAgainstWall: true }));
+  it('shows the three movement levels with within-zone selected by default', () => {
+    renderPanel(constraint());
 
-    const checkboxes = container.querySelectorAll<HTMLInputElement>('input[type="checkbox"]');
-    const wallCheckbox = checkboxes.item(1);
-    expect(wallCheckbox.disabled).toBe(true);
-    expect(wallCheckbox.checked).toBe(false);
-    expect(container.textContent).toContain('벽에 닿아 있는 구조물만 설정할 수 있습니다');
+    const radios = container.querySelectorAll<HTMLInputElement>('input[type="radio"]');
+    expect(radios).toHaveLength(3);
+    expect(container.textContent).toContain('자유 이동');
+    expect(container.textContent).toContain('구역 내에서 이동');
+    expect(container.textContent).toContain('이동 불가');
+    expect(radios.item(1).checked).toBe(true);
   });
 
-  it('maps fixed, bounded and free slider positions to the API patch', () => {
-    const { onChange, onMovementPreview } = renderPanel(constraint());
+  it('sends the selected movement policy', () => {
+    const { onChange } = renderPanel(constraint());
+    const fixed = container.querySelector<HTMLInputElement>('input[value="FIXED"]');
 
-    moveSlider('0');
-    expect(onChange).toHaveBeenLastCalledWith({
-      movable: false,
-      clearMaxMovementDistance: true,
-      maxMovementDistance: null,
-    });
+    act(() => fixed?.click());
 
-    moveSlider('2.5');
-    expect(onChange).toHaveBeenLastCalledWith({ movable: true, maxMovementDistance: 2.5 });
-    expect(onMovementPreview).toHaveBeenLastCalledWith(2.5);
+    expect(onChange).toHaveBeenLastCalledWith({ movementPolicy: 'FIXED' });
+  });
 
-    moveSlider('5.5');
-    expect(onChange).toHaveBeenLastCalledWith({
-      movable: true,
-      clearMaxMovementDistance: true,
-      maxMovementDistance: null,
-    });
-    expect(onMovementPreview).toHaveBeenLastCalledWith(null);
+  it('warns that within-zone movement needs a zone membership', () => {
+    renderPanel(constraint(), vi.fn(), null);
+
+    expect(container.textContent).toContain('소속 구역이 없어 현재 위치에서 이동하지 않습니다');
   });
 });

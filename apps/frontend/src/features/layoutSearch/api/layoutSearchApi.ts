@@ -102,12 +102,15 @@ export interface PreparedSimulation {
   status: string;
 }
 
+export type RecommendationType = 'TOTAL_TIME' | 'AVERAGE_TIME' | 'BALANCED' | 'GEOMETRY';
+
 export interface SearchCandidate {
   candidateId: number;
   round: number;
   originFindingType: string;
   operatorType: string;
   status: CandidateStatus;
+  recommendationTypes?: readonly RecommendationType[];
   rationale: CandidateRationale | null;
   changeSet: ChangeSet;
   totalMoveDistance: number | null;

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef } from 'react';
 import type Konva from 'konva';
 import { Circle, Group, Line } from 'react-konva';
-import type { EvacuationRoute, RoutePoint } from '../api/zoneApi';
 import { CANVAS_COLORS } from '../../layout/utils/colors';
+import type { EvacuationRoute, RoutePoint } from '../api/zoneApi';
 
 interface EvacuationRouteOverlayProps {
   routes: readonly EvacuationRoute[];

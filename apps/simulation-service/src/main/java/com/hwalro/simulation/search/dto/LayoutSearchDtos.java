@@ -59,6 +59,7 @@ public final class LayoutSearchDtos {
             String originFindingType,
             String operatorType,
             String status,
+            List<String> recommendationTypes,
             RationaleDto rationale,
             ChangeSetDto changeSet,
             List<MetricDto> measuredMetrics,

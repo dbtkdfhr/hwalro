@@ -1,6 +1,8 @@
 package com.hwalro.regulation.law.api;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hwalro.regulation.law.exception.LawApiConfigurationException;
 import java.time.Duration;
 import org.springframework.cache.annotation.Cacheable;
@@ -8,6 +10,7 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 @Component
 /**
@@ -20,6 +23,7 @@ public class LawApiClient {
     private static final Duration READ_TIMEOUT = Duration.ofSeconds(10);
     private final LawApiProperties properties;
     private final RestClient restClient;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public LawApiClient(LawApiProperties properties, RestClient.Builder restClientBuilder) {
         this.properties = properties;
@@ -40,7 +44,7 @@ public class LawApiClient {
     @Cacheable(cacheNames = "lawSearch", unless = "#result == null or #result.path('LawSearch').isMissingNode()")
     public JsonNode searchCurrentLaws(String query, int page, int size) {
         requireAuthenticationValue();
-        return restClient
+        String body = restClient
                 .get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/DRF/lawSearch.do")
@@ -54,7 +58,8 @@ public class LawApiClient {
                         .queryParam("page", page)
                         .build())
                 .retrieve()
-                .body(JsonNode.class);
+                .body(String.class);
+        return parseBody(body);
     }
 
     /**
@@ -77,7 +82,7 @@ public class LawApiClient {
     @Cacheable(cacheNames = "lawRelated", unless = "#result == null or #result.path('lsRltSearch').isMissingNode()")
     public JsonNode searchRelatedLaws(String lawId) {
         requireAuthenticationValue();
-        return restClient
+        String body = restClient
                 .get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/DRF/lawSearch.do")
@@ -87,22 +92,40 @@ public class LawApiClient {
                         .queryParam("type", "JSON")
                         .build())
                 .retrieve()
-                .body(JsonNode.class);
+                .body(String.class);
+        return parseBody(body);
     }
 
     private JsonNode getCurrentLaw(String identifierName, String identifier) {
         requireAuthenticationValue();
-        return restClient
+        String body = restClient
                 .get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/DRF/lawService.do")
                         .queryParam("OC", properties.oc())
-                        .queryParam("target", "eflaw")
+                        .queryParam("target", "law")
                         .queryParam(identifierName, identifier)
                         .queryParam("type", "JSON")
                         .build())
                 .retrieve()
-                .body(JsonNode.class);
+                .body(String.class);
+        return parseBody(body);
+    }
+
+    private JsonNode parseBody(String body) {
+        if (!StringUtils.hasText(body)) {
+            return null;
+        }
+        String trimmed = body.trim();
+        if (trimmed.startsWith("<")) {
+            throw new RestClientException("법령 API가 HTML 응답을 반환했습니다. OC 인증값 또는 외부 서비스 상태를 확인하세요. body="
+                    + trimmed.substring(0, Math.min(500, trimmed.length())));
+        }
+        try {
+            return objectMapper.readTree(body);
+        } catch (JsonProcessingException exception) {
+            throw new RestClientException("법령 API 응답을 JSON으로 파싱할 수 없습니다.", exception);
+        }
     }
 
     /** 인증값은 외부 API 요청 직전에만 확인해 애플리케이션 기동 자체는 막지 않는다. */

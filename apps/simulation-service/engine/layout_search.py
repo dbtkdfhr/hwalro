@@ -18,7 +18,6 @@ from __future__ import annotations
 import json
 import math
 import sys
-from decimal import ROUND_HALF_UP, Decimal
 from itertools import combinations
 from typing import Any, NamedTuple, Sequence
 
@@ -27,6 +26,7 @@ from shapely.geometry import LineString, Point, Polygon, box
 from shapely.ops import nearest_points
 
 import surrogate
+from ideal_route_docking import generate_docking_candidates
 from constraints import SearchConstraints, parse_constraints, touches_wall
 from layout_features import (
     FEATURE_SCHEMA_VERSION,
@@ -44,10 +44,13 @@ from route_planner import (
     parse_hazards,
     relocate_agents,
 )
+from search_precision import decimal_value as _decimal
+from search_precision import quantized as _quantized
 
-PLANNER_VERSION = "DIAGNOSTIC_BEAM_V1"
+PLANNER_VERSION = "DIAGNOSTIC_BEAM_V2"
+IDEAL_ROUTE_DOCKING_VERSION = "IDEAL_ROUTE_DOCKING_V2"
 SURROGATE_PLANNER_VERSION = "DIAGNOSTIC_BEAM_S1"
-EXHAUSTIVE_PLANNER_VERSION = "DIAGNOSTIC_EXHAUSTIVE_V1"
+EXHAUSTIVE_PLANNER_VERSION = "DIAGNOSTIC_EXHAUSTIVE_V2"
 CLEARANCE_METERS = 0.4
 CORRIDOR_CLEARANCE_METERS = GRID_STEP_METERS
 # Geometric ladders, not linear ones. A fixed 1.5 m ceiling could only ever nudge a fabric far
@@ -67,21 +70,19 @@ CLEARANCE_REFERENCE_METERS = 2.0
 # fabric line up with a wall or corridor it currently cuts across at an angle. Every angle costs
 # one full routing pass over all agents, so this set is deliberately short - widen it only with a
 # generation-time measurement in hand (5 minute engine timeout).
-ROTATE_ANGLES = (90.0, -90.0, 45.0, -45.0, 30.0, -30.0, 15.0, -15.0)
+ROTATE_ANGLES = (90.0, -90.0, 75.0, -75.0, 60.0, -60.0, 45.0, -45.0, 30.0, -30.0, 15.0, -15.0)
+SHIFT_TURN_DISTANCES = (1.0, 2.0, 4.0)
+SHIFT_TURN_ANGLES = (45.0, -45.0, 60.0, -60.0)
 WALL_ANCHOR_EPSILON = 0.05
 DUAL_GAP_DISTANCES = (0.5, 1.0)
 EXIT_OPENING_DISTANCES = (0.5, 1.0)
-POOL_CAP = 40
+POOL_CAP = 64
 # The pool is filled operator by operator, so without a per-operator ceiling the first operator
 # to run simply eats it: widening the distance ladder alone was enough to starve OPEN_DUAL_GAP,
 # which is generated last, out of every candidate list. This caps each operator's share of one
 # finding's pool. Final ranking stays purely best-first - this only decides what gets ranked.
-PER_OPERATOR_CAP = 12
+PER_OPERATOR_CAP = 16
 EPSILON = 1e-9
-# Layout coordinates are persisted as DECIMAL(12, 4); emitting more precision
-# than that cannot survive a round trip through the database anyway.
-COORDINATE_DECIMALS = 4
-COORDINATE_QUANTUM = Decimal(1).scaleb(-COORDINATE_DECIMALS)
 MOVE_FABRIC = "MOVE_FABRIC"
 REJECT_REASONS = ("OUTSIDE_BOUNDARY", "OVERLAP", "CORRIDOR_BLOCKED", "AGENT_UNREACHABLE_EXIT", "INVALID_GEOMETRY")
 REJECTED_EXAMPLES_PER_REASON = 20
@@ -104,14 +105,6 @@ _PRIMARY_OPERATOR = {
 
 def _numeric(value: Any) -> float:
     return float(value)
-
-
-def _decimal(value: Any) -> Decimal:
-    return value if isinstance(value, Decimal) else Decimal(str(value))
-
-
-def _quantized(value: Decimal) -> Decimal:
-    return value.quantize(COORDINATE_QUANTUM, rounding=ROUND_HALF_UP)
 
 
 def _rect_geometry(item: dict[str, Any]) -> Any:
@@ -775,14 +768,15 @@ def _mutation_variants(
         normal = _region_normal(finding)
         variants = []
         for distance in allowed_distances:
-            for sign, direction in ((1.0, "NORMAL_POSITIVE"), (-1.0, "NORMAL_NEGATIVE")):
-                delta = sign * distance
-                if wall_anchored:
-                    variants.append((_translated_after(before, delta, 0.0), "SLIDE_EAST" if delta >= 0 else "SLIDE_WEST", distance))
-                elif normal == "Y":
-                    variants.append((_translated_after(before, 0.0, delta), direction, distance))
-                else:
-                    variants.append((_translated_after(before, delta, 0.0), direction, distance))
+            if wall_anchored:
+                variants.append((_translated_after(before, distance, 0.0), "SLIDE_EAST", distance))
+                variants.append((_translated_after(before, -distance, 0.0), "SLIDE_WEST", distance))
+                continue
+            axes = (("NORMAL", normal), ("CROSSWISE", "Y" if normal == "X" else "X"))
+            for axis_name, axis in axes:
+                dx, dy = (distance, 0.0) if axis == "X" else (0.0, distance)
+                variants.append((_translated_after(before, dx, dy), f"{axis_name}_POSITIVE", distance))
+                variants.append((_translated_after(before, -dx, -dy), f"{axis_name}_NEGATIVE", distance))
         return variants
     if operator == "RELIEVE_HOTSPOT":
         center = _region_center(finding)
@@ -871,6 +865,28 @@ def _mutation_variants(
             for angle in ROTATE_ANGLES
         ]
     return []
+
+
+def _shift_and_turn_variants(
+    target: tuple[dict[str, Any], dict[str, Any]], constraints: Any | None = None
+) -> list[tuple[dict[str, Any], str, float]]:
+    fabric, _ = target
+    before = _coords_only(fabric)
+    move_radius = constraints.move_radius_of(fabric.get("id")) if constraints is not None else float("inf")
+    if move_radius == 0.0:
+        return []
+    if constraints is not None and not constraints.rotation_allowed_of(fabric.get("id")):
+        return []
+    distances = [distance for distance in SHIFT_TURN_DISTANCES if distance <= move_radius]
+    variants = []
+    for distance in distances:
+        for angle in SHIFT_TURN_ANGLES:
+            turned = _rotated_after(before, angle)
+            for axis, dx, dy in (("X", distance, 0.0), ("X", -distance, 0.0), ("Y", 0.0, distance), ("Y", 0.0, -distance)):
+                sign = "+" if (dx if axis == "X" else dy) >= 0 else "-"
+                direction = f"SHIFT_TURN_{angle:+.0f}_{axis}{sign}"
+                variants.append((_translated_after(turned, dx, dy), direction, distance))
+    return variants
 
 
 def _spans_match(before: dict[str, Any], after: dict[str, Any]) -> bool:
@@ -1280,14 +1296,12 @@ class _Generation:
             self.rejections.add("CONSTRAINT", _raw_fabric_id(fabric), "CONSTRAINT_FIXED", before, after)
             return True
         after_geometry = _rect_geometry({**fabric, **after})
+        if not self.constraints.allows_placement(fabric.get("id"), after_geometry):
+            self.rejections.add("CONSTRAINT", _raw_fabric_id(fabric), "CONSTRAINT_ZONE", before, after)
+            return True
         if self.constraints.intersects_forbidden_zone(after_geometry):
             self.rejections.add("CONSTRAINT", _raw_fabric_id(fabric), "CONSTRAINT_ZONE", before, after)
             return True
-        if self.constraints.is_wall_anchored(fabric.get("id")):
-            walls = drawing_walls(self.drawing)
-            if not _touches_any_wall(after_geometry, walls):
-                self.rejections.add("CONSTRAINT", _raw_fabric_id(fabric), "CONSTRAINT_WALL_ANCHOR", before, after)
-                return True
         return False
 
     def try_dual_gap(
@@ -1442,6 +1456,18 @@ def _generate_from_findings(
                 fabric,
                 _mutation_variants("ROTATE_TO_OPEN", finding, target, generation.constraints, drawing),
             )
+        if primary == "CLEAR_CORRIDOR":
+            for target in extra_targets:
+                generation.try_single_moves(
+                    drawing,
+                    finding_index,
+                    finding,
+                    region,
+                    finding_type,
+                    "SHIFT_AND_TURN",
+                    target[0],
+                    _shift_and_turn_variants(target, generation.constraints),
+                )
         path_targets, path_normal = _find_exit_path_targets(
             drawing, generation.agents, finding, generation.constraints
         )
@@ -1568,14 +1594,6 @@ def _generate_from_parents(
                 )
 
 
-def _ranked(items: Sequence[RawCandidate], count: int, score_of) -> list[RawCandidate]:
-    ordered = sorted(
-        enumerate(items),
-        key=lambda pair: (-score_of(pair[1]), getattr(pair[1], "total_move_distance", 0.0), pair[0]),
-    )
-    return [item for _, item in ordered[:count]]
-
-
 def _select(raw: Sequence[RawCandidate], max_candidates: int, score_of) -> list[RawCandidate]:
     """The best `max_candidates` of the whole pool, regardless of which finding they came from.
 
@@ -1585,10 +1603,35 @@ def _select(raw: Sequence[RawCandidate], max_candidates: int, score_of) -> list[
     case had a 0.0057 candidate tried while a 0.0675 one from the same finding was dropped.
     Spreading trials across findings is worth nothing if the spread costs the best candidates;
     coverage is not the goal, finding one verified improvement is.
+
+    One slot per (finding, operator) pair is reserved before the best-first fill: widening the
+    variant ladders otherwise lets a single high-scoring operator occupy every offered slot and
+    starve the rest out of the list entirely.
     """
     if max_candidates <= 0 or not raw:
         return []
-    return _ranked(raw, max_candidates, score_of)
+    ordered = sorted(
+        enumerate(raw),
+        key=lambda pair: (-score_of(pair[1]), getattr(pair[1], "total_move_distance", 0.0), pair[0]),
+    )
+    selected_indices: list[int] = []
+    seen_operators: set[tuple[int, str, str]] = set()
+    for index, item in ordered:
+        operator_key = (item.finding_index, item.origin_finding_type, item.operator_type)
+        if operator_key in seen_operators:
+            continue
+        seen_operators.add(operator_key)
+        selected_indices.append(index)
+        if len(selected_indices) >= max_candidates:
+            break
+    for index, _item in ordered:
+        if len(selected_indices) >= max_candidates:
+            break
+        if index not in selected_indices:
+            selected_indices.append(index)
+    by_index = dict(ordered)
+    chosen = set(selected_indices)
+    return [by_index[index] for index, _item in ordered if index in chosen]
 
 
 def _candidate_output(
@@ -1651,6 +1694,39 @@ def generate(input_data: dict[str, Any]) -> dict[str, Any]:
     drawing = input_data["drawing"]
     agents = [(_numeric(point["x"]), _numeric(point["y"])) for point in input_data.get("agents", [])]
     hazards = parse_hazards(input_data.get("hazards", []))
+    if input_data.get("plannerMode") == "IDEAL_ROUTE_DOCKING":
+        candidates = generate_docking_candidates(
+            drawing=drawing,
+            agents=agents,
+            selected_exit_ids=input_data.get("selectedExitIds", []),
+            hazards=hazards,
+            max_candidates=max(0, int(input_data.get("maxCandidates", 0))),
+            constraints=input_data.get("constraints"),
+        )
+        return {
+            "plannerVersion": IDEAL_ROUTE_DOCKING_VERSION,
+            "candidates": [
+                {
+                    "originFindingType": "IDEAL_ROUTE",
+                    "operatorType": "BOUNDARY_DOCKING",
+                    "parentCandidateId": None,
+                    "proxyScore": item["recoveredRouteCost"],
+                    "ops": item["ops"],
+                    "rationale": {
+                        "recoveredAgentCount": item["recoveredAgentCount"],
+                        "recoveredRouteCost": item["recoveredRouteCost"],
+                        "plannerMode": "IDEAL_ROUTE_DOCKING",
+                    },
+                }
+                for item in candidates
+            ],
+            "rejected": [],
+            "rejectedCounts": {},
+            "generationMode": GENERATION_BOUNDED,
+            "roundIndex": DEFAULT_ROUND_INDEX,
+            "rawCandidateCount": len(candidates),
+            "surrogateHealth": {"status": "DISABLED", "reason": "IDEAL_ROUTE_DOCKING"},
+        }
     exits = parse_exits(drawing, input_data.get("selectedExitIds", []))
     findings = input_data.get("findings", [])
     parents = input_data.get("parents", [])

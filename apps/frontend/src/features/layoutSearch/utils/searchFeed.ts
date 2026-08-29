@@ -70,6 +70,14 @@ function findingReply(search: LayoutSearch, trials: SearchCandidate[]): SearchRe
   if (FINDING_STATUSES.includes(search.status)) {
     return { key: 'finding', tone: 'running', text: '개선안 후보를 찾는 중', simulationId: null };
   }
+  if (search.status === 'VERIFYING') {
+    const plannedCount = search.progress.plannedCount;
+    const text =
+      plannedCount !== null && plannedCount > 0
+        ? `개선안 후보 ${plannedCount}개를 찾았습니다 · ${Math.min(search.progress.verifiedCount, plannedCount)}/${plannedCount} 검증 완료`
+        : '개선안 후보를 검증하는 중';
+    return { key: 'finding', tone: 'running', text, simulationId: null };
+  }
   if (trials.length > 0) {
     return {
       key: 'finding',
@@ -99,7 +107,7 @@ function summaryReply(search: LayoutSearch): SearchReply | null {
       return {
         key: 'summary',
         tone: 'done',
-        text: '개선된 배치를 찾지 못했습니다',
+        text: '실측에서 개선된 배치는 없습니다 · 후보별 비교 결과를 확인해 주세요',
         simulationId: null,
       };
     case 'CANCELLED':

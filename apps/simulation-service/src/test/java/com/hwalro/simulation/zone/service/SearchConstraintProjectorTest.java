@@ -4,10 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.hwalro.simulation.drawing.domain.Fabric;
-import com.hwalro.simulation.drawing.domain.Wall;
 import com.hwalro.simulation.drawing.mapper.DrawingMapper;
 import com.hwalro.simulation.search.domain.SearchConstraints;
 import com.hwalro.simulation.zone.domain.LayoutZone;
+import com.hwalro.simulation.zone.domain.LayoutZoneMember;
+import com.hwalro.simulation.zone.domain.ZoneElementKind;
 import com.hwalro.simulation.zone.domain.ZoneType;
 import com.hwalro.simulation.zone.mapper.LayoutZoneMapper;
 import java.math.BigDecimal;
@@ -30,19 +31,15 @@ class SearchConstraintProjectorTest {
     @Mock
     private LayoutZoneMapper layoutZoneMapper;
 
-    private SearchConstraints project(List<Fabric> fabrics, List<LayoutZone> zones) {
-        return project(fabrics, zones, List.of());
-    }
-
-    private SearchConstraints project(List<Fabric> fabrics, List<LayoutZone> zones, List<Wall> walls) {
+    private SearchConstraints project(
+            List<Fabric> fabrics, List<LayoutZone> zones, List<LayoutZoneMember> memberships) {
         when(drawingMapper.findFabricsByVersionId(VERSION_ID)).thenReturn(fabrics);
-        when(drawingMapper.findWallsByVersionId(VERSION_ID)).thenReturn(walls);
-        when(drawingMapper.findOutsideWallsByVersionId(VERSION_ID)).thenReturn(List.of());
         when(layoutZoneMapper.findZonesByVersionId(VERSION_ID)).thenReturn(zones);
+        when(layoutZoneMapper.findZoneMembersByVersionId(VERSION_ID)).thenReturn(memberships);
         return new SearchConstraintProjector(drawingMapper, layoutZoneMapper).project(VERSION_ID);
     }
 
-    private static Fabric fabric(Long id, Boolean movable, BigDecimal maxDistance, Boolean locked, Boolean wall) {
+    private static Fabric fabric(Long id, String movementPolicy) {
         Fabric fabric = new Fabric();
         fabric.setId(id);
         fabric.setLayoutVersionId(VERSION_ID);
@@ -51,59 +48,33 @@ class SearchConstraintProjectorTest {
         fabric.setEndX(BigDecimal.valueOf(3));
         fabric.setEndY(BigDecimal.valueOf(2));
         fabric.setRotation(BigDecimal.ZERO);
-        fabric.setMovable(movable);
-        fabric.setMaxMovementDistance(maxDistance);
-        fabric.setRotationLocked(locked);
-        fabric.setKeepAgainstWall(wall);
+        fabric.setMovementPolicy(movementPolicy);
         return fabric;
     }
 
     @Test
-    void immovableStructureBecomesAZeroRadius() {
-        SearchConstraints constraints = project(List.of(fabric(20L, false, null, false, false)), List.of());
-
-        assertThat(constraints.moveRadii()).containsEntry(20L, 0.0);
-    }
-
-    @Test
-    void movableStructureWithoutADistanceGetsNoRadiusKey() {
-        // 키가 없는 것이 엔진에서 "무제한"이다. 0.0으로 채우면 고정과 구분되지 않는다.
-        SearchConstraints constraints = project(List.of(fabric(20L, true, null, false, false)), List.of());
-
-        assertThat(constraints.moveRadii()).doesNotContainKey(20L);
-    }
-
-    @Test
-    void movableStructureWithADistanceKeepsThatDistance() {
+    void movementPoliciesAreProjectedByFabric() {
         SearchConstraints constraints =
-                project(List.of(fabric(20L, true, BigDecimal.valueOf(2.5), false, false)), List.of());
+                project(List.of(fabric(20L, "FREE"), fabric(21L, "FIXED")), List.of(), List.of());
 
-        assertThat(constraints.moveRadii()).containsEntry(20L, 2.5);
+        assertThat(constraints.movementPolicies()).containsEntry(20L, "FREE").containsEntry(21L, "FIXED");
     }
 
     @Test
-    void rotationLockedInvertsIntoRotationAllowedFalse() {
-        SearchConstraints constraints = project(
-                List.of(fabric(20L, true, null, true, false), fabric(21L, true, null, false, false)), List.of());
+    void withinZoneStructureReceivesItsZoneBounds() {
+        LayoutZone work = zone(91L, ZoneType.WORK, 1.5, 2.5, 3, 4);
+        LayoutZoneMember membership = LayoutZoneMember.of(VERSION_ID, 91L, ZoneElementKind.FABRIC, 20L);
+        SearchConstraints constraints =
+                project(List.of(fabric(20L, "WITHIN_ZONE")), List.of(work), List.of(membership));
 
-        assertThat(constraints.rotationAllowed()).containsEntry(20L, false).containsEntry(21L, true);
+        assertThat(constraints.movementZones()).containsEntry(20L, new SearchConstraints.MovementZone(1.5, 2.5, 3, 4));
     }
 
     @Test
-    void keepAgainstWallIsKeptOnlyWhileTheStructureStillTouchesAWall() {
-        SearchConstraints constraints = project(
-                List.of(fabric(20L, true, null, false, true), fabric(21L, true, null, false, false)),
-                List.of(),
-                List.of(wall(0, 2, 5, 2)));
+    void withinZoneWithoutMembershipHasNoMovementArea() {
+        SearchConstraints constraints = project(List.of(fabric(20L, "WITHIN_ZONE")), List.of(), List.of());
 
-        assertThat(constraints.wallAnchored()).containsEntry(20L, true).containsEntry(21L, false);
-    }
-
-    @Test
-    void staleWallConstraintIsNormalizedToFalse() {
-        SearchConstraints constraints = project(List.of(fabric(20L, true, null, false, true)), List.of());
-
-        assertThat(constraints.wallAnchored()).containsEntry(20L, false);
+        assertThat(constraints.movementZones()).doesNotContainKey(20L);
     }
 
     @Test
@@ -111,16 +82,18 @@ class SearchConstraintProjectorTest {
         SearchConstraints constraints = project(
                 List.of(),
                 List.of(
-                        zone(ZoneType.EXCLUSION, 1.5, 2.5, 3, 4),
+                        zone(91L, ZoneType.EXCLUSION, 1.5, 2.5, 3, 4),
                         // 매장 구역은 배치를 막지 않는다. 유형으로만 구분된다.
-                        zone(ZoneType.WORK, 10, 10, 5, 5)));
+                        zone(92L, ZoneType.WORK, 10, 10, 5, 5)),
+                List.of());
 
         assertThat(constraints.forbiddenZones())
                 .containsExactly(new SearchConstraints.ForbiddenZone(1.5, 2.5, 3.0, 4.0));
     }
 
-    private static LayoutZone zone(ZoneType type, double x, double y, double width, double height) {
+    private static LayoutZone zone(Long id, ZoneType type, double x, double y, double width, double height) {
         LayoutZone zone = new LayoutZone();
+        zone.setId(id);
         zone.setLayoutVersionId(VERSION_ID);
         zone.setZoneType(type.name());
         zone.setX(BigDecimal.valueOf(x));
@@ -130,33 +103,19 @@ class SearchConstraintProjectorTest {
         return zone;
     }
 
-    private static Wall wall(double startX, double startY, double endX, double endY) {
-        Wall wall = new Wall();
-        wall.setStartX(BigDecimal.valueOf(startX));
-        wall.setStartY(BigDecimal.valueOf(startY));
-        wall.setEndX(BigDecimal.valueOf(endX));
-        wall.setEndY(BigDecimal.valueOf(endY));
-        return wall;
-    }
-
     @Test
     void anEmptyLayoutProjectsToTheEmptyConstraints() {
-        SearchConstraints constraints = project(List.of(), List.of());
+        SearchConstraints constraints = project(List.of(), List.of(), List.of());
 
-        assertThat(constraints.moveRadii()).isEmpty();
+        assertThat(constraints.movementPolicies()).isEmpty();
+        assertThat(constraints.movementZones()).isEmpty();
         assertThat(constraints.forbiddenZones()).isEmpty();
-        assertThat(constraints.rotationAllowed()).isEmpty();
-        assertThat(constraints.wallAnchored()).isEmpty();
     }
 
     @Test
-    void nullFlagsFallBackToTheSchemaDefaults() {
-        // 마이그레이션 직후 기존 행은 DB 기본값(movable=TRUE, 나머지 FALSE)을 갖는다.
-        // 매퍼가 null을 돌려주는 경우에도 같은 의미로 읽혀야 한다.
-        SearchConstraints constraints = project(List.of(fabric(20L, null, null, null, null)), List.of());
+    void nullPolicyFallsBackToWithinZone() {
+        SearchConstraints constraints = project(List.of(fabric(20L, null)), List.of(), List.of());
 
-        assertThat(constraints.moveRadii()).doesNotContainKey(20L);
-        assertThat(constraints.rotationAllowed()).containsEntry(20L, true);
-        assertThat(constraints.wallAnchored()).containsEntry(20L, false);
+        assertThat(constraints.movementPolicies()).containsEntry(20L, "WITHIN_ZONE");
     }
 }

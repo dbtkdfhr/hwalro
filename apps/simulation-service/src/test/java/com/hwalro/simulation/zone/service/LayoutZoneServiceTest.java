@@ -11,7 +11,6 @@ import static org.mockito.Mockito.when;
 import com.hwalro.simulation.drawing.domain.Fabric;
 import com.hwalro.simulation.drawing.domain.FloorPlan;
 import com.hwalro.simulation.drawing.domain.Layout;
-import com.hwalro.simulation.drawing.domain.Wall;
 import com.hwalro.simulation.drawing.mapper.DrawingMapper;
 import com.hwalro.simulation.zone.domain.LayoutZone;
 import com.hwalro.simulation.zone.domain.LayoutZoneMember;
@@ -192,82 +191,46 @@ class LayoutZoneServiceTest {
     }
 
     @Test
-    void immovableStructureStoresNoMovementDistance() {
+    void storesSelectedMovementPolicy() {
         Fabric fabric = new Fabric();
         fabric.setId(20L);
         fabric.setLayoutVersionId(VERSION_ID);
         when(drawingMapper.findFabricsByVersionId(VERSION_ID)).thenReturn(List.of(fabric));
         when(drawingMapper.updateFabricConstraints(any())).thenReturn(1);
 
-        service.updateStructureConstraints(
-                LAYOUT_ID, 20L, new StructureConstraintUpdateRequest(false, BigDecimal.valueOf(5), false, null, null));
+        service.updateStructureConstraints(LAYOUT_ID, 20L, new StructureConstraintUpdateRequest("FIXED"));
 
         ArgumentCaptor<Fabric> saved = ArgumentCaptor.forClass(Fabric.class);
         verify(drawingMapper).updateFabricConstraints(saved.capture());
-        assertThat(saved.getValue().getMovable()).isFalse();
-        assertThat(saved.getValue().getMaxMovementDistance()).isNull();
+        assertThat(saved.getValue().getMovementPolicy()).isEqualTo("FIXED");
     }
 
     @Test
-    void rejectsNonPositiveMovementDistance() {
+    void rejectsUnknownMovementPolicy() {
         Fabric fabric = new Fabric();
         fabric.setId(20L);
         fabric.setLayoutVersionId(VERSION_ID);
         when(drawingMapper.findFabricsByVersionId(VERSION_ID)).thenReturn(List.of(fabric));
-        StructureConstraintUpdateRequest request =
-                new StructureConstraintUpdateRequest(true, BigDecimal.ZERO, false, null, null);
+        StructureConstraintUpdateRequest request = new StructureConstraintUpdateRequest("TELEPORT");
 
         assertThatThrownBy(() -> service.updateStructureConstraints(LAYOUT_ID, 20L, request))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("0보다");
+                .hasMessageContaining("지원하지 않는 이동 정책");
         verify(drawingMapper, never()).updateFabricConstraints(any());
     }
 
     @Test
-    void rejectsWallConstraintForStructureThatDoesNotTouchAWall() {
-        Fabric fabric = positionedFabric();
-        when(drawingMapper.findFabricsByVersionId(VERSION_ID)).thenReturn(List.of(fabric));
-        when(drawingMapper.findWallsByVersionId(VERSION_ID)).thenReturn(List.of());
-        when(drawingMapper.findOutsideWallsByVersionId(VERSION_ID)).thenReturn(List.of());
-        StructureConstraintUpdateRequest request = new StructureConstraintUpdateRequest(null, null, false, null, true);
-
-        assertThatThrownBy(() -> service.updateStructureConstraints(LAYOUT_ID, 20L, request))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("벽에 닿아 있지 않은 구조물");
-        verify(drawingMapper, never()).updateFabricConstraints(any());
-    }
-
-    @Test
-    void acceptsWallConstraintForStructureThatTouchesAWall() {
-        Fabric fabric = positionedFabric();
-        Wall wall = new Wall();
-        wall.setStartX(BigDecimal.ZERO);
-        wall.setStartY(BigDecimal.valueOf(2));
-        wall.setEndX(BigDecimal.valueOf(5));
-        wall.setEndY(BigDecimal.valueOf(2));
-        when(drawingMapper.findFabricsByVersionId(VERSION_ID)).thenReturn(List.of(fabric));
-        when(drawingMapper.findWallsByVersionId(VERSION_ID)).thenReturn(List.of(wall));
-        when(drawingMapper.findOutsideWallsByVersionId(VERSION_ID)).thenReturn(List.of());
-        when(drawingMapper.updateFabricConstraints(any())).thenReturn(1);
-
-        service.updateStructureConstraints(
-                LAYOUT_ID, 20L, new StructureConstraintUpdateRequest(null, null, false, null, true));
-
-        ArgumentCaptor<Fabric> saved = ArgumentCaptor.forClass(Fabric.class);
-        verify(drawingMapper).updateFabricConstraints(saved.capture());
-        assertThat(saved.getValue().getKeepAgainstWall()).isTrue();
-    }
-
-    private static Fabric positionedFabric() {
+    void rejectsMissingMovementPolicy() {
         Fabric fabric = new Fabric();
         fabric.setId(20L);
         fabric.setLayoutVersionId(VERSION_ID);
-        fabric.setStartX(BigDecimal.ONE);
-        fabric.setStartY(BigDecimal.ONE);
-        fabric.setEndX(BigDecimal.valueOf(3));
-        fabric.setEndY(BigDecimal.valueOf(2));
-        fabric.setRotation(BigDecimal.ZERO);
-        return fabric;
+        when(drawingMapper.findFabricsByVersionId(VERSION_ID)).thenReturn(List.of(fabric));
+        StructureConstraintUpdateRequest request = new StructureConstraintUpdateRequest(null);
+
+        assertThatThrownBy(() -> service.updateStructureConstraints(LAYOUT_ID, 20L, request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("이동 수준");
+        verify(drawingMapper, never()).updateFabricConstraints(any());
     }
 
     private static BigDecimal ten() {

@@ -120,10 +120,7 @@ CREATE TABLE IF NOT EXISTS fabrics (
     end_x DECIMAL(12, 4) NOT NULL,
     end_y DECIMAL(12, 4) NOT NULL,
     rotation DECIMAL(12, 4) NOT NULL DEFAULT 0,
-    movable BOOLEAN NOT NULL DEFAULT TRUE,
-    max_movement_distance DECIMAL(12, 4) NULL,
-    rotation_locked BOOLEAN NOT NULL DEFAULT FALSE,
-    keep_against_wall BOOLEAN NOT NULL DEFAULT FALSE,
+    movement_policy VARCHAR(20) NOT NULL DEFAULT 'WITHIN_ZONE',
     display_order INT NOT NULL DEFAULT 0,
     CONSTRAINT pk_fabrics PRIMARY KEY (id),
     -- layout_zone_members가 (fabric_id, layout_version_id) 복합 FK로 참조한다.
@@ -132,8 +129,8 @@ CREATE TABLE IF NOT EXISTS fabrics (
     -- (Java는 좌표 검증 실패, 엔진은 INVALID_GEOMETRY). DrawingService가 저장 시 정규화하며,
     -- 여기서 한 번 더 막아 회귀 시 즉시 실패하게 한다.
     CONSTRAINT ck_fabrics_extent CHECK (start_x < end_x AND start_y < end_y),
-    CONSTRAINT ck_fabrics_max_movement_distance
-        CHECK (max_movement_distance IS NULL OR max_movement_distance > 0),
+    CONSTRAINT ck_fabrics_movement_policy
+        CHECK (movement_policy IN ('FREE', 'WITHIN_ZONE', 'FIXED')),
     CONSTRAINT fk_fabrics_layout_version
         FOREIGN KEY (layout_version_id) REFERENCES layout_versions (id)
         ON UPDATE CASCADE

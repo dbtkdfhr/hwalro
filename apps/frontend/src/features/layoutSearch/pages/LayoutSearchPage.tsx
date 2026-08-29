@@ -86,12 +86,14 @@ export default function LayoutSearchPage() {
     setSelectedTabKey(null);
   }, [search?.searchId]);
 
-  const improvedCandidates = search?.improvedCandidates ?? [];
+  const candidates = useMemo(
+    () => [...(search?.improvedCandidates ?? []), ...(search?.rejectedCandidates ?? [])],
+    [search?.improvedCandidates, search?.rejectedCandidates],
+  );
 
-  // 거부된 후보는 "그 자리에 넣을 수 없다"는 사실일 뿐 제안이 아니므로 탭에 올리지 않는다.
   const defaultTabKey = useMemo(
-    () => (improvedCandidates.length > 0 ? `i-${improvedCandidates[0].candidateId}` : null),
-    [improvedCandidates],
+    () => (candidates.length > 0 ? `c-${candidates[0].candidateId}` : null),
+    [candidates],
   );
 
   const activeTabKey = selectedTabKey ?? defaultTabKey;
@@ -101,8 +103,8 @@ export default function LayoutSearchPage() {
       return null;
     }
     const candidateId = Number(activeTabKey.slice(2));
-    return improvedCandidates.find((entry) => entry.candidateId === candidateId) ?? null;
-  }, [activeTabKey, improvedCandidates]);
+    return candidates.find((entry) => entry.candidateId === candidateId) ?? null;
+  }, [activeTabKey, candidates]);
 
   const preview = useMemo(() => {
     if (!sourceSetup || !selectedCandidate) {
@@ -177,10 +179,11 @@ export default function LayoutSearchPage() {
       )}
 
       {/* 상단 플로팅 탭 바 */}
-      {improvedCandidates.length > 0 && (
+      {candidates.length > 0 && (
         <div className="layout-search-floating-tabs">
           <CandidateTabs
-            improved={search.improvedCandidates}
+            recommended={search.improvedCandidates}
+            comparisons={search.rejectedCandidates}
             activeKey={activeTabKey ?? ''}
             onSelect={setSelectedTabKey}
           />
@@ -235,19 +238,20 @@ export default function LayoutSearchPage() {
               onMinimize={detailPanel.minimize}
             />
           ) : (
-            <div className="search-insight-empty">
-              <div className="search-insight__header">
-                <h2>
-                  {search.status === 'NO_IMPROVEMENT'
-                    ? '현재 탐색 범위에서 개선안을 찾지 못했습니다'
-                    : '표시할 개선안이 없습니다'}
-                </h2>
-                <p>
-                  {search.status === 'NO_IMPROVEMENT'
-                    ? '도면 편집기에서 구조물 제약을 조정한 뒤 다시 탐색하면 다른 배치안을 찾을 수 있습니다.'
-                    : '개선안이 검증되면 상세 비교를 볼 수 있습니다.'}
-                </p>
+            <div className="flex flex-col items-center justify-center p-8 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-surface-subtle text-text-muted">
+                <span className="text-xl">✨</span>
               </div>
+              <h2 className="mt-3 text-sm font-black text-ink">
+                {search.status === 'NO_IMPROVEMENT'
+                  ? '현재 탐색 범위에서 개선안을 찾지 못했습니다'
+                  : '표시할 개선안이 없습니다'}
+              </h2>
+              <p className="mt-1 text-xs leading-relaxed text-text-muted">
+                {search.status === 'NO_IMPROVEMENT'
+                  ? '도면 편집기에서 구조물 제약을 조정한 뒤 다시 탐색하면 다른 배치안을 찾을 수 있습니다.'
+                  : '개선안이 검증되면 상세 비교를 볼 수 있습니다.'}
+              </p>
             </div>
           )}
         </CanvasWorkspacePanel>

@@ -141,7 +141,6 @@ function LayoutPage() {
   const [draftDialogOpen, setDraftDialogOpen] = useState(false);
   const [draftPending, setDraftPending] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
-  const [movementPreviewRadius, setMovementPreviewRadius] = useState<number | null>(null);
   const navigationState = location.state as LayoutNavigationState | null;
   const fadeInLayout = navigationState?.fadeInLayout === true;
   const resultReturnPath = readResultReturnPath(navigationState);
@@ -550,14 +549,6 @@ function LayoutPage() {
     selectedFabricZone,
   );
 
-  useEffect(() => {
-    setMovementPreviewRadius(
-      selectedFabricConstraint?.movable === true
-        ? selectedFabricConstraint.maxMovementDistance
-        : null,
-    );
-  }, [selectedFabric?.id, selectedFabricConstraint]);
-
   const handleZoneDrawn = (rect: ZoneRect) => {
     if (rect.width <= 0 || rect.height <= 0) {
       return;
@@ -836,7 +827,6 @@ function LayoutPage() {
         onSizeChange={onSizeChange}
         readOnly={readOnly}
         geometryEditable={!readOnly && canManageGeometry}
-        movementPreviewRadius={movementPreviewRadius}
         zones={metadata.metadata.zones}
         selectedZoneId={selectedZoneId}
         onZoneDrawn={handleZoneDrawn}
@@ -1027,7 +1017,6 @@ function LayoutPage() {
                       constraint={selectedFabricConstraint}
                       editable={canEditSelectedConstraints}
                       saved={selectedFabric.backendId !== null}
-                      onMovementPreview={setMovementPreviewRadius}
                       onChange={(patch) => {
                         if (selectedFabric.backendId === null) {
                           return;

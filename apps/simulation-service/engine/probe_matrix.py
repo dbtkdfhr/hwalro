@@ -109,16 +109,12 @@ def check_constraints_honoured(result: dict[str, Any], engine_input: dict[str, A
         for op in candidate["ops"]:
             fabric_id = op.get("fabricId")
             before, after = op.get("before") or {}, op.get("after") or {}
-            if parsed.move_radius_of(fabric_id) == 0.0:
+            geometry = constraints_module._fabric_geometry({**before, **after}) if after else None
+            if not parsed.can_move(fabric_id):
                 return f"고정된 fabric={fabric_id}이(가) {op['type']}로 움직였다"
-            if not parsed.rotation_allowed_of(fabric_id):
-                if abs(float(after.get("rotation", 0.0)) - float(before.get("rotation", 0.0))) > 1e-9:
-                    return f"회전 금지된 fabric={fabric_id}이(가) 회전했다"
-            if parsed.is_wall_anchored(fabric_id) and after:
-                if not constraints_module.touches_wall({**before, **after}, walls):
-                    return f"벽 고정된 fabric={fabric_id}이(가) 벽에서 떨어졌다"
-            if after and parsed.intersects_forbidden_zone(
-                    constraints_module._fabric_geometry({**before, **after})):
+            if geometry is not None and not parsed.allows_placement(fabric_id, geometry):
+                return f"fabric={fabric_id}이(가) 이동 구역을 벗어났다"
+            if geometry is not None and parsed.intersects_forbidden_zone(geometry):
                 return f"fabric={fabric_id}이(가) 금지구역 안에 놓였다"
     return None
 
@@ -207,17 +203,13 @@ def self_test() -> None:
     assert check_spans_preserved(result([op(1, square, stretched)]), base_input)
     assert check_spans_preserved(result([op(1, square, moved)]), base_input) is None
 
-    fixed = {**base_input, "constraints": {"moveRadii": {"1": 0.0}}}
+    fixed = {**base_input, "constraints": {"movementPolicies": {"1": "FIXED", "2": "FREE"}}}
     assert check_constraints_honoured(result([op(1, square, moved)]), fixed)
     assert check_constraints_honoured(result([op(2, square, moved)]), fixed) is None
 
-    locked = {**base_input, "constraints": {"rotationAllowed": {"1": False}}}
-    assert check_constraints_honoured(result([op(1, square, turned)]), locked)
-    assert check_constraints_honoured(result([op(1, square, moved)]), locked) is None
-
-    anchored = {**base_input, "constraints": {"wallAnchored": {"1": True}}}
-    off_wall = {"startX": 4.0, "startY": 4.0, "endX": 6.0, "endY": 6.0, "rotation": 0.0}
-    assert check_constraints_honoured(result([op(1, square, off_wall)]), anchored)
+    within = {**base_input, "constraints": {"movementPolicies": {"1": "WITHIN_ZONE"},
+              "movementZones": {"1": {"x": 0.0, "y": 0.0, "width": 5.0, "height": 5.0}}}}
+    assert check_constraints_honoured(result([op(1, square, moved)]), within)
 
     banned = {**base_input,
               "constraints": {"forbiddenZones": [{"x": 0.0, "y": 0.0, "width": 5.0, "height": 5.0}]}}

@@ -77,10 +77,10 @@
     "comment": [
       "SearchConstraints의 4개 차원(SearchConstraints.java:10)을 유/무로 교차한다.",
       "fixed = moveRadii를 0으로 (구조물 고정), forbidden = forbiddenZones,",
-      "noRotate = rotationAllowed false, wallAnchor = wallAnchored true.",
+      "fixed = 이동 불가, forbidden = 배치 제외 구역.",
       "대상 fabric은 matrix_cells.py가 각 셀에서 결정론적으로 고른다."
     ],
-    "dimensions": ["fixed", "forbidden", "noRotate", "wallAnchor"],
+    "dimensions": ["fixed", "forbidden"],
     "targetFabricCount": 2,
     "forbiddenZone": { "count": 2, "size": 15.0 }
   },
@@ -98,12 +98,12 @@
 
   "tier3Constraints": {
     "default-many-ortho-uniform-none": "none",
-    "default-many-mixed-skewed-some": "fixed+forbidden+noRotate+wallAnchor",
+    "default-many-mixed-skewed-some": "fixed+forbidden",
     "empty-few-ortho-skewed-some": "none",
     "empty-few-mixed-uniform-none": "fixed+forbidden",
-    "default-few-mixed-skewed-none": "noRotate",
-    "empty-many-ortho-uniform-some": "wallAnchor",
+    "default-few-mixed-skewed-none": "none",
+    "empty-many-ortho-uniform-some": "fixed",
     "default-many-mixed-uniform-some": "none",
-    "empty-few-ortho-skewed-none": "fixed+forbidden+noRotate+wallAnchor"
+    "empty-few-ortho-skewed-none": "fixed+forbidden"
   }
 }

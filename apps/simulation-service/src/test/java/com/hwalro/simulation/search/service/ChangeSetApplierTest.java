@@ -54,6 +54,27 @@ class ChangeSetApplierTest {
     }
 
     @Test
+    void acceptsSubQuantumNoiseInBeforeCoordinates() {
+        SimulationSetupResponse baseline = setup(List.of(point(1, 1)));
+        ChangeSet noisy = new ChangeSet(
+                1,
+                "METER",
+                List.of(new ChangeOp(
+                        "MOVE_FABRIC",
+                        FABRIC_ID,
+                        new ChangeOp.FabricTransform(
+                                new BigDecimal("3.0000004"),
+                                new BigDecimal("2.9999996"),
+                                new BigDecimal("7.0000004"),
+                                new BigDecimal("5.9999996"),
+                                new BigDecimal("0.0000004")),
+                        transform(3, 3, 7, 6, 90))));
+
+        assertThat(applier.apply(baseline, noisy).drawing().fabrics().get(0).rotation())
+                .isEqualByComparingTo("90");
+    }
+
+    @Test
     void failsWhenTheChangedLayoutHasNoRoomForTheAgents() {
         // 방을 거의 다 채우는 집기로 바꾸면 60명이 설 자리가 없다.
         List<PointDto> crowd = java.util.stream.IntStream.range(0, 60)

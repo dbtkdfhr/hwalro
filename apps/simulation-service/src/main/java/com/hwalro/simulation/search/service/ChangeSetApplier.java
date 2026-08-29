@@ -182,6 +182,6 @@ public final class ChangeSetApplier {
     }
 
     private boolean equals(BigDecimal left, BigDecimal right) {
-        return left.compareTo(right) == 0;
+        return LayoutSearchPrecision.same(left, right);
     }
 }

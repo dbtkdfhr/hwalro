@@ -1,5 +1,10 @@
-import { useEffect, useRef, useState } from 'react';
-import type { LayoutZone, StructureConstraint, ZoneType } from '../api/layoutMetadataApi';
+import { useEffect, useState } from 'react';
+import type {
+  LayoutZone,
+  MovementPolicy,
+  StructureConstraint,
+  ZoneType,
+} from '../api/layoutMetadataApi';
 import type { Exit } from '../types';
 import { round1 } from '../utils/geometry';
 
@@ -14,20 +19,19 @@ const ZONE_TYPE_LABELS: Record<ZoneType, string> = {
 const fieldLabelClassName = 'block text-xs text-panel-muted';
 const controlClassName =
   'mt-1 h-9 w-full rounded-md border border-panel-divider bg-panel-soft px-2 text-sm text-panel-text outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:opacity-50';
-const checkboxRowClassName = 'flex items-center gap-2 py-1.5 text-sm text-panel-text';
-const FREE_MOVEMENT_SLIDER_VALUE = 5.5;
-
-function movementSliderValue(constraint: StructureConstraint | null): number {
-  if (constraint?.movable === false) return 0;
-  if (constraint?.maxMovementDistance == null) return FREE_MOVEMENT_SLIDER_VALUE;
-  return Math.min(5, Math.max(0.5, Math.round(constraint.maxMovementDistance * 2) / 2));
-}
-
-function movementSliderLabel(value: number): string {
-  if (value === 0) return '고정';
-  if (value === FREE_MOVEMENT_SLIDER_VALUE) return '자유';
-  return `${value.toFixed(1)}m`;
-}
+const MOVEMENT_POLICY_OPTIONS: Array<{
+  value: MovementPolicy;
+  label: string;
+  description: string;
+}> = [
+  { value: 'FREE', label: '자유 이동', description: '도면 전체에서 이동하고 회전할 수 있습니다.' },
+  {
+    value: 'WITHIN_ZONE',
+    label: '구역 내에서 이동',
+    description: '소속 구역을 벗어나지 않는 범위에서 이동하고 회전합니다.',
+  },
+  { value: 'FIXED', label: '이동 불가', description: '현재 위치와 방향을 그대로 유지합니다.' },
+];
 
 function NumberInput({
   label,
@@ -232,14 +236,7 @@ interface StructureConstraintPanelProps {
   constraint: StructureConstraint | null;
   editable: boolean;
   saved: boolean;
-  onMovementPreview?: (radius: number | null) => void;
-  onChange: (patch: {
-    movable?: boolean;
-    maxMovementDistance?: number | null;
-    clearMaxMovementDistance?: boolean;
-    rotationLocked?: boolean;
-    keepAgainstWall?: boolean;
-  }) => void;
+  onChange: (patch: { movementPolicy: MovementPolicy }) => void;
 }
 
 /** 구조물의 배치 제약. 도면 기하와 별개로 저장되며 잠긴 버전에서도 수정할 수 있다. */
@@ -249,30 +246,10 @@ export function StructureConstraintPanel({
   constraint,
   editable,
   saved,
-  onMovementPreview,
   onChange,
 }: StructureConstraintPanelProps) {
   const disabled = !editable;
-  const externalMovementValue = movementSliderValue(constraint);
-  const [movementDraft, setMovementDraft] = useState(externalMovementValue);
-  const committedMovementRef = useRef(externalMovementValue);
-
-  useEffect(() => {
-    setMovementDraft(externalMovementValue);
-    committedMovementRef.current = externalMovementValue;
-  }, [externalMovementValue]);
-
-  const commitMovement = () => {
-    if (movementDraft === committedMovementRef.current) return;
-    committedMovementRef.current = movementDraft;
-    if (movementDraft === 0) {
-      onChange({ movable: false, clearMaxMovementDistance: true, maxMovementDistance: null });
-    } else if (movementDraft === FREE_MOVEMENT_SLIDER_VALUE) {
-      onChange({ movable: true, clearMaxMovementDistance: true, maxMovementDistance: null });
-    } else {
-      onChange({ movable: true, maxMovementDistance: movementDraft });
-    }
-  };
+  const selectedPolicy = constraint?.movementPolicy ?? 'WITHIN_ZONE';
 
   return (
     <section aria-label="배치 제약" className="mt-4 border-t border-panel-divider pt-4">
@@ -295,61 +272,33 @@ export function StructureConstraintPanel({
             </p>
           ) : null}
 
-          <label className="mt-3 block">
-            <span className="flex items-center justify-between text-xs text-panel-muted">
-              <span>이동 반경</span>
-              <strong className="font-mono text-panel-text">
-                {movementSliderLabel(movementDraft)}
-              </strong>
-            </span>
-            <input
-              type="range"
-              min={0}
-              max={FREE_MOVEMENT_SLIDER_VALUE}
-              step={0.5}
-              value={movementDraft}
-              disabled={disabled}
-              aria-label="이동 반경"
-              aria-valuetext={movementSliderLabel(movementDraft)}
-              onChange={(event) => {
-                const next = Number(event.target.value);
-                setMovementDraft(next);
-                onMovementPreview?.(next > 0 && next < FREE_MOVEMENT_SLIDER_VALUE ? next : null);
-              }}
-              onPointerUp={commitMovement}
-              onKeyUp={commitMovement}
-              onBlur={commitMovement}
-              className="mt-2 w-full accent-primary disabled:opacity-50"
-            />
-            <span className="mt-1 flex justify-between text-[11px] text-panel-muted">
-              <span>고정</span>
-              <span>5m</span>
-              <span>자유</span>
-            </span>
-          </label>
-
-          <label className={checkboxRowClassName}>
-            <input
-              type="checkbox"
-              checked={constraint?.rotationLocked ?? false}
-              disabled={disabled}
-              onChange={(event) => onChange({ rotationLocked: event.target.checked })}
-            />
-            회전 금지
-          </label>
-
-          <label className={checkboxRowClassName}>
-            <input
-              type="checkbox"
-              checked={(constraint?.wallContact ?? false) && (constraint?.keepAgainstWall ?? false)}
-              disabled={disabled || !constraint?.wallContact}
-              onChange={(event) => onChange({ keepAgainstWall: event.target.checked })}
-            />
-            벽에 붙여 유지
-          </label>
-          {constraint?.wallContact === false ? (
-            <p className="-mt-1 text-xs text-panel-muted">
-              벽에 닿아 있는 구조물만 설정할 수 있습니다.
+          <fieldset className="mt-3 space-y-2" disabled={disabled}>
+            <legend className="text-xs text-panel-muted">이동 수준</legend>
+            {MOVEMENT_POLICY_OPTIONS.map((option) => (
+              <label
+                key={option.value}
+                className="flex cursor-pointer gap-2 rounded-md border border-panel-divider bg-panel-soft px-3 py-2.5 has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+              >
+                <input
+                  type="radio"
+                  name={`movement-policy-${constraint?.fabricId ?? 'new'}`}
+                  value={option.value}
+                  checked={selectedPolicy === option.value}
+                  onChange={() => onChange({ movementPolicy: option.value })}
+                  className="mt-0.5 accent-primary"
+                />
+                <span>
+                  <strong className="block text-sm text-panel-text">{option.label}</strong>
+                  <span className="mt-0.5 block text-xs leading-4 text-panel-muted">
+                    {option.description}
+                  </span>
+                </span>
+              </label>
+            ))}
+          </fieldset>
+          {selectedPolicy === 'WITHIN_ZONE' && zoneName === null ? (
+            <p className="mt-2 text-xs text-danger">
+              소속 구역이 없어 현재 위치에서 이동하지 않습니다. 먼저 구역에 포함해 주세요.
             </p>
           ) : null}
         </>

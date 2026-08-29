@@ -37,6 +37,20 @@ class SimulationGeometryRelaxationTest {
     }
 
     @Test
+    void preservesValidAgentsAtTheMinimumSpacingWhenNoStructureMovedOntoThem() {
+        List<PointDto> boundary = squareBoundary();
+        List<PointDto> agents = List.of(point(2, 2), point(2.6, 2), point(3.2, 2));
+
+        List<PointDto> relaxed =
+                SimulationGeometry.relaxAgents(agents, boundary, List.of(), List.of(), List.of(), List.of());
+
+        assertThat(relaxed).containsExactlyElementsOf(agents);
+        assertThat(relaxed.get(0)).isSameAs(agents.get(0));
+        assertThat(relaxed.get(1)).isSameAs(agents.get(1));
+        assertThat(relaxed.get(2)).isSameAs(agents.get(2));
+    }
+
+    @Test
     void pushesAnAgentOutOfAFabricInterior() {
         List<PointDto> boundary = squareBoundary();
         List<Fabric> fabrics = List.of(fabric(3, 4, 7, 6, 0));

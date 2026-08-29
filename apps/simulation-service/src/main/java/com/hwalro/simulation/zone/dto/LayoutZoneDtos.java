@@ -51,22 +51,9 @@ public final class LayoutZoneDtos {
             Integer displayOrder,
             List<ZoneMemberDto> members) {}
 
-    public record StructureConstraintDto(
-            Long fabricId,
-            Long zoneId,
-            Boolean movable,
-            BigDecimal maxMovementDistance,
-            Boolean rotationLocked,
-            Boolean keepAgainstWall,
-            boolean wallContact) {}
+    public record StructureConstraintDto(Long fabricId, Long zoneId, String movementPolicy) {}
 
-    /** 부분 갱신. null 필드는 "변경 없음". {@code movable=false}이면 이동 거리는 무시하고 NULL로 저장한다. */
-    public record StructureConstraintUpdateRequest(
-            Boolean movable,
-            BigDecimal maxMovementDistance,
-            boolean clearMaxMovementDistance,
-            Boolean rotationLocked,
-            Boolean keepAgainstWall) {}
+    public record StructureConstraintUpdateRequest(String movementPolicy) {}
 
     public record LayoutMetadataResponse(
             Long layoutId,

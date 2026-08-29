@@ -5,6 +5,7 @@ import com.hwalro.simulation.drawing.domain.Fabric;
 import com.hwalro.simulation.drawing.domain.FloorPlan;
 import com.hwalro.simulation.drawing.domain.Layout;
 import com.hwalro.simulation.drawing.domain.LayoutVersion;
+import com.hwalro.simulation.drawing.domain.MovementPolicy;
 import com.hwalro.simulation.drawing.exception.DrawingNotFoundException;
 import com.hwalro.simulation.drawing.mapper.DrawingMapper;
 import com.hwalro.simulation.drawing.service.DrawingService;
@@ -76,17 +77,6 @@ public class LayoutZoneService {
 
     public List<Fabric> fabrics(Long layoutVersionId) {
         return drawingMapper.findFabricsByVersionId(layoutVersionId);
-    }
-
-    public Map<Long, Boolean> wallContacts(Long layoutVersionId, List<Fabric> fabrics) {
-        List<com.hwalro.simulation.drawing.domain.Wall> walls = drawingMapper.findWallsByVersionId(layoutVersionId);
-        List<com.hwalro.simulation.drawing.domain.OutsideWall> outsideWalls =
-                drawingMapper.findOutsideWallsByVersionId(layoutVersionId);
-        Map<Long, Boolean> result = new HashMap<>();
-        for (Fabric fabric : fabrics) {
-            result.put(fabric.getId(), WallContactEvaluator.touches(fabric, walls, outsideWalls));
-        }
-        return Map.copyOf(result);
     }
 
     /**
@@ -207,34 +197,10 @@ public class LayoutZoneService {
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("이 도면 버전에 없는 구조물입니다: " + fabricId));
 
-        if (request.movable() != null) {
-            fabric.setMovable(request.movable());
+        if (request.movementPolicy() == null) {
+            throw new IllegalArgumentException("이동 수준을 선택해 주세요.");
         }
-        if (request.rotationLocked() != null) {
-            fabric.setRotationLocked(request.rotationLocked());
-        }
-        if (request.keepAgainstWall() != null) {
-            if (request.keepAgainstWall()
-                    && !WallContactEvaluator.touches(
-                            fabric,
-                            drawingMapper.findWallsByVersionId(versionId),
-                            drawingMapper.findOutsideWallsByVersionId(versionId))) {
-                throw new IllegalArgumentException("벽에 닿아 있지 않은 구조물에는 벽 유지 제약을 설정할 수 없습니다.");
-            }
-            fabric.setKeepAgainstWall(request.keepAgainstWall());
-        }
-        if (request.clearMaxMovementDistance()) {
-            fabric.setMaxMovementDistance(null);
-        } else if (request.maxMovementDistance() != null) {
-            if (request.maxMovementDistance().signum() <= 0) {
-                throw new IllegalArgumentException("최대 이동 거리는 0보다 커야 합니다.");
-            }
-            fabric.setMaxMovementDistance(request.maxMovementDistance());
-        }
-        // 고정된 구조물에 이동 거리를 남겨두면 두 값이 서로 모순된다. 한쪽으로 정규화한다.
-        if (Boolean.FALSE.equals(fabric.getMovable())) {
-            fabric.setMaxMovementDistance(null);
-        }
+        fabric.setMovementPolicy(MovementPolicy.from(request.movementPolicy()).name());
         fabric.setLayoutVersionId(versionId);
 
         if (drawingMapper.updateFabricConstraints(fabric) == 0) {

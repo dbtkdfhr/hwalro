@@ -92,7 +92,7 @@ class LayoutZoneAuthorizationTest {
         Fabric fabric = new Fabric();
         fabric.setId(id);
         fabric.setLayoutVersionId(VERSION_ID);
-        fabric.setMovable(true);
+        fabric.setMovementPolicy("WITHIN_ZONE");
         return fabric;
     }
 
@@ -226,6 +226,6 @@ class LayoutZoneAuthorizationTest {
     }
 
     private static StructureConstraintUpdateRequest patch() {
-        return new StructureConstraintUpdateRequest(false, null, false, null, null);
+        return new StructureConstraintUpdateRequest("FIXED");
     }
 }

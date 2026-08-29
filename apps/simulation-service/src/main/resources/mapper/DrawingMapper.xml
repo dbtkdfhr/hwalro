@@ -169,10 +169,7 @@
                end_x,
                end_y,
                rotation,
-               movable,
-               max_movement_distance,
-               rotation_locked,
-               keep_against_wall,
+               movement_policy,
                display_order
         FROM fabrics
         WHERE layout_version_id = #{layoutVersionId}
@@ -316,10 +313,9 @@
 
     <insert id="insertFabric" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO fabrics (layout_version_id, name, start_x, start_y, end_x, end_y, rotation,
-                             movable, max_movement_distance, rotation_locked, keep_against_wall, display_order)
+                             movement_policy, display_order)
         VALUES (#{layoutVersionId}, #{name}, #{startX}, #{startY}, #{endX}, #{endY}, #{rotation},
-                COALESCE(#{movable}, TRUE), #{maxMovementDistance},
-                COALESCE(#{rotationLocked}, FALSE), COALESCE(#{keepAgainstWall}, FALSE),
+                COALESCE(#{movementPolicy}, 'WITHIN_ZONE'),
                 COALESCE(#{displayOrder}, 0))
     </insert>
 
@@ -435,10 +431,7 @@
     <!-- 기하 컬럼은 의도적으로 제외한다. 제약 저장이 도면 기하를 덮어쓰면 안 된다. -->
     <update id="updateFabricConstraints">
         UPDATE fabrics
-        SET movable = #{movable},
-            max_movement_distance = #{maxMovementDistance},
-            rotation_locked = #{rotationLocked},
-            keep_against_wall = #{keepAgainstWall}
+        SET movement_policy = #{movementPolicy}
         WHERE id = #{id} AND layout_version_id = #{layoutVersionId}
     </update>
 

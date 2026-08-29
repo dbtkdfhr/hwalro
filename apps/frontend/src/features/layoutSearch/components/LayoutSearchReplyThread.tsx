@@ -6,12 +6,16 @@ import { layoutSearchReplies, trialCandidates, type SearchReply } from '../utils
 import {
   CANDIDATE_STATUS_LABELS,
   formatDelta,
-  operatorLabel,
+  RECOMMENDATION_LABELS,
+  RECOMMENDATION_TYPE_META,
+  rejectReasonLabel,
   SEARCH_STATUS_LABELS,
 } from '../utils/searchLabels';
 
 interface Props {
   search: LayoutSearch;
+  onCancelSearch?: (searchId: number) => void;
+  cancellingSearchId?: number | null;
   onDeleteSimulation?: (simulationId: number) => void;
   deletingSimulationId?: number | null;
 }
@@ -69,6 +73,10 @@ function CandidateRow({
   const isEvaluated = candidateStatus === 'EVALUATED';
   const isNotImproved = candidateStatus === 'NOT_IMPROVED';
   const isFailed = candidateStatus === 'FAILED' || preparedStatus === 'FAILED';
+  const isCancelled = candidate.rejectReason?.startsWith('SEARCH_CANCELLED') ?? false;
+  const failureReason = rejectReasonLabel(candidate.rejectReason);
+  const isRecommended =
+    candidateStatus === 'EVALUATED' && (candidate.recommendationTypes?.length ?? 0) > 0;
 
   const deltas = candidate.delta ?? [];
   const totalTimeDelta = deltas.find(
@@ -77,10 +85,6 @@ function CandidateRow({
       d.metricType === 'SIMULATION_DURATION_SECONDS',
   );
   const avgTimeDelta = deltas.find((d) => d.metricType === 'AVERAGE_EVACUATION_TIME_SECONDS');
-  const exitImbalanceDelta = deltas.find(
-    (d) => d.metricType === 'EXIT_IMBALANCE' || d.metricType === 'EXIT_IMBALANCE_RATIO',
-  );
-  const maxDensityDelta = deltas.find((d) => d.metricType === 'MAX_DENSITY');
 
   const { statusLabel, statusBadgeStyle } = (() => {
     if (isRunning) {
@@ -110,6 +114,12 @@ function CandidateRow({
     if (isNotImproved) {
       return {
         statusLabel: '개선 미달',
+        statusBadgeStyle: 'bg-soft-gray text-text-muted border border-line',
+      };
+    }
+    if (isCancelled) {
+      return {
+        statusLabel: '취소됨',
         statusBadgeStyle: 'bg-soft-gray text-text-muted border border-line',
       };
     }
@@ -157,16 +167,32 @@ function CandidateRow({
                   to={simulationLinkTo}
                   className="truncate text-sm font-bold text-text-strong transition-colors hover:text-primary group-hover/row:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
                 >
-                  개선안 #{candidate.candidateId}
+                  {isRecommended ? '추천안' : '실측 후보'} #{candidate.candidateId}
                 </Link>
               ) : (
                 <span className="truncate text-sm font-bold text-text-strong">
-                  개선안 #{candidate.candidateId}
+                  {isRecommended ? '추천안' : '실측 후보'} #{candidate.candidateId}
                 </span>
               )}
-              <span className="inline-flex shrink-0 items-center rounded bg-accent-purple-soft px-1.5 py-0.5 text-[10px] font-bold text-accent-purple">
-                {operatorLabel(candidate.operatorType)}
-              </span>
+              {candidate.recommendationTypes && candidate.recommendationTypes.length > 0 ? (
+                candidate.recommendationTypes.map((type) => {
+                  const meta = RECOMMENDATION_TYPE_META[type];
+                  return (
+                    <span
+                      key={type}
+                      className={`inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                        meta?.badgeStyle ?? 'bg-soft-gray text-text-muted border border-line'
+                      }`}
+                    >
+                      {meta?.label ?? RECOMMENDATION_LABELS[type] ?? type}
+                    </span>
+                  );
+                })
+              ) : (
+                <span className="inline-flex shrink-0 items-center rounded border border-line bg-soft-gray px-1.5 py-0.5 text-[10px] font-bold text-text-muted">
+                  비교 후보
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -175,6 +201,7 @@ function CandidateRow({
       {/* 2. 상태 (13%) */}
       <td className="px-4 py-2.5">
         <span
+          title={failureReason ?? undefined}
           className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${statusBadgeStyle}`}
         >
           {isRunning && (
@@ -188,6 +215,9 @@ function CandidateRow({
           )}
           {statusLabel}
         </span>
+        {isFailed && failureReason && (
+          <p className="mt-1 text-[11px] leading-snug text-danger-strong">{failureReason}</p>
+        )}
       </td>
 
       {/* 3. 총 대피 시간 개선 (11%) */}
@@ -200,17 +230,6 @@ function CandidateRow({
         <DeltaCell delta={avgTimeDelta} inverse={true} />
       </td>
 
-      {/* 5. 비상구 편중도 — 비상구가 둘 이상일 때만 산출되므로 없으면 '-'로 둔다 */}
-      <td className="px-4 py-2.5 text-xs">
-        <DeltaCell delta={exitImbalanceDelta} inverse={true} />
-      </td>
-
-      {/* 6. 최대 밀집도 — 안전 기준을 넘긴 상승은 개선 판정에서 거부 사유가 된다 */}
-      <td className="px-4 py-2.5 text-xs">
-        <DeltaCell delta={maxDensityDelta} inverse={true} />
-      </td>
-
-      {/* 7. 관리 */}
       <td className="px-6 py-2.5 text-center">
         {simulationId && onDeleteSimulation ? (
           <div className="flex items-center justify-center opacity-0 transition-opacity duration-150 group-hover/row:opacity-100 focus-within:opacity-100">
@@ -257,6 +276,8 @@ function StatusFeedItem({ reply }: { reply: SearchReply }) {
 
 export function LayoutSearchReplyThread({
   search,
+  onCancelSearch,
+  cancellingSearchId = null,
   onDeleteSimulation,
   deletingSimulationId,
 }: Props) {
@@ -296,14 +317,26 @@ export function LayoutSearchReplyThread({
           </span>
         </div>
 
-        <Link
-          to={`/simulations/${search.baselineSimulationId}/layout-search`}
-          className="inline-flex items-center gap-1 rounded-md border border-line bg-white px-2.5 py-1 text-xs font-bold text-text-strong shadow-xs transition hover:border-primary/40 hover:bg-primary-soft hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
-        >
-          <Play className="h-2.5 w-2.5 fill-current" aria-hidden="true" />
-          탐색 워크스페이스
-          <ChevronRight className="h-3 w-3" aria-hidden="true" />
-        </Link>
+        <div className="flex items-center gap-2">
+          {isSearching && onCancelSearch && (
+            <button
+              type="button"
+              disabled={cancellingSearchId !== null}
+              onClick={() => onCancelSearch(search.searchId)}
+              className="inline-flex items-center rounded-md border border-danger/25 bg-white px-2.5 py-1 text-xs font-bold text-danger-strong transition hover:bg-danger-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {cancellingSearchId === search.searchId ? '취소 요청 중…' : '탐색 취소'}
+            </button>
+          )}
+          <Link
+            to={`/simulations/${search.baselineSimulationId}/layout-search`}
+            className="inline-flex items-center gap-1 rounded-md border border-line bg-white px-2.5 py-1 text-xs font-bold text-text-strong shadow-xs transition hover:border-primary/40 hover:bg-primary-soft hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
+          >
+            <Play className="h-2.5 w-2.5 fill-current" aria-hidden="true" />
+            탐색 워크스페이스
+            <ChevronRight className="h-3 w-3" aria-hidden="true" />
+          </Link>
+        </div>
       </div>
 
       {/* 후보 목록이 있을 경우 테이블 형태로 렌더링 */}
@@ -312,13 +345,11 @@ export function LayoutSearchReplyThread({
           <table className="w-full table-fixed border-collapse text-left">
             <caption className="sr-only">발견된 배치 개선안 후보 목록</caption>
             <colgroup>
-              <col className="w-[26%]" />
-              <col className="w-[12%]" />
-              <col className="w-[12%]" />
-              <col className="w-[12%]" />
-              <col className="w-[13%]" />
-              <col className="w-[13%]" />
-              <col className="w-[12%]" />
+              <col className="w-[42%]" />
+              <col className="w-[14%]" />
+              <col className="w-[17%]" />
+              <col className="w-[17%]" />
+              <col className="w-[10%]" />
             </colgroup>
             <thead>
               <tr className="border-b border-line/40 bg-surface-elevated/40 text-[11px] font-semibold text-text-muted">
@@ -326,8 +357,6 @@ export function LayoutSearchReplyThread({
                 <th className="px-4 py-2">상태</th>
                 <th className="px-4 py-2">총 대피시간 개선</th>
                 <th className="px-4 py-2">평균 대피시간 개선</th>
-                <th className="px-4 py-2">비상구 편중도</th>
-                <th className="px-4 py-2">최대 밀집도</th>
                 <th className="px-6 py-2 text-center">관리</th>
               </tr>
             </thead>

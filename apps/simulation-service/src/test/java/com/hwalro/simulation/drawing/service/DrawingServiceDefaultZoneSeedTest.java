@@ -146,7 +146,14 @@ class DrawingServiceDefaultZoneSeedTest {
 
     private static DefaultFabric fabric(String name, int displayOrder) {
         return new DefaultFabric(
-                name, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ONE, BigDecimal.ONE, BigDecimal.ZERO, displayOrder);
+                name,
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+                BigDecimal.ONE,
+                BigDecimal.ONE,
+                BigDecimal.ZERO,
+                "WITHIN_ZONE",
+                displayOrder);
     }
 
     private static DefaultExit exit(String name) {

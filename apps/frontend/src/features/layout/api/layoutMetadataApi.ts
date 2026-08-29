@@ -11,6 +11,7 @@ export interface ZoneRect {
 export type ZoneType = 'WORK' | 'STORAGE' | 'PASSAGE' | 'EXCLUSION' | 'OTHER';
 
 export type ZoneElementKind = 'WALL' | 'PILLAR' | 'FABRIC';
+export type MovementPolicy = 'FREE' | 'WITHIN_ZONE' | 'FIXED';
 
 export interface ZoneMember {
   kind: ZoneElementKind;
@@ -31,11 +32,7 @@ export interface LayoutZone {
 export interface StructureConstraint {
   fabricId: number;
   zoneId: number | null;
-  movable: boolean;
-  maxMovementDistance: number | null;
-  rotationLocked: boolean;
-  keepAgainstWall: boolean;
-  wallContact: boolean;
+  movementPolicy: MovementPolicy;
 }
 
 export interface LayoutMetadata {
@@ -72,11 +69,7 @@ export interface ZoneUpdateRequest {
 }
 
 export interface StructureConstraintUpdateRequest {
-  movable?: boolean;
-  maxMovementDistance?: number | null;
-  clearMaxMovementDistance?: boolean;
-  rotationLocked?: boolean;
-  keepAgainstWall?: boolean;
+  movementPolicy: MovementPolicy;
 }
 
 export const layoutMetadataApi = {

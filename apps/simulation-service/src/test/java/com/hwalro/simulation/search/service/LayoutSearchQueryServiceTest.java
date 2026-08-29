@@ -7,11 +7,13 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hwalro.simulation.common.jwt.JwtUser;
 import com.hwalro.simulation.search.config.LayoutSearchProperties;
+import com.hwalro.simulation.search.domain.LayoutSearchCandidateEntity;
 import com.hwalro.simulation.search.dto.LayoutSearchMonitorItem;
 import com.hwalro.simulation.search.mapper.LayoutSearchMapper;
 import com.hwalro.simulation.simulation.mapper.SimulationMapper;
 import com.hwalro.simulation.simulation.service.SimulationService;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,5 +52,25 @@ class LayoutSearchQueryServiceTest {
 
         assertThat(service.getMonitor(user)).isEqualTo(searches);
         verify(layoutSearchMapper).findMonitorItems(7L);
+    }
+
+    @Test
+    void exposesMeasuredCandidatesThatWereNotRecommended() {
+        LayoutSearchCandidateEntity worsened = new LayoutSearchCandidateEntity();
+        worsened.setId(21L);
+        worsened.setStatus("NOT_IMPROVED");
+        LayoutSearchCandidateEntity failed = new LayoutSearchCandidateEntity();
+        failed.setId(22L);
+        failed.setStatus("FAILED");
+        LayoutSearchCandidateEntity recommended = new LayoutSearchCandidateEntity();
+        recommended.setId(23L);
+        recommended.setStatus("EVALUATED");
+
+        assertThat(LayoutSearchQueryService.isMeasuredComparison(worsened, Map.of()))
+                .isTrue();
+        assertThat(LayoutSearchQueryService.isMeasuredComparison(failed, Map.of()))
+                .isTrue();
+        assertThat(LayoutSearchQueryService.isMeasuredComparison(recommended, Map.of(23L, List.of("TOTAL_TIME"))))
+                .isFalse();
     }
 }

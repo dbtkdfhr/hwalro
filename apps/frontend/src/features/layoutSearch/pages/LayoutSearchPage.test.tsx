@@ -67,6 +67,7 @@ function candidate(candidateId = 11): SearchCandidate {
     originFindingType: 'BOTTLENECK',
     operatorType,
     status: 'EVALUATED',
+    recommendationTypes: [candidateId === 11 ? 'TOTAL_TIME' : 'AVERAGE_TIME'],
     rationale: {
       findingIndex: 0,
       operatorType,
@@ -111,6 +112,7 @@ function candidate(candidateId = 11): SearchCandidate {
 function search(
   status: LayoutSearch['status'] = 'COMPLETED',
   improvedCandidates: SearchCandidate[] = [candidate(11), candidate(12)],
+  rejectedCandidates: SearchCandidate[] = [],
 ): LayoutSearch {
   return {
     searchId: 1,
@@ -142,7 +144,7 @@ function search(
             ],
           },
     improvedCandidates,
-    rejectedCandidates: [],
+    rejectedCandidates,
     failureCode: null,
     failureMessage: null,
   };
@@ -279,11 +281,11 @@ describe('배치 개선안 페이지 interaction', () => {
     });
 
     expect(preparation).toHaveBeenCalledTimes(1);
-    expect(container.textContent).toContain('시뮬레이션 준비됨');
+    expect(container.textContent).toContain('실측 시뮬레이션 저장됨');
     expect(container.querySelector('a[href="/simulations/111/setup"]')).not.toBeNull();
 
     const secondCandidate = [...container.querySelectorAll('button')].find((element) =>
-      element.textContent?.includes('혼잡 완화'),
+      element.textContent?.includes('평균시간 최적'),
     );
     await act(async () => secondCandidate?.click());
     expect((button('이 개선안으로 시뮬레이션 진행') as HTMLButtonElement).disabled).toBe(false);
@@ -307,7 +309,7 @@ describe('배치 개선안 페이지 interaction', () => {
       await Promise.resolve();
     });
     const secondCandidate = [...container.querySelectorAll('button')].find((element) =>
-      element.textContent?.includes('혼잡 완화'),
+      element.textContent?.includes('평균시간 최적'),
     );
     await act(async () => secondCandidate?.click());
 
@@ -323,6 +325,35 @@ describe('배치 개선안 페이지 interaction', () => {
       pending.get(12)?.({ simulationId: 112, status: 'DRAFT' });
       await Promise.resolve();
     });
+  });
+
+  it('실측에서 악화된 후보도 배치와 지표를 비교할 수 있게 표시한다', async () => {
+    const rejected = candidate(13);
+    rejected.status = 'NOT_IMPROVED';
+    rejected.recommendationTypes = [];
+    rejected.measuredMetrics = [
+      { metricType: 'TOTAL_EVACUATION_TIME_SECONDS', unit: 'seconds', metricValue: 201.2 },
+    ];
+    rejected.delta = [
+      {
+        metricType: 'TOTAL_EVACUATION_TIME_SECONDS',
+        baseline: 182.4,
+        measured: 201.2,
+        difference: 18.8,
+        ratio: 0.103,
+      },
+    ];
+    rejected.preparedSimulation = { simulationId: 213, status: 'COMPLETED' };
+    vi.spyOn(simulationApi, 'getSetup').mockResolvedValue(setup());
+    vi.spyOn(layoutSearchApi, 'latest').mockResolvedValue(search('NO_IMPROVEMENT', [], [rejected]));
+
+    await renderPage();
+
+    expect(container.textContent).toContain('악화됨');
+    expect(container.textContent).toContain('+18.8 (+10.3%)');
+    expect(container.querySelector('a[href="/simulations/213/results"]')).not.toBeNull();
+    expect(container.textContent).toContain('시뮬레이션 결과 열기');
+    expect(container.textContent).not.toContain('이 개선안으로 시뮬레이션 진행');
   });
 
   it('terminal 상태에서 다시 탐색하면 결과 화면의 시작 모달로 돌아간다', async () => {

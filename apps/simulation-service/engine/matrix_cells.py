@@ -494,14 +494,12 @@ def apply_constraints(engine_input: dict[str, Any], combo: dict[str, Any],
     target_ids = [str(fabric["id"]) for fabric in targets]
 
     constraints: dict[str, Any] = {
-        "moveRadii": {}, "forbiddenZones": [], "rotationAllowed": {}, "wallAnchored": {},
+        "movementPolicies": {str(fabric["id"]): "FREE" for fabric in fabrics},
+        "movementZones": {},
+        "forbiddenZones": [],
     }
     if combo["fixed"]:
-        constraints["moveRadii"] = {identifier: 0.0 for identifier in target_ids}
-    if combo["noRotate"]:
-        constraints["rotationAllowed"] = {identifier: False for identifier in target_ids}
-    if combo["wallAnchor"]:
-        constraints["wallAnchored"] = {identifier: True for identifier in target_ids}
+        constraints["movementPolicies"].update({identifier: "FIXED" for identifier in target_ids})
     if combo["forbidden"]:
         size = float(spec["forbiddenZone"]["size"])
         points = [(point["x"], point["y"]) for point in engine_input["drawing"]["outsideBoundary"]]

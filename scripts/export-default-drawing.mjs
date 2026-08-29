@@ -116,7 +116,7 @@ const [walls, outsideWalls, pillars, fabrics, exits, layoutTexts, zones, members
      FROM (SELECT * FROM pillars WHERE layout_version_id = ${layoutVersionId} ${ELEMENT_ORDER}) t`,
   ),
   queryJson(
-    `SELECT JSON_ARRAYAGG(JSON_OBJECT(${ELEMENT_COLUMNS}, 'rotation', rotation, 'displayOrder', display_order))
+    `SELECT JSON_ARRAYAGG(JSON_OBJECT(${ELEMENT_COLUMNS}, 'rotation', rotation, 'movementPolicy', movement_policy, 'displayOrder', display_order))
      FROM (SELECT * FROM fabrics WHERE layout_version_id = ${layoutVersionId} ${ELEMENT_ORDER}) t`,
   ),
   queryJson(
@@ -214,6 +214,7 @@ const drawing = {
     endX: decimal(fabric.endX),
     endY: decimal(fabric.endY),
     rotation: decimal(fabric.rotation),
+    movementPolicy: fabric.movementPolicy,
     displayOrder: fabric.displayOrder,
   })),
   exits: exits.map((exit) => ({

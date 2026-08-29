@@ -136,10 +136,7 @@ class DrawingServiceIdentitySyncTest {
         // 제약 컬럼은 updateFabricGeometry SQL에 없다. 도메인 값도 채우지 않는다.
         ArgumentCaptor<Fabric> updated = ArgumentCaptor.forClass(Fabric.class);
         verify(drawingMapper).updateFabricGeometry(updated.capture());
-        assertThat(updated.getValue().getMovable()).isNull();
-        assertThat(updated.getValue().getMaxMovementDistance()).isNull();
-        assertThat(updated.getValue().getRotationLocked()).isNull();
-        assertThat(updated.getValue().getKeepAgainstWall()).isNull();
+        assertThat(updated.getValue().getMovementPolicy()).isNull();
         verify(drawingMapper, never()).deleteFabricsByVersionId(eq(VERSION_ID));
     }
 

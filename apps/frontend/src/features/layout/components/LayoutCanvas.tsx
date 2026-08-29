@@ -57,8 +57,6 @@ interface LayoutCanvasProps {
   readOnly?: boolean;
   /** false면 요소 선택만 허용하고 도면 기하는 변경하지 않는다. */
   geometryEditable?: boolean;
-  /** 선택된 구조물에 유한 이동 반경이 있을 때만 표시한다. */
-  movementPreviewRadius?: number | null;
   /** 서버가 소유하는 구역. 문서(doc)가 아니라 별도 훅이 들고 있다. */
   zones?: LayoutZone[];
   selectedZoneId?: number | null;
@@ -155,7 +153,6 @@ export function LayoutCanvas({
   onSizeChange,
   readOnly = false,
   geometryEditable = !readOnly,
-  movementPreviewRadius = null,
   zones = [],
   selectedZoneId = null,
   onZoneDrawn,
@@ -942,22 +939,6 @@ export function LayoutCanvas({
                     </Group>
                   );
                 })}
-            {movementPreviewRadius !== null && movementPreviewRadius > 0
-              ? doc.fabrics
-                  .filter((fabric) => fabric.id === selection.fabricIds[0])
-                  .map((fabric) => (
-                    <Circle
-                      key={`movement-radius-${fabric.id}`}
-                      x={(fabric.startX + fabric.endX) / 2}
-                      y={(fabric.startY + fabric.endY) / 2}
-                      radius={movementPreviewRadius}
-                      fill={ACCENT_ALPHA_8}
-                      stroke={CANVAS_COLORS.accent}
-                      strokeWidth={s(1.5)}
-                      dash={[s(6), s(4)]}
-                    />
-                  ))
-              : null}
             {doc.outsideWalls.map((wall) => (
               <OutsideWallView
                 key={wall.id}

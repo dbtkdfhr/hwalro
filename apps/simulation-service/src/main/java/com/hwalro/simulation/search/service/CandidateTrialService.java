@@ -86,8 +86,11 @@ public class CandidateTrialService {
                     densityThresholdProvider.getCurrent().value().doubleValue(),
                     "EXIT_IMBALANCE".equals(candidate.getOriginFindingType()));
             recordTrialResult(candidate, run, trialMetrics, baselineMetrics, judgement);
-            if (judgement.improved()) {
-                verifiedCandidateMaterializer.materialize(candidate, mutatedSetup, run);
+            LayoutSearchCandidateEntity completedCandidate = layoutStudyMapper.findCandidateById(candidate.getId());
+            if (completedCandidate != null
+                    && List.of(CandidateStatus.EVALUATED.name(), CandidateStatus.NOT_IMPROVED.name())
+                            .contains(completedCandidate.getStatus())) {
+                verifiedCandidateMaterializer.materialize(completedCandidate, mutatedSetup, run);
             }
             return new TrialOutcome(
                     true, judgement.improved() ? CandidateStatus.EVALUATED : CandidateStatus.NOT_IMPROVED);

@@ -58,7 +58,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Service
 public class LayoutSearchOrchestrator {
     private static final Logger log = LoggerFactory.getLogger(LayoutSearchOrchestrator.class);
-    private static final String PLANNER_VERSION = "DIAGNOSTIC_BEAM_V1";
+    private static final String PLANNER_VERSION = "DIAGNOSTIC_BEAM_V2";
     private static final int MAX_FINDINGS = 4;
     private static final int MAX_FAILURE_MESSAGE_LENGTH = 1000;
     private static final String COMPLETED_STATUS = "COMPLETED";
@@ -214,16 +214,13 @@ public class LayoutSearchOrchestrator {
                 return;
             }
             double trialCap = TrialBudgetCalculator.trialCapSeconds(baselineMetrics, properties.getAbortMargin());
-            int beamWidth = properties.getBeamWidth();
             boolean verify = budget.verifies();
             // 2라운드는 실측으로 개선된 부모를 확장하는 단계다. 확인하지 않는 탐색에는 그 부모가 없으므로
             // 1라운드만 돈다.
-            int rounds = verify ? budget.maxRounds() : 1;
-            boolean exhaustive = "THOROUGH".equals(budget.preset());
+            int rounds = 1;
+            boolean exhaustive = false;
             if (existing.isEmpty()) {
-                int round1Cap = exhaustive
-                        ? 0
-                        : rounds >= 2 ? Math.max(1, budget.maxTrials() - beamWidth * 2) : budget.maxTrials();
+                int round1Cap = budget.maxTrials();
                 if (!runRound(
                         searchId,
                         1,
@@ -293,15 +290,13 @@ public class LayoutSearchOrchestrator {
                     finish(searchId, hasUsableCandidate(searchId, verify));
                     return;
                 }
-                List<LayoutSearchCandidateEntity> parents = exhaustive
-                        ? improved
-                        : improved.stream().limit(beamWidth).toList();
+                List<LayoutSearchCandidateEntity> parents = improved;
                 List<Map<String, Object>> parentInputs =
                         parents.stream().map(this::toParentInput).toList();
                 if (!runRound(
                         searchId,
                         2,
-                        exhaustive ? 0 : beamWidth * 2,
+                        budget.maxTrials(),
                         exhaustive,
                         verify,
                         source,
@@ -549,6 +544,7 @@ public class LayoutSearchOrchestrator {
             case "OPEN_DUAL_GAP" -> "병목 구역 양쪽의 집기를 벌려 통로 폭을 확보했습니다.";
             case "RELIEVE_DIAGONAL" -> "혼잡 구역에서 대각 방향으로 멀어지도록 집기를 이동했습니다.";
             case "EXIT_OPENING" -> "한산한 출구 접근로의 집기를 정리해 출구 수요를 분산했습니다.";
+            case "BOUNDARY_DOCKING" -> "이상 경로를 가로막는 구조물을 경계에 평행하게 정리했습니다.";
             default -> "배치 변경으로 대피 흐름을 개선합니다.";
         };
     }
@@ -640,9 +636,24 @@ public class LayoutSearchOrchestrator {
         return readChangeSet(json).ops();
     }
 
-    /** 같은 변경인지 판정하는 키. 저장본과 새 후보를 같은 직렬화기로 통과시켜 비교한다. */
     private String opsKey(List<ChangeOp> ops) {
-        return writeJson(ops);
+        return ops.stream().map(this::opKey).sorted().collect(java.util.stream.Collectors.joining("|"));
+    }
+
+    private String opKey(ChangeOp op) {
+        ChangeOp.FabricTransform before = op.before();
+        ChangeOp.FabricTransform after = op.after();
+        return String.join(":", op.type(), String.valueOf(op.fabricId()), transformKey(before), transformKey(after));
+    }
+
+    private String transformKey(ChangeOp.FabricTransform transform) {
+        return String.join(
+                ",",
+                LayoutSearchPrecision.key(transform.startX()),
+                LayoutSearchPrecision.key(transform.startY()),
+                LayoutSearchPrecision.key(transform.endX()),
+                LayoutSearchPrecision.key(transform.endY()),
+                LayoutSearchPrecision.key(transform.rotation()));
     }
 
     private LayoutSearchEntity requireSearch(Long searchId) {

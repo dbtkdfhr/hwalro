@@ -202,7 +202,8 @@ public final class SimulationGeometry {
         for (int iteration = 0; iteration < MAX_RELAX_ITERATIONS; iteration++) {
             BitSet dirty = new BitSet(count);
             pushOutOfStructures(xs, ys, moved, active, dirty, boundary, centroid, walls, pillars, fabrics, exits);
-            separateAgents(xs, ys, moved, active, dirty, count);
+            double collisionThreshold = iteration == 0 ? AGENT_SPACING : TARGET_SPACING;
+            separateAgents(xs, ys, moved, active, dirty, count, collisionThreshold);
             if (dirty.isEmpty()) {
                 return finish(agents, xs, ys, moved, count);
             }
@@ -288,7 +289,13 @@ public final class SimulationGeometry {
      * 구조물 검사 대상이 되고, 그 결과 밀어내기가 이웃으로 연쇄된다.
      */
     private static void separateAgents(
-            double[] xs, double[] ys, boolean[] moved, BitSet active, BitSet dirty, int count) {
+            double[] xs,
+            double[] ys,
+            boolean[] moved,
+            BitSet active,
+            BitSet dirty,
+            int count,
+            double collisionThreshold) {
         Map<Cell, List<Integer>> buckets = new HashMap<>();
         Cell[] cells = new Cell[count];
         for (int index = 0; index < count; index++) {
@@ -309,7 +316,7 @@ public final class SimulationGeometry {
                         double dx = xs[other] - xs[index];
                         double dy = ys[other] - ys[index];
                         double gap = Math.hypot(dx, dy);
-                        if (TARGET_SPACING - gap <= RELAX_TOLERANCE) {
+                        if (collisionThreshold - gap <= RELAX_TOLERANCE) {
                             continue;
                         }
                         double unitX;

@@ -184,10 +184,11 @@ class LawApiCacheTest {
                         if (lawApiFailure.getAndSet(false)) {
                             throw new RuntimeException("external law api failure");
                         }
-                        return lawApiBody.get();
+                        JsonNode node = lawApiBody.get();
+                        return node == null ? null : node.toString();
                     })
                     .when(responseSpec)
-                    .body(JsonNode.class);
+                    .body(String.class);
 
             RequestBodySpec bodySpec = mock(RequestBodySpec.class);
             doReturn(responseSpec).when(bodySpec).retrieve();

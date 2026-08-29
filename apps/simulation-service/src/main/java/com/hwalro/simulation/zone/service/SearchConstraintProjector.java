@@ -1,6 +1,7 @@
 package com.hwalro.simulation.zone.service;
 
 import com.hwalro.simulation.drawing.domain.Fabric;
+import com.hwalro.simulation.drawing.domain.MovementPolicy;
 import com.hwalro.simulation.drawing.mapper.DrawingMapper;
 import com.hwalro.simulation.search.domain.SearchConstraints;
 import com.hwalro.simulation.zone.domain.LayoutZone;
@@ -28,26 +29,25 @@ public class SearchConstraintProjector {
     }
 
     public SearchConstraints project(Long layoutVersionId) {
-        Map<Long, Double> moveRadii = new LinkedHashMap<>();
-        Map<Long, Boolean> rotationAllowed = new LinkedHashMap<>();
-        Map<Long, Boolean> wallAnchored = new LinkedHashMap<>();
+        Map<Long, String> movementPolicies = new LinkedHashMap<>();
+        Map<Long, SearchConstraints.MovementZone> movementZones = new LinkedHashMap<>();
         List<Fabric> fabrics = drawingMapper.findFabricsByVersionId(layoutVersionId);
-        var walls = drawingMapper.findWallsByVersionId(layoutVersionId);
-        var outsideWalls = drawingMapper.findOutsideWallsByVersionId(layoutVersionId);
+        Map<Long, LayoutZone> zonesById = layoutZoneMapper.findZonesByVersionId(layoutVersionId).stream()
+                .collect(java.util.stream.Collectors.toMap(LayoutZone::getId, zone -> zone));
+        Map<Long, Long> zoneIdByFabric = new LinkedHashMap<>();
+        layoutZoneMapper.findZoneMembersByVersionId(layoutVersionId).stream()
+                .filter(member -> member.getFabricId() != null)
+                .forEach(member -> zoneIdByFabric.put(member.getFabricId(), member.getZoneId()));
 
         for (Fabric fabric : fabrics) {
-            boolean movable = !Boolean.FALSE.equals(fabric.getMovable());
-            if (!movable) {
-                moveRadii.put(fabric.getId(), 0.0);
-            } else if (fabric.getMaxMovementDistance() != null) {
-                moveRadii.put(fabric.getId(), fabric.getMaxMovementDistance().doubleValue());
+            MovementPolicy policy = MovementPolicy.from(fabric.getMovementPolicy());
+            movementPolicies.put(fabric.getId(), policy.name());
+            if (policy == MovementPolicy.WITHIN_ZONE) {
+                LayoutZone zone = zonesById.get(zoneIdByFabric.get(fabric.getId()));
+                if (zone != null && ZoneType.EXCLUSION != ZoneType.from(zone.getZoneType())) {
+                    movementZones.put(fabric.getId(), toMovementZone(zone));
+                }
             }
-            // 이동 가능 + 거리 미지정이면 키를 넣지 않는다. 엔진에서 그것이 "무제한"이다.
-            rotationAllowed.put(fabric.getId(), !Boolean.TRUE.equals(fabric.getRotationLocked()));
-            wallAnchored.put(
-                    fabric.getId(),
-                    Boolean.TRUE.equals(fabric.getKeepAgainstWall())
-                            && WallContactEvaluator.touches(fabric, walls, outsideWalls));
         }
 
         // 배치 제외 영역은 EXCLUSION 유형 구역이다. 사각형을 두 종류로 나눠 관리하지 않는다.
@@ -58,14 +58,19 @@ public class SearchConstraintProjector {
                         .toList();
 
         return new SearchConstraints(
-                Map.copyOf(moveRadii),
-                List.copyOf(forbiddenZones),
-                Map.copyOf(rotationAllowed),
-                Map.copyOf(wallAnchored));
+                Map.copyOf(movementPolicies), Map.copyOf(movementZones), List.copyOf(forbiddenZones));
     }
 
     private static SearchConstraints.ForbiddenZone toForbiddenZone(LayoutZone zone) {
         return new SearchConstraints.ForbiddenZone(
+                zone.getX().doubleValue(),
+                zone.getY().doubleValue(),
+                zone.getWidth().doubleValue(),
+                zone.getHeight().doubleValue());
+    }
+
+    private static SearchConstraints.MovementZone toMovementZone(LayoutZone zone) {
+        return new SearchConstraints.MovementZone(
                 zone.getX().doubleValue(),
                 zone.getY().doubleValue(),
                 zone.getWidth().doubleValue(),

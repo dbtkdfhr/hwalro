@@ -3,6 +3,7 @@ package com.hwalro.simulation.search.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hwalro.simulation.search.domain.Metric;
+import com.hwalro.simulation.search.domain.MetricDelta;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -42,7 +43,7 @@ class CandidateSelectorTest {
     }
 
     @Test
-    void a_candidate_that_only_thins_out_the_worst_crowding_counts_as_improved() {
+    void density_improvement_alone_does_not_count_as_evacuation_improvement() {
         // 탐색 4번 후보 19의 실측값이다. 총 대피시간은 소수점까지 그대로였고 평균은 0.79%만 줄었지만
         // 최대 밀집도가 4.0에서 3.0으로 내려갔다 - 그 후보가 겨냥한 BOTTLENECK 진단이 근거로 든 값이
         // 바로 그 밀집도(PEAK_DENSITY 4.0)였다.
@@ -51,7 +52,7 @@ class CandidateSelectorTest {
 
         assertThat(CandidateSelector.judge(trial, baseline, MARGIN, SAFETY_THRESHOLD)
                         .improved())
-                .isTrue();
+                .isFalse();
     }
 
     @Test
@@ -67,13 +68,13 @@ class CandidateSelectorTest {
     }
 
     @Test
-    void a_faster_layout_that_packs_people_tighter_is_not_an_improvement() {
+    void density_increase_does_not_block_average_evacuation_improvement() {
         List<Metric> baseline = metrics(59.6, 24.0, 4.0);
         List<Metric> trial = metrics(59.6, 22.0, 5.0);
 
         assertThat(CandidateSelector.judge(trial, baseline, MARGIN, SAFETY_THRESHOLD)
                         .improved())
-                .isFalse();
+                .isTrue();
     }
 
     @Test
@@ -100,7 +101,7 @@ class CandidateSelectorTest {
     }
 
     @Test
-    void a_much_faster_layout_is_still_rejected_when_peak_crowding_rises() {
+    void a_much_faster_layout_is_accepted_regardless_of_peak_density() {
         // 탐색 2번 후보 1의 실측값이다. 총 대피시간 -29.4%, 평균 -39.6%로 크게 좋아졌지만 최대 밀집도가
         // 3.0에서 4.0으로 올랐다. 화면에는 이 +1이 "비상구 편중도 / 밀집도" 칸에 떠서 편중도가 나빠진
         // 것처럼 보였지만, 실제로는 밀집도이며 거부 사유도 밀집도다.
@@ -109,7 +110,7 @@ class CandidateSelectorTest {
 
         assertThat(CandidateSelector.judge(trial, baseline, MARGIN, SAFETY_THRESHOLD)
                         .improved())
-                .isFalse();
+                .isTrue();
     }
 
     @Test
@@ -136,9 +137,20 @@ class CandidateSelectorTest {
     }
 
     @Test
-    void a_density_rise_that_crosses_the_safety_threshold_blocks_even_a_much_faster_layout() {
+    void density_threshold_crossing_does_not_block_evacuation_time_improvement() {
         List<Metric> baseline = metrics(59.6, 24.0, 3.0);
         List<Metric> trial = metrics(40.0, 16.0, 3.5);
+
+        assertThat(CandidateSelector.judge(trial, baseline, MARGIN, SAFETY_THRESHOLD)
+                        .improved())
+                .isTrue();
+    }
+
+    @Test
+    void density_reduction_without_evacuation_time_improvement_is_not_accepted() {
+        // 기준을 넘은 상태에서 조금이라도 내려오는 것은 안전상 분명한 개선이다.
+        List<Metric> baseline = metrics(59.6, 24.0, 5.0);
+        List<Metric> trial = metrics(59.6, 24.0, 4.0);
 
         assertThat(CandidateSelector.judge(trial, baseline, MARGIN, SAFETY_THRESHOLD)
                         .improved())
@@ -146,13 +158,32 @@ class CandidateSelectorTest {
     }
 
     @Test
-    void thinning_crowding_that_is_still_above_the_threshold_counts_as_improved() {
-        // 기준을 넘은 상태에서 조금이라도 내려오는 것은 안전상 분명한 개선이다.
-        List<Metric> baseline = metrics(59.6, 24.0, 5.0);
-        List<Metric> trial = metrics(59.6, 24.0, 4.0);
+    void selects_total_average_and_balanced_recommendations_without_duplicates() {
+        List<CandidateSelector.RankableCandidate> candidates =
+                List.of(rankable(1, -0.30, -0.03), rankable(2, -0.04, -0.35), rankable(3, -0.20, -0.18));
 
-        assertThat(CandidateSelector.judge(trial, baseline, MARGIN, SAFETY_THRESHOLD)
-                        .improved())
-                .isTrue();
+        assertThat(CandidateSelector.selectRecommendations(candidates, MARGIN))
+                .containsEntry(1L, List.of("TOTAL_TIME"))
+                .containsEntry(2L, List.of("AVERAGE_TIME"))
+                .containsEntry(3L, List.of("BALANCED"));
+    }
+
+    @Test
+    void one_candidate_can_hold_multiple_recommendation_types() {
+        List<CandidateSelector.RankableCandidate> candidates = List.of(rankable(1, -0.30, -0.35));
+
+        assertThat(CandidateSelector.selectRecommendations(candidates, MARGIN))
+                .containsEntry(1L, List.of("TOTAL_TIME", "AVERAGE_TIME", "BALANCED"));
+    }
+
+    private static CandidateSelector.RankableCandidate rankable(long id, double totalRatio, double averageRatio) {
+        return new CandidateSelector.RankableCandidate(
+                id,
+                List.of(),
+                List.of(
+                        new MetricDelta("TOTAL_EVACUATION_TIME_SECONDS", 100, 100 * (1 + totalRatio), 0, totalRatio),
+                        new MetricDelta(
+                                "AVERAGE_EVACUATION_TIME_SECONDS", 100, 100 * (1 + averageRatio), 0, averageRatio)),
+                1);
     }
 }

@@ -107,6 +107,14 @@ const migrationContracts = [
     ],
   },
   {
+    path: 'apps/simulation-service/src/main/resources/db/migration-replace-structure-constraints-with-movement-policy.sql',
+    fragments: [
+      'USE hwalro_simulation',
+      'ADD COLUMN movement_policy VARCHAR(20)',
+      'ADD CONSTRAINT ck_fabrics_movement_policy',
+    ],
+  },
+  {
     path: 'apps/simulation-service/src/main/resources/db/migration-add-evacuation-route-store.sql',
     fragments: [
       'USE hwalro_simulation',
@@ -150,6 +158,17 @@ const migrationContracts = [
       'MODIFY COLUMN layout_id BIGINT UNSIGNED NOT NULL',
     ],
   },
+  {
+    path: 'apps/simulation-service/src/main/resources/db/migration-drop-legacy-structure-constraints.sql',
+    fragments: [
+      'USE hwalro_simulation',
+      'DROP CHECK ck_fabrics_max_movement_distance',
+      'DROP COLUMN movable',
+      'DROP COLUMN max_movement_distance',
+      'DROP COLUMN rotation_locked',
+      'DROP COLUMN keep_against_wall',
+    ],
+  },
 ];
 
 const runbook = await readFile('deploy/RDS_MIGRATION_V1_5_TO_CURRENT.md', 'utf8');
@@ -189,14 +208,15 @@ for (const requiredCheck of [
   'table.layout_zones',
   'table.layout_zone_members',
   'table.evacuation_route_store',
-  'fabrics.movable',
+  'fabrics.movement_policy',
   'walls.display_order',
   'pillars.display_order',
-  'columns.structure_constraints',
+  'columns.movement_policy_constraints',
   'columns.layout_zones',
   'columns.layout_zone_members',
   'columns.evacuation_route_store',
   'constraints.layout_zone_integrity',
+  'constraint.ck_fabrics_movement_policy',
   'primary-keys.new-simulation-tables',
   'indexes.evacuation_route_store',
   'inspection_areas.layout_id',

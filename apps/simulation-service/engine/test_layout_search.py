@@ -40,6 +40,7 @@ def agents() -> list[dict]:
 
 def base_input(drawing, findings=None, parents=None, max_candidates=6, constraints=None) -> dict:
     value = {
+        "plannerMode": "DIAGNOSTIC_BEAM",
         "searchId": 1,
         "round": 1,
         "drawing": drawing,

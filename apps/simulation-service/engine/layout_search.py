@@ -26,6 +26,15 @@ from shapely.geometry import LineString, Point, Polygon, box
 from shapely.ops import nearest_points
 
 import surrogate
+from configuration_space_shape_planner import (
+    GRID_MODE,
+    GRID_VERSION,
+    PDE_MODE,
+    PDE_VERSION,
+    GridPlannerRequest,
+    generate_candidates,
+    planner_result,
+)
 from ideal_route_docking import generate_docking_candidates
 from constraints import SearchConstraints, parse_constraints, touches_wall
 from layout_features import (
@@ -46,6 +55,10 @@ from route_planner import (
 )
 from search_precision import decimal_value as _decimal
 from search_precision import quantized as _quantized
+
+DIAGNOSTIC_BEAM_MODE = "DIAGNOSTIC_BEAM"
+DOCKING_MODE = "IDEAL_ROUTE_DOCKING"
+SUPPORTED_PLANNER_MODES = (GRID_MODE, PDE_MODE, DOCKING_MODE, DIAGNOSTIC_BEAM_MODE)
 
 PLANNER_VERSION = "DIAGNOSTIC_BEAM_V2"
 IDEAL_ROUTE_DOCKING_VERSION = "IDEAL_ROUTE_DOCKING_V2"
@@ -1690,11 +1703,34 @@ def _generation_mode(input_data: dict[str, Any]) -> str:
     return GENERATION_EXHAUSTIVE if requested == GENERATION_EXHAUSTIVE else GENERATION_BOUNDED
 
 
+class UnknownPlannerModeError(ValueError):
+    """Raised instead of silently falling back to the legacy diagnostic-beam planner."""
+
+    def __init__(self, planner_mode: object) -> None:
+        super().__init__(
+            f"plannerMode must be one of {', '.join(SUPPORTED_PLANNER_MODES)}; received {planner_mode!r}"
+        )
+
+
 def generate(input_data: dict[str, Any]) -> dict[str, Any]:
     drawing = input_data["drawing"]
     agents = [(_numeric(point["x"]), _numeric(point["y"])) for point in input_data.get("agents", [])]
     hazards = parse_hazards(input_data.get("hazards", []))
-    if input_data.get("plannerMode") == "IDEAL_ROUTE_DOCKING":
+    planner_mode = input_data.get("plannerMode")
+    if planner_mode in (GRID_MODE, PDE_MODE):
+        maximum_candidates = max(0, int(input_data.get("maxCandidates", 0)))
+        request = GridPlannerRequest(
+            drawing,
+            tuple(agents),
+            tuple(input_data.get("selectedExitIds", [])),
+            tuple(hazards),
+            maximum_candidates,
+            max(0.0, _numeric(input_data.get("generationBudgetSeconds", 600.0))),
+            parse_constraints(input_data.get("constraints")),
+        )
+        version = GRID_VERSION if planner_mode == GRID_MODE else PDE_VERSION
+        return planner_result(version, generate_candidates(request, planner_mode))
+    if planner_mode == DOCKING_MODE:
         candidates = generate_docking_candidates(
             drawing=drawing,
             agents=agents,
@@ -1727,6 +1763,10 @@ def generate(input_data: dict[str, Any]) -> dict[str, Any]:
             "rawCandidateCount": len(candidates),
             "surrogateHealth": {"status": "DISABLED", "reason": "IDEAL_ROUTE_DOCKING"},
         }
+    if planner_mode != DIAGNOSTIC_BEAM_MODE:
+        # No silent fallback: an unset or unknown mode used to run the legacy beam planner,
+        # so a misconfigured service quietly searched with the oldest generation.
+        raise UnknownPlannerModeError(planner_mode)
     exits = parse_exits(drawing, input_data.get("selectedExitIds", []))
     findings = input_data.get("findings", [])
     parents = input_data.get("parents", [])

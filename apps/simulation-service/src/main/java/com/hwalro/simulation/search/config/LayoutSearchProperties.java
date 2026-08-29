@@ -11,7 +11,8 @@ public class LayoutSearchProperties {
     private String workDirectory = "";
     private String surrogateMode = "SHADOW";
     private String surrogateBundle = "";
-    private Duration searchTimeout = Duration.ofMinutes(5);
+    private LayoutSearchPlannerMode plannerMode = LayoutSearchPlannerMode.CONFIGURATION_SPACE_SHAPE_GRID;
+    private Duration generationBudget = Duration.ofMinutes(10);
     private int beamWidth = 2;
     private double improvementMargin = 0.02;
     private double abortMargin = 0.15;
@@ -61,12 +62,20 @@ public class LayoutSearchProperties {
         this.surrogateBundle = surrogateBundle;
     }
 
-    public Duration getSearchTimeout() {
-        return searchTimeout;
+    public LayoutSearchPlannerMode getPlannerMode() {
+        return plannerMode;
     }
 
-    public void setSearchTimeout(Duration searchTimeout) {
-        this.searchTimeout = searchTimeout;
+    public void setPlannerMode(LayoutSearchPlannerMode plannerMode) {
+        this.plannerMode = plannerMode;
+    }
+
+    public Duration getGenerationBudget() {
+        return generationBudget;
+    }
+
+    public void setGenerationBudget(Duration generationBudget) {
+        this.generationBudget = generationBudget;
     }
 
     public int getBeamWidth() {

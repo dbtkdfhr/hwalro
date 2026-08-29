@@ -35,7 +35,7 @@ public interface LayoutSearchMapper {
 
     int finishSearch(Long id, String status, LocalDateTime finishedAt, String failureCode, String failureMessage);
 
-    void insertCandidate(LayoutSearchCandidateEntity candidate);
+    int insertCandidateIfSearchActive(LayoutSearchCandidateEntity candidate);
 
     int updateCandidateStatus(Long id, String status, String rejectReason);
 

@@ -109,14 +109,16 @@
           AND status IN ('PENDING', 'DIAGNOSING', 'GENERATING', 'VERIFYING')
     </update>
 
-    <insert id="insertCandidate" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insertCandidateIfSearchActive" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO layout_search_candidates (
             study_id, parent_candidate_id, round_index, candidate_order,
             origin_finding_type, operator_type, status, change_set, rationale, proxy_score, reject_reason, constraints_snapshot
-        ) VALUES (
+        ) SELECT
             #{studyId}, #{parentCandidateId}, #{roundIndex}, #{candidateOrder},
             #{originFindingType}, #{operatorType}, #{status}, #{changeSet}, #{rationale}, #{proxyScore}, #{rejectReason}, #{constraintsSnapshot}
-        )
+        FROM layout_searches
+        WHERE id = #{studyId}
+          AND status IN ('PENDING', 'DIAGNOSING', 'GENERATING', 'VERIFYING')
     </insert>
 
     <update id="updateCandidateStatus">

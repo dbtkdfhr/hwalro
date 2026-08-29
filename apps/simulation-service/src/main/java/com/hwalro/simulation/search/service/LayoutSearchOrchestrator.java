@@ -58,7 +58,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Service
 public class LayoutSearchOrchestrator {
     private static final Logger log = LoggerFactory.getLogger(LayoutSearchOrchestrator.class);
-    private static final String PLANNER_VERSION = "DIAGNOSTIC_BEAM_V2";
     private static final int MAX_FINDINGS = 4;
     private static final int MAX_FAILURE_MESSAGE_LENGTH = 1000;
     private static final String COMPLETED_STATUS = "COMPLETED";
@@ -127,7 +126,7 @@ public class LayoutSearchOrchestrator {
         LayoutSearchEntity search = new LayoutSearchEntity();
         search.setBaselineSimulationId(simulationId);
         search.setBaselineLayoutVersionId(setup.layoutVersionId());
-        search.setPlannerVersion(PLANNER_VERSION);
+        search.setPlannerVersion(properties.getPlannerMode().plannerVersion());
         search.setStatus(SearchStatus.PENDING.name());
         search.setBaselineMetrics(writeJson(baselineMetrics));
         search.setBudget(writeJson(new SearchBudget(budgetPreset, budget.trials(), budget.rounds(), trialCap, verify)));
@@ -184,6 +183,7 @@ public class LayoutSearchOrchestrator {
         if (!Boolean.TRUE.equals(cancelled)) {
             throw new SimulationConflictException("진행 중인 배치 개선안 탐색만 취소할 수 있습니다.");
         }
+        layoutSearchRunner.cancel(searchId);
         return requireSearch(searchId);
     }
 
@@ -315,8 +315,14 @@ public class LayoutSearchOrchestrator {
             }
             finish(searchId, hasUsableCandidate(searchId, verify));
         } catch (RuntimeException exception) {
+            if (isCancelled(searchId)) {
+                log.info("Layout search {} stopped after cancellation", searchId);
+                return;
+            }
             log.error("Layout search {} failed", searchId, exception);
             failSearch(searchId, "STUDY_FAILED: " + safeMessage(exception.getMessage()));
+        } finally {
+            layoutSearchRunner.clearIdleCancellation(searchId);
         }
     }
 
@@ -382,7 +388,7 @@ public class LayoutSearchOrchestrator {
         return verifyCandidates(searchId, queued, baselineSetup, baselineMetrics, trialCap, exits);
     }
 
-    private void persistCandidates(
+    void persistCandidates(
             Long searchId,
             int round,
             SearchResult search,
@@ -418,8 +424,9 @@ public class LayoutSearchOrchestrator {
             entity.setRationale(writeJson(enrichRationale(candidate)));
             entity.setProxyScore(candidate.proxyScore());
             entity.setConstraintsSnapshot(constraintsSnapshot);
-            layoutSearchMapper.insertCandidate(entity);
-            queued.add(entity);
+            if (layoutSearchMapper.insertCandidateIfSearchActive(entity) == 1) {
+                queued.add(entity);
+            }
         }
         // 거부된 변경은 제안이 아니라 "그 자리에 넣을 수 없다"는 사실일 뿐이라 사용자에게 보여줄
         // 것이 없다. 후보로 저장하지 않고 사유별 집계만 로그로 남긴다 - 후보가 갑자기 줄어드는

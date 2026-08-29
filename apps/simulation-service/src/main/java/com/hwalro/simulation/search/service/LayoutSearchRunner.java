@@ -34,7 +34,9 @@ public class LayoutSearchRunner {
     private final Path scriptPath;
     private final Path workRoot;
     private final Duration timeout;
+    private final String plannerMode;
     private final boolean keepJobDirectory;
+    private final LayoutSearchProcessRegistry processRegistry;
 
     public LayoutSearchRunner(
             ObjectMapper objectMapper,
@@ -49,8 +51,22 @@ public class LayoutSearchRunner {
                         .toAbsolutePath()
                         .normalize()
                 : Path.of(properties.getWorkDirectory()).toAbsolutePath().normalize();
-        this.timeout = properties.getSearchTimeout();
+        this.timeout = properties.getGenerationBudget();
+        this.plannerMode = properties.getPlannerMode().name();
         this.keepJobDirectory = properties.isKeepJobDirectory();
+        this.processRegistry = new LayoutSearchProcessRegistry(LayoutSearchRunner::stop);
+    }
+
+    public void cancel(long searchId) {
+        processRegistry.cancel(searchId);
+    }
+
+    public void clearIdleCancellation(long searchId) {
+        processRegistry.clearIdleCancellation(searchId);
+    }
+
+    Duration generationTimeout() {
+        return timeout;
     }
 
     public SearchResult run(SearchInput input) {
@@ -59,6 +75,7 @@ public class LayoutSearchRunner {
         }
         Path jobDirectory = null;
         Process process = null;
+        LayoutSearchProcessRegistry.RunHandle processHandle = null;
         SearchLogRelay relay = null;
         try {
             Files.createDirectories(workRoot);
@@ -68,19 +85,26 @@ public class LayoutSearchRunner {
             Path inputPath = jobDirectory.resolve("input.json");
             Path outputPath = jobDirectory.resolve("output.json");
             objectMapper.writeValue(inputPath.toFile(), createInput(input));
+            if (processRegistry.isCancellationRequested(input.studyId())) {
+                throw new SearchRunException("배치 탐색 엔진 실행이 취소되었습니다.");
+            }
 
             process = new ProcessBuilder(
                             pythonCommand, scriptPath.toString(), inputPath.toString(), outputPath.toString())
                     .redirectErrorStream(true)
                     .start();
+            processHandle = processRegistry.register(input.studyId(), process);
             relay = new SearchLogRelay(process.getInputStream(), input.studyId());
             relay.start();
             if (!process.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS)) {
-                stop(process);
+                processHandle.stop();
                 relay.await();
                 throw new SearchRunException("배치 탐색 엔진 실행 시간이 %d초를 초과했습니다.".formatted(timeout.toSeconds()));
             }
             relay.await();
+            if (processHandle.isCancelled()) {
+                throw new SearchRunException("배치 탐색 엔진 실행이 취소되었습니다.");
+            }
             if (process.exitValue() != 0) {
                 log.warn(
                         "Layout search failed for {} with exit code {}: {}",
@@ -100,12 +124,19 @@ public class LayoutSearchRunner {
         } catch (IOException exception) {
             throw new SearchRunException("배치 탐색 엔진 입출력 처리에 실패했습니다.", exception);
         } catch (InterruptedException exception) {
-            if (process != null) {
+            if (processHandle != null) {
+                processHandle.stop();
+            } else if (process != null) {
                 stop(process);
             }
             Thread.currentThread().interrupt();
             throw new SearchRunException("배치 탐색 엔진 실행이 중단되었습니다.", exception);
         } finally {
+            if (processHandle != null) {
+                processHandle.close();
+            } else if (process != null && process.isAlive()) {
+                stop(process);
+            }
             if (keepJobDirectory) {
                 log.info("Layout search {} job directory kept for inspection: {}", input.studyId(), jobDirectory);
             } else {
@@ -122,7 +153,8 @@ public class LayoutSearchRunner {
         value.put("agents", input.agents());
         value.put("hazards", input.hazards());
         value.put("selectedExitIds", input.selectedExitIds());
-        value.put("plannerMode", "IDEAL_ROUTE_DOCKING");
+        value.put("plannerMode", plannerMode);
+        value.put("generationBudgetSeconds", timeout.toSeconds());
         value.put("densityThreshold", input.densityThreshold());
         value.put("findings", input.findings());
         value.put("parents", input.parents());

@@ -173,7 +173,7 @@ export function LayoutCanvas({
   const cameraRef = useRef<Camera>(state.camera);
   const mainLayerRef = useRef<Konva.Layer>(null);
 
-  const { containerRef, spaceDown } = useCanvasListeners({
+  const { containerRef, spaceDown, cameraReady } = useCanvasListeners({
     dispatch,
     onSizeChange,
     camera: state.camera,
@@ -183,7 +183,7 @@ export function LayoutCanvas({
   });
 
   const { doc, tool, selection, draft, snapHint, cursor, validationProblems } = state;
-  const camera = cameraRef.current;
+  const camera = panning ? cameraRef.current : state.camera;
 
   useEffect(() => {
     cameraRef.current = state.camera;
@@ -871,7 +871,7 @@ export function LayoutCanvas({
       onPointerUp={onPointerUp}
       onPointerLeave={onPointerLeave}
     >
-      {size.w > 0 && size.h > 0 && (
+      {cameraReady && (
         <Stage width={size.w} height={size.h}>
           <Layer
             ref={mainLayerRef}

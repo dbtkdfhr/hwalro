@@ -3,7 +3,26 @@ package com.hwalro.regulation.report.dto;
 import java.util.List;
 
 public record ReportVisualContextResponse(
-        Long simulationResultId, Long simulationId, String layoutTitle, Drawing drawing, List<Bottleneck> bottlenecks) {
+        Long simulationResultId,
+        Long simulationId,
+        Long layoutId,
+        Long layoutVersionId,
+        String layoutTitle,
+        Drawing drawing,
+        List<Bottleneck> bottlenecks,
+        List<RiskZone> riskZones) {
+    public ReportVisualContextResponse withRiskZones(List<RiskZone> riskZones) {
+        return new ReportVisualContextResponse(
+                simulationResultId,
+                simulationId,
+                layoutId,
+                layoutVersionId,
+                layoutTitle,
+                drawing,
+                bottlenecks,
+                riskZones);
+    }
+
     public record Drawing(
             String name,
             double width,
@@ -32,6 +51,8 @@ public record ReportVisualContextResponse(
             double peakDensity,
             double thresholdValue,
             Bounds geometry) {}
+
+    public record RiskZone(Long id, String title, String description, String severity, Bounds geometry) {}
 
     public record Bounds(double x, double y, double width, double height) {}
 }

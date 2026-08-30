@@ -6,6 +6,7 @@ public record SimulationReportContextResponse(
         Long simulationResultId,
         Long simulationId,
         Long layoutId,
+        Long layoutVersionId,
         String layoutTitle,
         List<Metric> metrics,
         List<Bottleneck> bottlenecks) {

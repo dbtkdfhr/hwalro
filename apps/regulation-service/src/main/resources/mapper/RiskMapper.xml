@@ -103,6 +103,28 @@
         ORDER BY layout_id, id
     </select>
 
+    <select id="findByLayoutVersionIds" resultType="com.hwalro.regulation.risk.domain.Risk">
+        SELECT id,
+               layout_id,
+               layout_version_id,
+               assignee_id,
+               title,
+               description,
+               start_x,
+               start_y,
+               end_x,
+               end_y,
+               severity,
+               status,
+               created_at
+        FROM risks
+        WHERE layout_version_id IN
+        <foreach collection="layoutVersionIds" item="layoutVersionId" open="(" separator="," close=")">
+            #{layoutVersionId}
+        </foreach>
+        ORDER BY layout_version_id, id
+    </select>
+
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO risks (layout_id, layout_version_id, assignee_id, title, description, start_x, start_y, end_x, end_y, severity, status)
         VALUES (#{layoutId}, #{layoutVersionId}, #{assigneeId}, #{title}, #{description}, #{startX}, #{startY}, #{endX}, #{endY}, #{severity}, #{status})

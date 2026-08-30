@@ -23,6 +23,8 @@ public interface RiskMapper {
 
     List<Risk> findByLayoutIds(@Param("layoutIds") List<Long> layoutIds);
 
+    List<Risk> findByLayoutVersionIds(@Param("layoutVersionIds") List<Long> layoutVersionIds);
+
     int insert(Risk risk);
 
     int update(Risk risk);

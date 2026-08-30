@@ -45,6 +45,8 @@ public class SimulationReportVisualContextService {
                     return new SimulationReportVisualContextResponse(
                             id,
                             summary.simulationId(),
+                            summary.layoutId(),
+                            summary.layoutVersionId(),
                             summary.layoutTitle(),
                             detailService.findDrawing(summary.simulationId()),
                             detailService.findBottlenecks(id));

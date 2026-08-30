@@ -22,7 +22,10 @@ import com.hwalro.regulation.report.dto.ReportDraftInsert;
 import com.hwalro.regulation.report.dto.ReportListItem;
 import com.hwalro.regulation.report.dto.ReportListResponse;
 import com.hwalro.regulation.report.dto.ReportUpdateRequest;
+import com.hwalro.regulation.report.dto.ReportVisualContextResponse;
 import com.hwalro.regulation.report.mapper.ReportMapper;
+import com.hwalro.regulation.risk.domain.Risk;
+import com.hwalro.regulation.risk.mapper.RiskMapper;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -42,6 +45,9 @@ class ReportServiceTest {
 
     @Mock
     private SimulationReportVisualContextClient visualContextClient;
+
+    @Mock
+    private RiskMapper riskMapper;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -231,6 +237,40 @@ class ReportServiceTest {
     }
 
     @Test
+    void enrichesVisualContextsWithRisksFromTheirExactLayoutVersions() {
+        ReportService reportService = reportService();
+        LocalDateTime now = LocalDateTime.now();
+        when(reportMapper.findDetailById(30L)).thenReturn(new ReportDetailRow(30L, 7L, "보고서", "{}", "초안", now, now));
+        when(reportMapper.findSimulationResultIds(30L)).thenReturn(List.of(20L));
+        ReportVisualContextResponse context =
+                new ReportVisualContextResponse(20L, 200L, 300L, 400L, "현재 배치안", null, List.of(), List.of());
+        when(visualContextClient.findAll(List.of(20L), "Bearer token")).thenReturn(List.of(context));
+        Risk risk = new Risk();
+        risk.setId(50L);
+        risk.setLayoutVersionId(400L);
+        risk.setTitle("무대 앞 적치물");
+        risk.setDescription("통로 폭을 좁힐 수 있음");
+        risk.setSeverity("HIGH");
+        risk.setStartX(30.0);
+        risk.setStartY(40.0);
+        risk.setEndX(10.0);
+        risk.setEndY(20.0);
+        when(riskMapper.findByLayoutVersionIds(List.of(400L))).thenReturn(List.of(risk));
+
+        var response = reportService.getVisualContexts(new JwtUser(7L, Set.of("OPERATOR")), 30L, "Bearer token");
+
+        assertThat(response).hasSize(1);
+        assertThat(response.get(0).riskZones())
+                .containsExactly(new ReportVisualContextResponse.RiskZone(
+                        50L,
+                        "무대 앞 적치물",
+                        "통로 폭을 좁힐 수 있음",
+                        "HIGH",
+                        new ReportVisualContextResponse.Bounds(10, 20, 20, 20)));
+        verify(riskMapper).findByLayoutVersionIds(List.of(400L));
+    }
+
+    @Test
     void rejectsVisualContextAccessBeforeCallingSimulationService() {
         ReportService reportService = reportService();
         LocalDateTime now = LocalDateTime.now();
@@ -271,6 +311,6 @@ class ReportServiceTest {
     }
 
     private ReportService reportService() {
-        return new ReportService(reportMapper, authorDirectoryClient, visualContextClient, objectMapper);
+        return new ReportService(reportMapper, authorDirectoryClient, visualContextClient, riskMapper, objectMapper);
     }
 }

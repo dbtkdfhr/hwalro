@@ -1,21 +1,27 @@
 package com.hwalro.regulation.report.service;
 
 import com.hwalro.regulation.common.jwt.JwtUser;
+import com.hwalro.regulation.law.dto.RegulationArticle;
+import com.hwalro.regulation.law.dto.RegulationDetail;
+import com.hwalro.regulation.law.service.RegulationService;
 import com.hwalro.regulation.report.ReportStatus;
 import com.hwalro.regulation.report.ai.ReportDraftGenerator;
 import com.hwalro.regulation.report.ai.ReportDraftInput;
-import com.hwalro.regulation.report.ai.ReportDraftInput.Risk;
+import com.hwalro.regulation.report.ai.ReportDraftInput.Law;
 import com.hwalro.regulation.report.client.SimulationReportContextClient;
 import com.hwalro.regulation.report.client.SimulationReportContextClient.Context;
 import com.hwalro.regulation.report.dto.AiReportDraftCreateRequest;
 import com.hwalro.regulation.report.dto.AiReportDraftJobResponse;
 import com.hwalro.regulation.report.dto.ReportContent;
 import com.hwalro.regulation.report.exception.SimulationServiceException;
+import com.hwalro.regulation.risk.dto.RiskAttachedLaw;
 import com.hwalro.regulation.risk.mapper.RiskMapper;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import org.slf4j.Logger;
@@ -36,6 +42,7 @@ public class AiReportDraftService {
 
     private final SimulationReportContextClient simulationClient;
     private final RiskMapper riskMapper;
+    private final RegulationService regulationService;
     private final ReportDraftGenerator generator;
     private final ReportService reportService;
     private final Executor executor;
@@ -43,11 +50,13 @@ public class AiReportDraftService {
     public AiReportDraftService(
             SimulationReportContextClient simulationClient,
             RiskMapper riskMapper,
+            RegulationService regulationService,
             ReportDraftGenerator generator,
             ReportService reportService,
             @Qualifier("aiReportExecutor") Executor executor) {
         this.simulationClient = simulationClient;
         this.riskMapper = riskMapper;
+        this.regulationService = regulationService;
         this.generator = generator;
         this.reportService = reportService;
         this.executor = executor;
@@ -99,12 +108,9 @@ public class AiReportDraftService {
             List<Long> resultIds = resultIds(request);
             List<Context> contexts = simulationClient.findAll(resultIds, authorization);
             validateContexts(resultIds, contexts);
-            List<Long> layoutIds =
-                    contexts.stream().map(Context::layoutId).distinct().toList();
-            List<Risk> risks = riskMapper.findByLayoutIds(layoutIds).stream()
-                    .map(risk ->
-                            new Risk(risk.getLayoutId(), risk.getTitle(), risk.getDescription(), risk.getSeverity()))
-                    .toList();
+            List<Long> layoutVersionIds =
+                    contexts.stream().map(Context::layoutVersionId).distinct().toList();
+            List<ReportDraftInput.Risk> risks = buildRisks(layoutVersionIds);
             Context source = contexts.get(0);
             ReportDraftInput input = new ReportDraftInput(source, contexts.subList(1, contexts.size()), risks);
             ReportContent content = generator.generate(input);
@@ -113,6 +119,77 @@ public class AiReportDraftService {
             reportService.failAiGeneration(reportId);
             log.warn("AI report generation failed. reportId={}", reportId, exception);
         }
+    }
+
+    private List<ReportDraftInput.Risk> buildRisks(List<Long> layoutVersionIds) {
+        List<com.hwalro.regulation.risk.domain.Risk> risks = riskMapper.findByLayoutVersionIds(layoutVersionIds);
+        List<Long> riskIds = risks.stream()
+                .map(com.hwalro.regulation.risk.domain.Risk::getId)
+                .filter(java.util.Objects::nonNull)
+                .toList();
+        Map<Long, List<RiskAttachedLaw>> attachedLawsByRisk = riskIds.isEmpty()
+                ? Map.of()
+                : riskMapper.findAttachedLawsByRiskIds(riskIds).stream()
+                        .collect(java.util.stream.Collectors.groupingBy(RiskAttachedLaw::riskId));
+        Map<String, RegulationDetail> detailCache = new HashMap<>();
+        Set<String> failedSerialNumbers = new HashSet<>();
+        return risks.stream()
+                .map(risk -> new ReportDraftInput.Risk(
+                        risk.getLayoutId(),
+                        risk.getLayoutVersionId(),
+                        risk.getTitle(),
+                        risk.getDescription(),
+                        risk.getSeverity(),
+                        attachedLawsByRisk.getOrDefault(risk.getId(), List.of()).stream()
+                                .map(reference -> resolveLaw(reference, detailCache, failedSerialNumbers))
+                                .toList()))
+                .toList();
+    }
+
+    private Law resolveLaw(
+            RiskAttachedLaw reference, Map<String, RegulationDetail> detailCache, Set<String> failedSerialNumbers) {
+        RegulationDetail detail = resolveLawDetail(reference.lawSerialNumber(), detailCache, failedSerialNumbers);
+        RegulationArticle article = findArticle(detail, reference.lawArticleNumber());
+        return new Law(
+                reference.lawSerialNumber(),
+                detail == null ? null : detail.name(),
+                reference.lawArticleNumber(),
+                article == null ? null : article.title(),
+                article == null ? null : article.content());
+    }
+
+    private RegulationDetail resolveLawDetail(
+            String serialNumber, Map<String, RegulationDetail> detailCache, Set<String> failedSerialNumbers) {
+        if (!StringUtils.hasText(serialNumber) || failedSerialNumbers.contains(serialNumber)) {
+            return null;
+        }
+        if (detailCache.containsKey(serialNumber)) {
+            return detailCache.get(serialNumber);
+        }
+        try {
+            RegulationDetail detail = regulationService.getDetail(serialNumber);
+            detailCache.put(serialNumber, detail);
+            return detail;
+        } catch (RuntimeException exception) {
+            failedSerialNumbers.add(serialNumber);
+            log.warn("Failed to resolve law detail for AI report. serialNumber={}", serialNumber, exception);
+            return null;
+        }
+    }
+
+    private RegulationArticle findArticle(RegulationDetail detail, String articleNumber) {
+        if (detail == null || detail.articles() == null || !StringUtils.hasText(articleNumber)) {
+            return null;
+        }
+        String normalizedNumber = normalizeArticleNumber(articleNumber);
+        return detail.articles().stream()
+                .filter(article -> normalizedNumber.equals(normalizeArticleNumber(article.number())))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private String normalizeArticleNumber(String articleNumber) {
+        return StringUtils.hasText(articleNumber) ? articleNumber.trim().replaceAll("[\\s제조()]", "") : "";
     }
 
     private AiReportDraftCreateRequest validate(
@@ -157,7 +234,11 @@ public class AiReportDraftService {
         if (contexts == null
                 || contexts.size() != requestedIds.size()
                 || !contexts.stream().map(Context::simulationResultId).toList().equals(requestedIds)
-                || contexts.stream().anyMatch(context -> context.layoutId() == null || context.layoutId() <= 0)) {
+                || contexts.stream()
+                        .anyMatch(context -> context.layoutId() == null
+                                || context.layoutId() <= 0
+                                || context.layoutVersionId() == null
+                                || context.layoutVersionId() <= 0)) {
             throw new SimulationServiceException("시뮬레이션 결과를 완전하게 조회하지 못했습니다.");
         }
     }

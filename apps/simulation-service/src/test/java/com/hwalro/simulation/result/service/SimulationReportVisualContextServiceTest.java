@@ -47,6 +47,9 @@ class SimulationReportVisualContextServiceTest {
         assertThat(contexts)
                 .extracting(SimulationReportVisualContextResponse::simulationResultId)
                 .containsExactly(20L, 10L);
+        assertThat(contexts)
+                .extracting(SimulationReportVisualContextResponse::layoutVersionId)
+                .containsExactly(400L, 400L);
         assertThat(contexts.get(0).drawing()).isSameAs(firstDrawing);
         assertThat(contexts.get(0).bottlenecks()).containsExactly(bottleneck);
         assertThat(contexts.get(1).drawing()).isSameAs(secondDrawing);

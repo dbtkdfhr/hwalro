@@ -20,8 +20,11 @@ import com.hwalro.regulation.report.dto.ReportUpdateRequest;
 import com.hwalro.regulation.report.dto.ReportVisualContextResponse;
 import com.hwalro.regulation.report.exception.ReportNotFoundException;
 import com.hwalro.regulation.report.mapper.ReportMapper;
+import com.hwalro.regulation.risk.domain.Risk;
+import com.hwalro.regulation.risk.mapper.RiskMapper;
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -42,16 +45,19 @@ public class ReportService {
     private final ReportMapper reportMapper;
     private final AuthorDirectoryClient authorDirectoryClient;
     private final SimulationReportVisualContextClient visualContextClient;
+    private final RiskMapper riskMapper;
     private final ObjectMapper objectMapper;
 
     public ReportService(
             ReportMapper reportMapper,
             AuthorDirectoryClient authorDirectoryClient,
             SimulationReportVisualContextClient visualContextClient,
+            RiskMapper riskMapper,
             ObjectMapper objectMapper) {
         this.reportMapper = reportMapper;
         this.authorDirectoryClient = authorDirectoryClient;
         this.visualContextClient = visualContextClient;
+        this.riskMapper = riskMapper;
         this.objectMapper = objectMapper;
     }
 
@@ -127,8 +133,48 @@ public class ReportService {
         if (simulationResultIds.isEmpty()) {
             return List.of();
         }
-        return visualContextClient.findAll(simulationResultIds, authorization);
+        List<ReportVisualContextResponse> contexts = visualContextClient.findAll(simulationResultIds, authorization);
+        List<Long> layoutVersionIds = contexts.stream()
+                .map(ReportVisualContextResponse::layoutVersionId)
+                .filter(Objects::nonNull)
+                .filter(id -> id > 0)
+                .collect(Collectors.collectingAndThen(Collectors.toCollection(LinkedHashSet::new), List::copyOf));
+        if (layoutVersionIds.isEmpty()) {
+            return contexts;
+        }
+        Map<Long, List<ReportVisualContextResponse.RiskZone>> risksByVersion =
+                riskMapper.findByLayoutVersionIds(layoutVersionIds).stream()
+                        .filter(risk -> risk.getLayoutVersionId() != null)
+                        .map(this::toRiskZoneEntry)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.groupingBy(
+                                RiskZoneEntry::layoutVersionId,
+                                Collectors.mapping(RiskZoneEntry::riskZone, Collectors.toList())));
+        return contexts.stream()
+                .map(context ->
+                        context.withRiskZones(risksByVersion.getOrDefault(context.layoutVersionId(), List.of())))
+                .toList();
     }
+
+    private RiskZoneEntry toRiskZoneEntry(Risk risk) {
+        if (risk.getStartX() == null || risk.getStartY() == null || risk.getEndX() == null || risk.getEndY() == null) {
+            return null;
+        }
+        double x = Math.min(risk.getStartX(), risk.getEndX());
+        double y = Math.min(risk.getStartY(), risk.getEndY());
+        double width = Math.abs(risk.getEndX() - risk.getStartX());
+        double height = Math.abs(risk.getEndY() - risk.getStartY());
+        return new RiskZoneEntry(
+                risk.getLayoutVersionId(),
+                new ReportVisualContextResponse.RiskZone(
+                        risk.getId(),
+                        risk.getTitle(),
+                        risk.getDescription(),
+                        risk.getSeverity(),
+                        new ReportVisualContextResponse.Bounds(x, y, width, height)));
+    }
+
+    private record RiskZoneEntry(Long layoutVersionId, ReportVisualContextResponse.RiskZone riskZone) {}
 
     @Transactional
     public ReportDetailResponse createDraft(

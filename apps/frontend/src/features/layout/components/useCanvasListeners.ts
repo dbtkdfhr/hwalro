@@ -16,6 +16,7 @@ interface UseCanvasListenersOptions {
 export interface CanvasListeners {
   containerRef: RefObject<HTMLDivElement | null>;
   spaceDown: boolean;
+  cameraReady: boolean;
 }
 
 export function useCanvasListeners({
@@ -169,5 +170,8 @@ export function useCanvasListeners({
     };
   }, []);
 
-  return { containerRef, spaceDown };
+  const cameraReady =
+    size.w > 0 && size.h > 0 && fittedNonceRef.current === cameraFitNonce;
+
+  return { containerRef, spaceDown, cameraReady };
 }

@@ -64,6 +64,7 @@ public class SimulationReportContextService {
                             id,
                             summary.simulationId(),
                             summary.layoutId(),
+                            summary.layoutVersionId(),
                             summary.layoutTitle(),
                             metrics.getOrDefault(id, List.of()),
                             bottlenecks.getOrDefault(id, List.of()));

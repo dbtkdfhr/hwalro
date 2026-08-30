@@ -29,6 +29,7 @@ export interface MinimapHighlight {
   width: number;
   height: number;
   label?: string;
+  kind?: 'bottleneck' | 'risk';
 }
 
 interface Props {
@@ -96,9 +97,11 @@ function drawHighlight(
   const height = highlight.height * scale;
   if (width <= 0 || height <= 0) return;
 
-  context.fillStyle = 'rgba(201, 79, 71, 0.18)';
+  const isRisk = highlight.kind === 'risk';
+  const color = isRisk ? '#d97706' : '#c94f47';
+  context.fillStyle = isRisk ? 'rgba(245, 158, 11, 0.22)' : 'rgba(201, 79, 71, 0.18)';
   context.fillRect(x, y, width, height);
-  context.strokeStyle = '#c94f47';
+  context.strokeStyle = color;
   context.lineWidth = 2;
   context.strokeRect(x, y, width, height);
 
@@ -107,7 +110,7 @@ function drawHighlight(
   const badgeY = Math.max(10, y);
   context.beginPath();
   context.arc(badgeX, badgeY, 9, 0, Math.PI * 2);
-  context.fillStyle = '#c94f47';
+  context.fillStyle = color;
   context.fill();
   context.fillStyle = '#ffffff';
   context.font = 'bold 10px sans-serif';

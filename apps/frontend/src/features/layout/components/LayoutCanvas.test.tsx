@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { act, type PropsWithChildren } from 'react';
+import { act, forwardRef, type PropsWithChildren } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createInitialState } from '../state/editorReducer';
@@ -10,10 +10,31 @@ import { LayoutCanvas } from './LayoutCanvas';
 vi.mock('react-konva', () => {
   const Shape = ({ children }: PropsWithChildren) => children ?? null;
   const Text = ({ text }: { text?: string }) => <span data-konva-text>{text}</span>;
+  interface MockLayerProps extends PropsWithChildren {
+    x?: number;
+    y?: number;
+    scaleX?: number;
+    scaleY?: number;
+  }
+  const Layer = forwardRef<unknown, MockLayerProps>(
+    function MockLayer({ children, x, y, scaleX, scaleY }, _ref) {
+      return (
+        <div
+          data-konva-layer
+          data-x={String(x)}
+          data-y={String(y)}
+          data-scale-x={String(scaleX)}
+          data-scale-y={String(scaleY)}
+        >
+          {children}
+        </div>
+      );
+    },
+  );
   return {
     Circle: Shape,
     Group: Shape,
-    Layer: Shape,
+    Layer,
     Line: Shape,
     Rect: Shape,
     Stage: Shape,
@@ -191,5 +212,40 @@ describe('LayoutCanvas zone rendering', () => {
     });
 
     expect(container.textContent).not.toContain('좌상단 구역 이름');
+  });
+});
+
+describe('LayoutCanvas camera rendering', () => {
+  it('waits for the fitted camera before rendering the drawing layer', () => {
+    const initial = createInitialState();
+    const props = {
+      dispatch: vi.fn(),
+      size: { w: 800, h: 600 },
+      onSizeChange: vi.fn(),
+    };
+
+    act(() => root.render(<LayoutCanvas state={initial} {...props} />));
+    expect(container.querySelector('[data-konva-layer]')).toBeNull();
+    expect(props.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'setCamera' }),
+    );
+
+    act(() =>
+      root.render(
+        <LayoutCanvas
+          state={{
+            ...initial,
+            camera: { zoom: 2, panX: -3, panY: -4 },
+          }}
+          {...props}
+        />,
+      ),
+    );
+
+    const layer = container.querySelector<HTMLElement>('[data-konva-layer]');
+    expect(layer?.dataset.x).toBe(String(3 * 2 * PX_PER_METER));
+    expect(layer?.dataset.y).toBe(String(4 * 2 * PX_PER_METER));
+    expect(layer?.dataset.scaleX).toBe(String(2 * PX_PER_METER));
+    expect(layer?.dataset.scaleY).toBe(String(2 * PX_PER_METER));
   });
 });

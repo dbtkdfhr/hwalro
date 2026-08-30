@@ -1,5 +1,6 @@
 import { selectTopBottlenecks } from '../../simulationResult/utils/bottleneckDisplay';
 import { SimulationMinimap } from '../../simulations/components/SimulationMinimap';
+import type { MinimapHighlight } from '../../simulations/components/SimulationMinimap';
 import type { ReportVisualContext } from '../types/report';
 
 type CardVariant = 'document' | 'settings' | 'preview';
@@ -34,6 +35,20 @@ export function ReportSimulationCard({
   const toneClass =
     tone === 'primary' ? 'border-primary/20 bg-primary-soft' : 'border-line bg-surface';
   const topBottlenecks = context ? selectTopBottlenecks(context.bottlenecks) : [];
+  const highlights: MinimapHighlight[] = context
+    ? [
+        ...topBottlenecks.map((bottleneck, index) => ({
+          ...bottleneck.geometry,
+          label: `B${index + 1}`,
+          kind: 'bottleneck' as const,
+        })),
+        ...(context.riskZones ?? []).map((risk, index) => ({
+          ...risk.geometry,
+          label: `R${index + 1}`,
+          kind: 'risk' as const,
+        })),
+      ]
+    : [];
 
   return (
     <div
@@ -61,11 +76,8 @@ export function ReportSimulationCard({
         ) : context ? (
           <SimulationMinimap
             drawing={context.drawing}
-            highlights={topBottlenecks.map((bottleneck, index) => ({
-              ...bottleneck.geometry,
-              label: String(index + 1),
-            }))}
-            ariaLabel={`결과 ${resultId} 도면과 상위 병목 ${topBottlenecks.length}개 미니맵`}
+            highlights={highlights}
+            ariaLabel={`결과 ${resultId} 도면과 상위 병목 ${topBottlenecks.length}개, 주의 구역 ${context.riskZones?.length ?? 0}개 미니맵`}
             width={size.width}
             height={size.height}
             className="block h-auto w-full"
@@ -79,11 +91,18 @@ export function ReportSimulationCard({
       </div>
 
       {!isLoading && !error && context && (
-        <p className="mt-2 text-[11px] font-bold text-text-muted">
-          {topBottlenecks.length > 0
-            ? `상위 병목 ${topBottlenecks.length}개 표시`
-            : '감지된 병목 없음'}
-        </p>
+        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-bold text-text-muted">
+          <span>
+            <span className="mr-1 inline-block h-2 w-2 rounded-sm bg-[#c94f47]" />
+            {topBottlenecks.length > 0
+              ? `상위 병목 ${topBottlenecks.length}개`
+              : '감지된 병목 없음'}
+          </span>
+          <span>
+            <span className="mr-1 inline-block h-2 w-2 rounded-sm bg-[#d97706]" />
+            주의 구역 {context.riskZones?.length ?? 0}개
+          </span>
+        </div>
       )}
     </div>
   );

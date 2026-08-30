@@ -48,9 +48,20 @@ public class SimulationReportContextClient {
             Long simulationResultId,
             Long simulationId,
             Long layoutId,
+            Long layoutVersionId,
             String layoutTitle,
             List<Metric> metrics,
-            List<Bottleneck> bottlenecks) {}
+            List<Bottleneck> bottlenecks) {
+        public Context(
+                Long simulationResultId,
+                Long simulationId,
+                Long layoutId,
+                String layoutTitle,
+                List<Metric> metrics,
+                List<Bottleneck> bottlenecks) {
+            this(simulationResultId, simulationId, layoutId, null, layoutTitle, metrics, bottlenecks);
+        }
+    }
 
     public record Metric(String metricType, double metricValue, String unit) {}
 

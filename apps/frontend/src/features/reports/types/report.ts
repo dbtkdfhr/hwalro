@@ -54,7 +54,23 @@ export interface AiReportDraftMonitorItem {
 export interface ReportVisualContext {
   simulationResultId: number;
   simulationId: number;
+  layoutId: number;
+  layoutVersionId: number;
   layoutTitle: string;
   drawing: import('../../simulationResult/types').SimulationDrawing;
   bottlenecks: import('../../simulationResult/types').DetectedBottleneck[];
+  riskZones: ReportRiskZone[];
+}
+
+export interface ReportRiskZone {
+  id: number;
+  title: string;
+  description: string | null;
+  severity: string;
+  geometry: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
 }
